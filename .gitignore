@@ -1,0 +1,7 @@
+# Ignore packed files
+*.hak
+*.mod
+*.tlk
+
+# Ignore the nasher directory
+.nasher/
