@@ -952,7 +952,7 @@ void PopulateHelmetData()
 
 void PopulateAppearanceData(string sFormID)
 {
-    if (LOAD_MODEL_DATA == FALSE) // || USE_CAMPAIGN_DATABASE == FALSE)
+    if (LOAD_MODEL_DATA == FALSE || USE_CAMPAIGN_DATABASE == FALSE)
     {
         Notice("Skipping appearance loading for form " + sFormID + ".  To reload all models, set " +
             "LOAD_MODEL_DATA to TRUE in " + NUI_GetFormfile(sFormID) + ".nss.");
@@ -1147,6 +1147,7 @@ void NUI_HandleFormDefinition()
     } NUI_SaveForm();
 
     Notice("Defining form " + sFormID + " (Version " + VERSION + ")");
+    PopulateAppearanceData(sFormID);
 }
 
 void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
@@ -1209,7 +1210,6 @@ void NUI_HandleFormBinds()
     int n;
 
     OnFormOpen();
-    PopulateAppearanceData(bd.sFormID);
     NUI_SetBindWatch(oPC, bd.nToken, "combo_type_value");
 
     for (n = 0; n < bd.nCount; n++)
@@ -1229,7 +1229,7 @@ void NUI_HandleFormEvents()
 
     if (ed.sEvent == "open")
     {
-        //DelayCommand(1.0, Dump(ed));
+
     }
     else if (ed.sEvent == "close")
         OnFormClose();
@@ -1256,52 +1256,6 @@ void NUI_HandleFormEvents()
     {
         if (ed.sControlID == "combo_type_value")
             OnSelectItemType(JsonGetInt(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
-    }
-
-/*
-    if (ed.sEvent == "watch" || ed.sEvent == "range")
-    {
-        Notice("Event Data - ");
-        Notice("  > sEvent = " + ed.sEvent);
-        Notice("  > sControlID = " + ed.sControlID);
-        Notice("  > nIndex = " + IntToString(ed.nIndex));
-        Notice("  > jBinds = " + JsonDump(ed.jBinds));
-        Notice("  > jPayload = " + JsonDump(ed.jPayload));
-    }*/
-}
-
-void Dump(struct NUIEventData ed)
-{
-    Notice("Dumping property data" +
-        "\n  > IsAppearanceSelected - " + IntToString(GetIsAppearanceSelected()) +
-        "\n  > IsEquipmentSelected - " + IntToString(GetIsEquipmentSelected()) +
-        "\n  > ColorSheetResref - " + GetColorSheetResref() +
-        "\n  > HasItemEquipped - " + IntToString(GetHasItemEquipped()) +
-        "\n  > ColorCategoryOptions - " + JsonDump(GetColorCategoryOptions()) +
-        "\n  > PartCategoryOptions - " + JsonDump(GetPartCategoryOptions()) +
-        "\n  > PartCategorySelected - " + JsonDump(GetPartCategorySelected()) +
-        "\n  > ColorCategorySelected - " + JsonDump(GetColorCategorySelected()) +
-        "\n  > SelectedColorCategoryIndex - " + IntToString(GetSelectedColorCategoryIndex()) +
-        "\n  > SelectedItemTypeIndex - " + IntToString(GetSelectedItemTypeIndex()) +
-        "\n  > SelectedPartCategoryIndex - " + IntToString(GetSelectedPartCategoryIndex()) +
-        "\n  > PartOptions - " + JsonDump(GetPartOptions()) +
-        "\n  > PartSelected - " + JsonDump(GetPartSelected()) +
-        "\n  > SelectedPartIndex - " + IntToString(GetSelectedPartIndex()) +
-        "\n  > PartIDToIndex - " + JsonDump(GetPartIDToIndex()));
-
-    string sBinds = "geometry,toggle_appearance_toggled,toggle_equipment_toggled," +
-        "label_item_visible,list_colorcategory_rowcount,toggle_colorcategory_label," +
-        "toggle_colorcategory_value,list_partcategory_rowcount,toggle_partcategory_label," +
-        "toggle_partcategory_value,image_colorsheet_resref,list_partselected_rowcount," +
-        "toggle_partselected_label,toggle_partselected_value";
-    
-    Notice("Dumping binds");
-
-    int n, nCount = CountList(sBinds);
-    for (n = 0; n < nCount; n++)
-    {
-        string sBind = GetListItem(sBinds, n);
-        Notice("  > " + sBind + ": " + JsonDump(NuiGetBind(ed.oPC, ed.nFormToken, sBind)));
     }
 }
 
