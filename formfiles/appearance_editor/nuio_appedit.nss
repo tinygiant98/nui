@@ -21,7 +21,7 @@
 // it only when data changes.  To use a campaign database, set this value to TRUE.  If this
 // value is FALSE, model appearances will be loaded into the module's sqlite database on each
 // module load and the MODULE_LOAD_APPEARANCES variable below will have no effect.
-int USE_CAMPAIGN_DATABASE = FALSE;
+int USE_CAMPAIGN_DATABASE = TRUE;
 
 // If using the campaign database, the model data can be saved to a different database then
 // set in nui_i_database.nss.  Set this value to the name of the campaign database to save
@@ -31,7 +31,7 @@ string CAMPAIGN_DATABASE = "";
 
 // Whether the model data is saved into a campaign database or module sqlite database, set this
 // value to the name of the table for all model/appearance data that this form uses.
-string DATABASE_TABLE = "nui_app_race";
+string DATABASE_TABLE = "nuif_appedit_model";
 
 // ---------------------------------------------------------------------------------------
 //                                MODEL DATA CONFIGURATION
