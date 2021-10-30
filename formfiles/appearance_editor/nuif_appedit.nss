@@ -1215,7 +1215,8 @@ void NUI_HandleFormBinds()
     for (n = 0; n < bd.nCount; n++)
     {
         struct NUIBindArrayData bad = NUI_GetBindArrayData(bd.jBinds, n);
-        DelayCommand(0.3, UpdateBinds(bad.sBind, bd.nToken, TRUE));
+        UpdateBinds(bad.sBind, bd.nToken, TRUE);
+        //DelayCommand(0.3, UpdateBinds(bad.sBind, bd.nToken, TRUE));
     }
 }
 

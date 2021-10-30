@@ -10,12 +10,14 @@
 // This system is expected to use live data, reloading forms and controls every time the
 // module loads.  Be default, all form data is kep in the module's sqlite database, however
 // you can specify the use of a campaign database for this data by setting this value to
-// TRUE.
-const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
+// TRUE.  Normally, however, this should remain FALSE as there is no method for avoiding
+// form reloading on module load and all saving old data could do is potentially interfere
+// with new versions of formfiles.
+const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
 
 // If the above value is set to true, provide the name of the campaign database to be used
 // for holding form data here.
-const string NUI_CAMPAIGN_DATABASE = "nui_form_data";  // REMOVE FOR PRODUCTION
+const string NUI_CAMPAIGN_DATABASE = "nui_form_data";
 
 // This is the table name for the sqlite table that holds all form definition data
 const string NUI_FORMS = "nui_forms";
@@ -52,9 +54,9 @@ string NUI_FORMFILE_PREFIX = "nuif_";
 
 // Set this value to the function that should be called to define a form
 // during auto-initialization.  All formfiles should contain this function.
-// For example, if the following value is "HandleFormDefinition", the
+// For example, if the following value is "NUI_HandleFormDefinition", the
 // formfile should include a function called:
-//      void HandleFormDefinition() {}
+//      void NUI_HandleFormDefinition() {}
 // which contains all the code required to generate json for a specific
 // form.
 string NUI_FORMFILE_DEFINITION_FUNCTION = "NUI_HandleFormDefinition";

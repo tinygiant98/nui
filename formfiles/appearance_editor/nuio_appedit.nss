@@ -47,7 +47,7 @@ string DATABASE_TABLE = "nuif_appedit_model";
 // If model data is being saved to the campaign database (see database settings above), this
 // value can be set to FALSE *AFTER* the first time the form is defined in your module and
 // all model data is saved.
-int LOAD_MODEL_DATA = TRUE;
+int LOAD_MODEL_DATA = FALSE;
 
 // The model files are found randomly by resman and may not be in numerical order.  Setting this
 // option to TRUE forces the model number arrays to be sorted numerically.
