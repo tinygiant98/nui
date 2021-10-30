@@ -15,18 +15,22 @@ Primary:
 
 Supporting:
 * `gui_pal_armor01.tga` - required to show the metal color palette; somehow missing from the base game files
+* `appedit_full.erf` - all form files, including configuration and language
+* `appedit_base.erf` - only base files, no configuration or language files included.  Use for version updates.
 
 ## Installation
 
-For toolset installation, import `appedit.erf`.  No compilation is required.  The NUI wrapper system must be installed for any formfile to work.  No compilation is required.
+For toolset installation, import `appedit_full.erf`.  No compilation is required.  The NUI wrapper system must be installed for any formfile to work.  No compilation is required.
 
 For other installation methods, such as nasher, copy the base files into whatever folder you want to use and include that folder in your configuration file.
 
+For version updates, import `appedit_base.erf`.  This file will not contain configuration or language files and will prevent overwriting established configurations during version updates.
+
 ## Language Option
 
-The `appedit.erf` file will contain all language files for this form.  To select the language you want to use, after importing, open `nuio_appedit.nss`, read the `Language Configuation` block, and set the include directive appropriately.  No compilation is required.
+The `appedit_full.erf` file will contain all language files for this form.  To select the language you want to use, after importing, open `nuio_appedit.nss`, read the `Language Configuation` block, and set the include directive appropriately.  No compilation is required.
 
-To create a new language file, copy `nuil_appedit_en.nss`, change the last two letter to the language code you're translating to, modify the string values and submit it for a pull request on the repo.
+To create a new language file, copy `nuil_appedit_en.nss`, change the last two letters to the language code you're translating to, modify the string values and submit it for a pull request on the repo.
 
 ## Setup
 
