@@ -1,7 +1,33 @@
 
-// This system will auto-initialize forms that meet specific parameters.
-// Forms defined in "formfiles" should be in include format (i.e. there
-// should be no void main() {}).
+// ---------------------------------------------------------------------------------------
+//                             NUI WRAPPER CONFIGURATION FILE
+// ---------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------
+//                                DATABASE CONFIGURATION
+// ---------------------------------------------------------------------------------------
+
+// This system is expected to use live data, reloading forms and controls every time the
+// module loads.  Be default, all form data is kep in the module's sqlite database, however
+// you can specify the use of a campaign database for this data by setting this value to
+// TRUE.
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
+
+// If the above value is set to true, provide the name of the campaign database to be used
+// for holding form data here.
+const string NUI_CAMPAIGN_DATABASE = "nui_form_data";  // REMOVE FOR PRODUCTION
+
+// This is the table name for the sqlite table that holds all form definition data
+const string NUI_FORMS = "nui_forms";
+
+// The following two tables hold data pertaining to custom controls.  If you are not building
+// or using custom controls, do not modify these values.
+const string NUI_CONTROL = "nui_controls";
+const string NUI_DATA = "nui_data";
+
+// ---------------------------------------------------------------------------------------
+//                             EVENT HANDLING CONFIGURATION
+// ---------------------------------------------------------------------------------------
 
 // In order for this system to capture events, it must control the nui 
 // event handling.  This is the default file to control event handling.
@@ -10,8 +36,18 @@
 //   NUI_RunEventHandler();
 string NUI_EVENT_HANDLER = "nui_event";
 
+// ---------------------------------------------------------------------------------------
+//                                FORMFILE CONFIGURATION
+// ---------------------------------------------------------------------------------------
+
+// This system will auto-initialize forms that meet specific parameters.
+// Forms defined in "formfiles" should be in include format (i.e. there
+// should be no void main() {}).
+
 // Auto-initialized forms must be .nss files that have specific prefixes.
-// Set this value to the script file prefix used for formfiles.
+// Set this value to the script file prefix used for formfiles.  The default
+// for all formfiles downloaded from the repo is `nuif_`.  If necessary,
+// you can use multiple prefixes separated by commas.
 string NUI_FORMFILE_PREFIX = "nuif_";
 
 // Set this value to the function that should be called to define a form
@@ -38,6 +74,8 @@ string NUI_FORMFILE_BINDS_FUNCTION = "NUI_HandleFormBinds";
 // this function, even if no builds are defined for this form.
 string NUI_FORMFILE_BUILDS_FUNCTION = "NUI_HandleFormBuilds";
 
+
+// FUTURE GROWTH, don't touch this stuff
 string NUI_CONTROLFILE_PREFIX = "nui_c_";
 
 string NUI_CONTROLFILE_REGISTRATION_FUNCTION = "NUI_HandleControlRegistration";
@@ -48,4 +86,5 @@ string NUI_CONTROLFILE_ADDSERIES_FUNCTION = "NUI_HandleAddSeries";
 
 string NUI_CONTROLFILE_DROPSERIES_FUNCTION = "NUI_HandleDropSeries";
 
-string IGNORE_EVENTS = "range,mousescroll,mousedown";
+// TODO maybe not this?
+string NUI_IGNORE_EVENTS = ""; //"range,mousescroll,mousedown";

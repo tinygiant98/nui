@@ -12,7 +12,7 @@
 string NUI_VERSION = "0.1.0";
 
 // NUI Event list
-string NUI_EVENTS = "click,mousedown,mouseup,mousescroll,open,close,watch";
+string NUI_EVENTS = "click,mousedown,mouseup,mousescroll,open,close,watch,range";
 
 string NUI_PATH_ROOT = "root,children,-1";
 string NUI_PATH_GROUP = "children,0,children,-1";

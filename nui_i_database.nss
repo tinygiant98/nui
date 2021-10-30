@@ -1,13 +1,3 @@
-void NUI_PopulateBindTable();
-
-const string NUI_DATABASE = "temp_db";  // REMOVE FOR PRODUCTION
-const string NUI_TABLE = "nui_forms";
-const string NUI_DATA = "nui_data";
-const string NUI_CONTROL = "nui_controls";
-
-// TESTING ONLY - FOR PRODUCTION, SET TO FALSE OR REMOVE
-const int NUI_CAMPAIGN = TRUE;
-
 string sQuery;
 sqlquery sql;
 
@@ -18,10 +8,10 @@ string NUI_EncodePC(object oPC)
 
 sqlquery NUI_PrepareQuery(string sQuery, int bCampaign = FALSE, string sDatabase = "")
 {
-    if (NUI_CAMPAIGN || bCampaign == TRUE)
+    if (NUI_USE_CAMPAIGN_DATABASE || bCampaign == TRUE)
     {
         if (sDatabase == "")
-            sDatabase = NUI_DATABASE;
+            sDatabase = NUI_CAMPAIGN_DATABASE;
 
         sql = SqlPrepareQueryCampaign(sDatabase, sQuery);
     }
@@ -33,7 +23,7 @@ sqlquery NUI_PrepareQuery(string sQuery, int bCampaign = FALSE, string sDatabase
 
 void NUI_InitializeDatabase()
 {
-    sQuery = "CREATE TABLE IF NOT EXISTS " + NUI_TABLE + " (" +
+    sQuery = "CREATE TABLE IF NOT EXISTS " + NUI_FORMS + " (" +
             "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
             "form TEXT NOT NULL UNIQUE, " +
             "json TEXT);";
@@ -69,10 +59,10 @@ json NUI_GetJSONValueByPath(string sFormID, string sControlID, string sPath)
         sControlID = sFormID;
 
     sQuery = "SELECT json_extract(value, '$." + sPath + "') " +
-        "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+        "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
         "WHERE type = 'object' " +
             "AND json_extract(value, '$.id') = @sControlID " +
-            "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+            "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@sFormID", sFormID);
@@ -84,10 +74,10 @@ json NUI_GetJSONValueByPath(string sFormID, string sControlID, string sPath)
 json NUI_GetFormRoot(string sFormID)
 {
     sQuery = "SELECT json_extract(value, '$.root') " +
-        "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+        "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
         "WHERE type = 'object' " +
             "AND form = @form;";
-            //"AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+            //"AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
@@ -98,10 +88,10 @@ json NUI_GetFormRoot(string sFormID)
 int NUI_ParentID(string sFormID, string sControlID)
 {
     sQuery = "SELECT json_tree.parent " +
-        "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+        "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
         "WHERE type = 'object' " + 
             "AND json_extract(value, '$.id') = @sControlID " +
-            "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID";
+            "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID";
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@sFormID", sFormID);
@@ -118,10 +108,10 @@ string NUI_GetParentID(string sFormID, string sControlID)
     int nID = NUI_ParentID(sFormID, sControlID);
 
     string sQuery = "SELECT json_extract(value, '$.id') " +
-        "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+        "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
         "WHERE type = 'object' " +
             "AND json_tree.id = @nParent " +
-            "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+            "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@sFormID", sFormID);
@@ -138,10 +128,10 @@ string NUI_GetHandler(string sFormID, string sControlID, string sType, string sM
 
     string sQuery = "SELECT json_extract(value, '$." + sType + ".script'), " +
                            "json_extract(value, '$." + sType + ".function') " +
-        "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+        "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
         "WHERE type = 'object' " +
             "AND json_extract(value, '$.id') = @sControlID " +
-            "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+            "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     string sScript, sFunction;
     int bBackstop = FALSE;
@@ -187,20 +177,20 @@ sqlquery NUI_GetBindTable(string sFormID)
     // Trying a non-null value?  This successfully pulls all json_tree data for all
     // window elements that have any kind of bind.  Need to narrow it down...
     string sChild = "SELECT json_tree.* " +
-            "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$.bind') != 'NULL' " +
                 "AND form = @form";
-                //"AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID";
+                //"AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID";
 
     // This successfully pulls the type of the control we're after, now - wonder twins, unite!
     //string sQuery2 = "SELECT json_tree.id, json_extract(value, '$.type'), parent " +
     string sParent = "SELECT json_tree.* " +
-            "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 "AND form = @form";
                 //"AND json_extract(value, '$.id') = @sControlID " +
-                //"AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID";
+                //"AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID";
 
     // now - wonder twins, unite! only pulls type, key - need bind value
     sQuery = "SELECT IFNULL(json_extract(parent.value, '$.type'), '_form_'), " +
@@ -221,7 +211,7 @@ sqlquery NUI_GetCustomControlTable(string sFormID)
 {
     sQuery = "SELECT json_extract(value, '$.id'), " +
                 "json_extract(value, '$.build_data.type') " +
-             "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
              "WHERE type = 'object' " +
                 "AND json_extract(value, '$.build_data.type') IS NOT NULL " +
                 "AND form = @form;";
@@ -234,15 +224,15 @@ sqlquery NUI_GetCustomControlTable(string sFormID)
 void NUI_GetJSONTree(string sFormID, string sControlID, string sKey = "id")
 {
     sQuery = "SELECT json_tree.* " +
-            "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$." + sKey + "') = @controlID " +
-                "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+                "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     sQuery = "SELECT json_tree.* " +
-            "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$') " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
-                "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+                "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@sFormID", sFormID);
@@ -276,7 +266,7 @@ void NUI_GetJSONTree(string sFormID, string sControlID, string sKey = "id")
 string NUI_GetFormfile(string sFormID)
 {
     sQuery = "SELECT json_extract(json, '$.formfile') " +
-             "FROM " + NUI_TABLE + " " +
+             "FROM " + NUI_FORMS + " " +
              "WHERE form = @form;";
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
@@ -297,10 +287,10 @@ string NUI_GetControlfile(string sControl)
 
 void NUI_SetFormfile(string sFormID, string sFormfile)
 {
-    sQuery = "UPDATE " + NUI_TABLE + " " +
+    sQuery = "UPDATE " + NUI_FORMS + " " +
              "SET json = " +
                 "(SELECT json_insert(json, '$.formfile', '" + sFormfile + "') " +
-                "FROM " + NUI_TABLE + " " +
+                "FROM " + NUI_FORMS + " " +
                 "WHERE form = @form) " +
              "WHERE form = @form;";
     sql = NUI_PrepareQuery(sQuery);
@@ -310,7 +300,7 @@ void NUI_SetFormfile(string sFormID, string sFormfile)
 
 void NUI_SaveFormJSON(string sFormID, json jWindow)
 {
-    sQuery = "INSERT INTO " + NUI_TABLE + " (form, json) " +
+    sQuery = "INSERT INTO " + NUI_FORMS + " (form, json) " +
             "VALUES (@form, @json) " +
             "ON CONFLICT (form) DO UPDATE SET " +
                 "json = @json;";
@@ -324,7 +314,7 @@ void NUI_SaveFormJSON(string sFormID, json jWindow)
 json NUI_GetFormJSON(string sFormID)
 {
     sQuery = "SELECT json " +
-            "FROM " + NUI_TABLE + " " +
+            "FROM " + NUI_FORMS + " " +
             "WHERE form = @form;";
     
     sql = NUI_PrepareQuery(sQuery);    
@@ -338,10 +328,10 @@ json NUI_GetFormJSON(string sFormID)
 json NUI_GetJSONTreeFieldByKey(string sFormID, string sField, string sKey, string sValue)
 {
     sQuery = "SELECT " + sField + " " +
-            "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$.root') " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$.root') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$." + sKey + "') = @sValue " +
-                "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+                "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@sFormID", sFormID);
     SqlBindString(sql, "@sValue", sValue);
@@ -353,10 +343,10 @@ json NUI_GetJSONTreeFieldByKey(string sFormID, string sField, string sKey, strin
 json NUI_GetJSONTreeFieldByID(string sFormID, string sValue, string sField)
 {
     sQuery = "SELECT " + sField + " " +
-            "FROM " + NUI_TABLE + ", json_tree(" + NUI_TABLE + ".json, '$.root') " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$.root') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$.id') = @sValue " +
-                "AND json_extract(" + NUI_TABLE + ".json, '$.id') = @sFormID;";
+                "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@sFormID", sFormID);
@@ -403,7 +393,6 @@ void NUI_PopulateBuildJSON(object oPC, string sFormID)
         }
     }
 }
-
 
 void NUI_ClearCustomControlData(object oPC, string sFormID)
 {

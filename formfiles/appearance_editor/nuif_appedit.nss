@@ -1219,8 +1219,6 @@ void NUI_HandleFormBinds()
     }
 }
 
-void Dump(struct NUIEventData ed);
-
 void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
@@ -1258,5 +1256,3 @@ void NUI_HandleFormEvents()
             OnSelectItemType(JsonGetInt(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
     }
 }
-
-//void main() {}

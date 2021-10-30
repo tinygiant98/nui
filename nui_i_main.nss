@@ -9,7 +9,6 @@
 
 #include "util_i_debug"
 #include "util_i_csvlists"
-#include "util_i_libraries"
 #include "nui_i_config"
 #include "nui_i_const"
 #include "nui_i_database"
@@ -1074,7 +1073,7 @@ void NUI_RunEventHandler()
     string sFormID = NuiGetWindowId(oPC, NuiGetEventWindow());
     string sControlID = NuiGetEventElement();
 
-    if (HasListItem(IGNORE_EVENTS, NuiGetEventType()))
+    if (HasListItem(NUI_IGNORE_EVENTS, NuiGetEventType()))
         return;
 
     NUI_SetCurrentOperation(NUI_OPERATION_EVENT);
@@ -1821,6 +1820,11 @@ int NUI_DisplayForm(object oPC, string sFormID)
     return -1;
 }
 
+void NUI_DestroyForm(object oPC, int nToken)
+{
+    NuiDestroy(oPC, nToken);
+}
+
 void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
 {
     NuiSetBind(oPC, nToken, sBind, jValue);
@@ -2556,21 +2560,26 @@ json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchB
 
 void NUI_DefineFormsByFormfile()
 {
-    json jFormfiles = NUI_GetResrefArray(NUI_FORMFILE_PREFIX);
-    if (jFormfiles == JsonNull())
-        return;
-
-    NUI_SetCurrentOperation(NUI_OPERATION_DEFINE);
-
-    int n, nCount = JsonGetLength(jFormfiles);
-    for (n = 0; n < nCount; n++)
+    int f, fCount = CountList(NUI_FORMFILE_PREFIX);
+    for (f = 0; f < fCount; f++)
     {
-        string sFormfile = JsonGetString(JsonArrayGet(jFormfiles, n));
-        SetLocalString(GetModule(), NUI_CURRENT_FORMFILE, sFormfile);
-        NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_DEFINITION_FUNCTION);
-    }
+        string sPrefix = GetListItem(NUI_FORMFILE_PREFIX, f);
+        json jFormfiles = NUI_GetResrefArray(sPrefix);
+        if (jFormfiles == JsonNull())
+            return;
 
-    NUI_ClearCurrentOperation();
+        NUI_SetCurrentOperation(NUI_OPERATION_DEFINE);
+
+        int n, nCount = JsonGetLength(jFormfiles);
+        for (n = 0; n < nCount; n++)
+        {
+            string sFormfile = JsonGetString(JsonArrayGet(jFormfiles, n));
+            SetLocalString(GetModule(), NUI_CURRENT_FORMFILE, sFormfile);
+            NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_DEFINITION_FUNCTION);
+        }
+
+        NUI_ClearCurrentOperation();
+    }
 }
 
 void NUI_DefineCustomControlsByFile()
