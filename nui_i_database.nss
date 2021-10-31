@@ -1,3 +1,9 @@
+
+// For some reason, the toolset compiler wants to see these here (nwnsc doesn't care):
+#include "nui_i_config"
+#include "util_i_debug"
+#include "util_i_csvlists"
+
 string sQuery;
 sqlquery sql;
 

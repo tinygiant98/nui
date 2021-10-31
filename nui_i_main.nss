@@ -417,7 +417,7 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
         return FALSE;
     }
 
-    string sChunk = "#include \"" + sFile + "\" " +
+    string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
     if (TRUE)  // debugging only
