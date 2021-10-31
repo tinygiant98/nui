@@ -20,7 +20,7 @@
 // available without constantly reloading it, you can save it to a campaign db and reload
 // it only when data changes.  To use a campaign database, set this value to TRUE.  If this
 // value is FALSE, model appearances will be loaded into the module's sqlite database on each
-// module load and the MODULE_LOAD_APPEARANCES variable below will have no effect.
+// module load and the LOAD_MODEL_DATA variable below will have no effect.
 int USE_CAMPAIGN_DATABASE = TRUE;
 
 // If using the campaign database, the model data can be saved to a different database then

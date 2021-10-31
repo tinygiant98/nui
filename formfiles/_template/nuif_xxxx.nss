@@ -19,7 +19,7 @@ const string IGNORE_FORM_EVENTS = "";
 
 void NUI_HandleFormDefinition()
 {
-    string sFormID = "color_picker";
+    string sFormID = "xxxx";
 
     NUI_CreateForm(sFormID);
         NUI_SetTitle(TITLE);

@@ -38,6 +38,41 @@ const string NUI_DATA = "nui_data";
 //   NUI_RunEventHandler();
 string NUI_EVENT_HANDLER = "nui_event";
 
+// -----------------------------------------------------------------------------
+//                             Custom Functions
+//      MODIFY THESE TO ENSURE COMPATIBILTY WITH YOUR MODULE'S EVENT SYSTEM
+// -----------------------------------------------------------------------------
+
+// This function will set the script set in the NUI_EVENT_HANDLER variable in
+// the configuration file nui_i_config.nss.  You can modify this function directly,
+// however, if you are only changing the script, you should designate the file script
+// in the config file and not in this function.  See notes about the event handler
+// in the config file.
+void NUI_SetEventHandler()
+{
+    SetEventScript(GetModule(), EVENT_SCRIPT_MODULE_ON_NUI_EVENT, NUI_EVENT_HANDLER);
+}
+
+// This function will run various scripts that can be set during form definition. If
+// your module uses something other than the standard loose-script methodology, modify
+// this function to match your methodology.  For example, if you're using SM's 
+// event management system, you would change this to RunLibraryScript(sScript, oPC);
+int NUI_RunScript(string sScript, object oPC)
+{
+    ExecuteScript(sScript, oPC);
+    return sScript != "";
+}
+
+// This system will save form data by PC object.  This datatype is a string.  You can selected
+// how this string is encoded for your module here.  This will allow the saved data to be
+// compatible with methodology for pc identification in your module.  It is very unlikely
+// that your module will be querying the temporary form data tables, but the option is here
+// in case it is needed.
+string NUI_EncodePC(object oPC)
+{
+    return GetName(oPC);
+}
+
 // ---------------------------------------------------------------------------------------
 //                                FORMFILE CONFIGURATION
 // ---------------------------------------------------------------------------------------

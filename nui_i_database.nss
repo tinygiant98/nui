@@ -1,11 +1,6 @@
 string sQuery;
 sqlquery sql;
 
-string NUI_EncodePC(object oPC)
-{
-    return GetName(oPC);
-}
-
 sqlquery NUI_PrepareQuery(string sQuery, int bCampaign = FALSE, string sDatabase = "")
 {
     if (NUI_USE_CAMPAIGN_DATABASE || bCampaign == TRUE)
