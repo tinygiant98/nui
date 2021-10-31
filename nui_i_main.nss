@@ -14,31 +14,6 @@
 #include "nui_i_database"
 
 // -----------------------------------------------------------------------------
-//                             Custom Functions
-//      MODIFY THESE TO ENSURE COMPATIBILTY WITH YOUR MODULE'S EVENT SYSTEM
-// -----------------------------------------------------------------------------
-
-// This function will set the script set in the NUI_EVENT_HANDLER variable in
-// the configuration file nui_i_config.nss.  You can modify this function directly,
-// however, if you are only changing the script, you should designate the file script
-// in the config file and not in this function.  See notes about the event handler
-// in the config file.
-void NUI_SetEventHandler()
-{
-    SetEventScript(GetModule(), EVENT_SCRIPT_MODULE_ON_NUI_EVENT, NUI_EVENT_HANDLER);
-}
-
-// This function will run various scripts that can be set during form definition. If
-// your module uses something other than the standard loose-script methodology, modify
-// this function to match your methodology.  For example, if you're using SM's 
-// event management system, you would change this to RunLibraryScript(sScript, oPC);
-int NUI_RunScript(string sScript, object oPC)
-{
-    ExecuteScript(sScript, oPC);
-    return sScript != "";
-}
-
-// -----------------------------------------------------------------------------
 //                       Public Function Prototypes
 //                  DO NOT CHANGE ANYTHING BELOW THIS LINE
 // -----------------------------------------------------------------------------
