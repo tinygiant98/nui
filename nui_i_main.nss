@@ -712,12 +712,8 @@ json NUI_HandleUniquePatchRequirements(json j, string sOperation = "add")
 
 void NUI_ApplyPatchToRoot(json j, string sOperation = "add", string sPath = "")
 {
-    Notice("NUI_ApplyPatchToRoot (before) :: sPath - " + sPath);
-
     if (sPath == "")
         sPath = NUI_GetRunningPath();
-
-    Notice("NUI_ApplyPatchToRoot (after) :: sPath - " + sPath);
 
     json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
 
