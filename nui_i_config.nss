@@ -13,7 +13,7 @@
 // TRUE.  Normally, however, this should remain FALSE as there is no method for avoiding
 // form reloading on module load and all saving old data could do is potentially interfere
 // with new versions of formfiles.
-const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
 
 // If the above value is set to true, provide the name of the campaign database to be used
 // for holding form data here.
@@ -63,7 +63,7 @@ int NUI_RunScript(string sScript, object oPC)
     return sScript != "";
 }
 
-// This system will save form data by PC object.  This datatype is a string.  You can selected
+// This system will save form data by PC object.  This datatype is a string.  You can decide
 // how this string is encoded for your module here.  This will allow the saved data to be
 // compatible with methodology for pc identification in your module.  It is very unlikely
 // that your module will be querying the temporary form data tables, but the option is here
@@ -111,7 +111,7 @@ string NUI_FORMFILE_BINDS_FUNCTION = "NUI_HandleFormBinds";
 // this function, even if no builds are defined for this form.
 string NUI_FORMFILE_BUILDS_FUNCTION = "NUI_HandleFormBuilds";
 
-
+// TODO make this prettier
 // FUTURE GROWTH, don't touch this stuff
 string NUI_CONTROLFILE_PREFIX = "nui_c_";
 

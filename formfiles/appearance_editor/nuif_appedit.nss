@@ -787,7 +787,7 @@ void OnFormClose()
     DeleteLocalJson(OBJECT_SELF, PROPERTIES);
 }
 
-void InitializedDatabase()
+void InitializeDatabase()
 {
     sQuery = "CREATE TABLE IF NOT EXISTS " + DATABASE_TABLE + " (" +
         "gender TEXT, " +
@@ -866,6 +866,14 @@ json GetRaceAppearanceFromDatabase(int nGender, int nRace, int nPhenotype, strin
     SqlBindString(sql, "@part", sPart);
 
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
+}
+
+void ClearDatabase()
+{
+    sQuery = "DELETE FROM " + DATABASE_TABLE + ";";
+    sql = NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
+
+    SqlStep(sql);
 }
 
 json GetHelmetsFromDatabase()
@@ -950,21 +958,24 @@ void PopulateHelmetData()
         DelayCommand(0.1, AddRaceAppearanceToDatabase("", "", "", "helmet", jResult));
 }
 
-void PopulateAppearanceData(string sFormID)
+void PopulateAppearanceData(string sFormID, int bForceLoad = FALSE)
 {
-    if (LOAD_MODEL_DATA == FALSE || USE_CAMPAIGN_DATABASE == FALSE)
+    if (bForceLoad == FALSE)
     {
-        Notice("Skipping appearance loading for form " + sFormID + ".  To reload all models, set " +
-            "LOAD_MODEL_DATA to TRUE in " + NUI_GetFormfile(sFormID) + ".nss.");
-        return;
-    }        
+        if (LOAD_MODEL_DATA == FALSE || USE_CAMPAIGN_DATABASE == FALSE)
+        {
+            Notice("Skipping appearance loading for form " + sFormID + ".  To reload all models, set " +
+                "LOAD_MODEL_DATA to TRUE in " + NUI_GetFormfile(sFormID) + ".nss.");
+            return;
+        }  
+    }    
     
     Notice("Initializing appearances for form " + sFormID + ".  This can take more than 60 seconds to complete " +
             "for all the base-game models.  Any customzied models can increase the required time dramatically. " +
             "To prevent reloading appearances on future module loads, set LOAD_MODEL_DATA to FALSE in " + 
             NUI_GetFormfile(sFormID) + ".nss");
 
-    InitializedDatabase();  
+    InitializeDatabase();  
     PopulateHelmetData();
 
     string sGenders = CountList(MODEL_GENDER) > 0 ? MODEL_GENDER : Get2DAList("gender", "gender");
@@ -1126,7 +1137,6 @@ void NUI_HandleFormDefinition()
                         NUI_AddToggleButton("toggle_partselected");
                             NUI_BindLabel("toggle_partselected_label");
                             NUI_BindValue("toggle_partselected_value");
-                            //NUI_BindForegroundColor("toggle_partselected_color");
                     } NUI_CloseListbox();
 
                 NUI_AddRow();
@@ -1194,7 +1204,7 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
                     JsonInt(GetDoesNotHaveItemEquipped());
     else if (sBind == "label_item_label")
             jReturn = GetItemCanBeEquipped() == FALSE ? JsonString(CANNOT_EQUIP) :
-                    GetSelectedItemTypeIndex() == 0 ? JsonString(NO_EQUIPMENT) : 
+                      GetSelectedItemTypeIndex() == 0 ? JsonString(NO_EQUIPMENT) : 
                                                         JsonString(NO_HELMET);
 
     if (bSetDefaults == TRUE)
@@ -1216,15 +1226,12 @@ void NUI_HandleFormBinds()
     {
         struct NUIBindArrayData bad = NUI_GetBindArrayData(bd.jBinds, n);
         UpdateBinds(bad.sBind, bd.nToken, TRUE);
-        //DelayCommand(0.3, UpdateBinds(bad.sBind, bd.nToken, TRUE));
     }
 }
 
 void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
-
-    int nDebug = TRUE;
 
     if (ed.sEvent == "open")
     {

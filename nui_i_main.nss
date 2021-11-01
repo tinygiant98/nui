@@ -712,8 +712,12 @@ json NUI_HandleUniquePatchRequirements(json j, string sOperation = "add")
 
 void NUI_ApplyPatchToRoot(json j, string sOperation = "add", string sPath = "")
 {
+    Notice("NUI_ApplyPatchToRoot (before) :: sPath - " + sPath);
+
     if (sPath == "")
         sPath = NUI_GetRunningPath();
+
+    Notice("NUI_ApplyPatchToRoot (after) :: sPath - " + sPath);
 
     json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
 
@@ -2294,11 +2298,11 @@ void NUI_CreateControl(string sType, string sID = "")
     else
     {
         if (NUI_GetRunningPathSource() == "")
-        {
             NUI_ResetRunningPath();
-            NUI_IncrementRunningPath();
-        }
+
+        NUI_IncrementRunningPath();
     }
+
     json j = JsonObject();
 
     j = NUI_SetObjectProperty(j, NUI_PROPERTY_TYPE, JsonString(sType));
@@ -2517,7 +2521,7 @@ void NUI_DropSeries(object oPC, string sFormID, string sControlID, string sTag)
 
 }
 
-json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchBase = FALSE)
+json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchBase = FALSE, string sFolders = "")
 {
     json jResrefs = JsonArray();
 
@@ -2525,7 +2529,7 @@ json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchB
     int n = 1;
 
     do {
-        sFormfile = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase);
+        sFormfile = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders);
         if (sFormfile != "")
             jResrefs = JsonArrayInsert(jResrefs, JsonString(sFormfile));
     } while (sFormfile != "");
@@ -2578,6 +2582,9 @@ void NUI_DefineCustomControlsByFile()
 
 void NUI_Initialize()
 {
+    SetDebugLevel(DEBUG_LEVEL_NOTICE);
+    SetDebugLogging(DEBUG_LOG_ALL);
+
     NUI_SetEventHandler();
     NUI_InitializeDatabase();
     NUI_DefineCustomControlsByFile();
