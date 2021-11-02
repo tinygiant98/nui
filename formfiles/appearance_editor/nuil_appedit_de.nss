@@ -2,7 +2,15 @@
 //                                LANGUAGE CONFIGURATION
 // ---------------------------------------------------------------------------------------
 
-// This is the German language file supporting the Appearance Editor.
+// This is the German language file supporting the Appearance Editor.  This translation file
+// was provided by dunahan. 
+
+// *** This file must be encoded in Western (ISO 8859-15) for this to work correctly. ***
+
+// *** IF ANY CHANGES ARE MADE TO THIS FILE, ENSURE IT IS SAVED WITH THE CORRECT ENCODING OR 
+// SOME TRANSLATION DATA MAY BE LOST ***  If you're using VSCode as your primary editor, you
+// can select "Auto Guess Encoding" and this file *should* open and save with the correct
+// encoding
 
 // All of the text values which are displayed on the form's controls can be modified here to
 // account for various languages this form may be deployed in.
