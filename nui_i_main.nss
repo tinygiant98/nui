@@ -1047,12 +1047,21 @@ void NUI_RunEventHandler()
     object oPC = NuiGetEventPlayer();
     string sFormID = NuiGetWindowId(oPC, NuiGetEventWindow());
     string sControlID = NuiGetEventElement();
+    string sEventType = NuiGetEventType();
+    string sFunction = sControlID + "_" + sEventType;
 
-    if (HasListItem(NUI_IGNORE_EVENTS, NuiGetEventType()))
+    if (HasListItem(NUI_IGNORE_EVENTS, sEventType))
         return;
 
     NUI_SetCurrentOperation(NUI_OPERATION_EVENT);
-    NUI_RunHandler(NUI_PROPERTY_EVENTDATA, sFormID, sControlID, oPC);
+    
+    string sFormfile = NUI_GetFormfile(sFormID);
+    if (NUI_ExecuteFileFunction(sFormfile, sFunction, oPC) == FALSE)
+    {
+        if (NUI_ExecuteFileFunction(sFormfile, sControlID, oPC) == FALSE)
+            NUI_RunHandler(NUI_PROPERTY_EVENTDATA, sFormID, sControlID, oPC);
+    }
+
     NUI_ClearCurrentOperation();
 }
 
@@ -1802,6 +1811,10 @@ void NUI_DestroyForm(object oPC, int nToken)
 
 void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
 {
+    //Notice(HexColorString(" ** SETTING BIND VALUE **", COLOR_CYAN) +
+    //    "\n  > " + HexColorString(sBind, COLOR_GREEN_LIGHT) + " || " + HexColorString(JsonDump(jValue), COLOR_BLUE_LIGHT));
+
+    //NuiSetBindWatch(oPC, nToken, sBind, TRUE);
     NuiSetBind(oPC, nToken, sBind, jValue);
 }
 

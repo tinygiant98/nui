@@ -9,7 +9,7 @@
 //  None!  Leave me alone.
 // -----------------------------------------------------------------------------
 
-string NUI_VERSION = "0.1.0";
+string NUI_VERSION = "0.1.1";
 
 // NUI Event list
 string NUI_EVENTS = "click,mousedown,mouseup,mousescroll,open,close,watch,range";

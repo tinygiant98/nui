@@ -173,27 +173,20 @@ json NUI_GetBuildData(string sFormID, string sControlID)
     return NUI_GetJSONValueByPath(sFormID, sControlID, "build_data");
 }
 
-sqlquery NUI_GetBindTable(string sFormID)
+sqlquery NUI_GetBindTable(string sFormID, string sControlID = "")
 {
-    // Trying a non-null value?  This successfully pulls all json_tree data for all
-    // window elements that have any kind of bind.  Need to narrow it down...
     string sChild = "SELECT json_tree.* " +
             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$.bind') != 'NULL' " +
                 "AND form = @form";
-                //"AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID";
 
-    // This successfully pulls the type of the control we're after, now - wonder twins, unite!
-    //string sQuery2 = "SELECT json_tree.id, json_extract(value, '$.type'), parent " +
     string sParent = "SELECT json_tree.* " +
             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
+                (sControlID != "" ? "AND json_extract(value, '$.id') = @control " : "") +
                 "AND form = @form";
-                //"AND json_extract(value, '$.id') = @sControlID " +
-                //"AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID";
 
-    // now - wonder twins, unite! only pulls type, key - need bind value
     sQuery = "SELECT IFNULL(json_extract(parent.value, '$.type'), '_form_'), " +
                 "IFNULL(json_extract(parent.value, '$.bind_data'), '_nobind_'), " +
                 "child.key, json_extract(child.value, '$.bind'), " +
@@ -204,6 +197,8 @@ sqlquery NUI_GetBindTable(string sFormID)
 
     sql = NUI_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
+    if (sControlID != "")
+        SqlBindString(sql, "@control", sControlID);
 
     return sql;
 }
