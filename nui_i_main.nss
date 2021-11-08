@@ -420,7 +420,7 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
-    if (TRUE)  // debugging only
+    if (FALSE)  // debugging only
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
         if (sError != "")
@@ -1032,12 +1032,15 @@ void NUI_RunHandler(string sType, string sFormID, string sControlID, object oTar
                 sFunction = NUI_FORMFILE_BUILDS_FUNCTION;
 
             if (NUI_ExecuteFileFunction(sFormfile, sFunction, oTarget) == FALSE)
-                Error("Handler not found for " + sType + ":" +
-                    "\n  sFormID -> " + sFormID +
-                    "\n  sControlID -> " + sControlID +
-                    "\n  sFormfile -> " + sFormfile +
-                    "\n  sFunction -> " + sFunction +
-                    "\n  oTarget -> " + GetName(oTarget));
+            {
+                if (TRUE)
+                    Error("Handler not found for " + sType + ":" +
+                        "\n  sFormID -> " + sFormID +
+                        "\n  sControlID -> " + sControlID +
+                        "\n  sFormfile -> " + sFormfile +
+                        "\n  sFunction -> " + sFunction +
+                        "\n  oTarget -> " + GetName(oTarget));
+            }
         }
     }
 }
