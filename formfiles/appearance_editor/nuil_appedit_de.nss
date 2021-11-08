@@ -29,8 +29,8 @@ string HEAD     = "Kopf";
 string NECK     = "Nacken";
 string CHEST    = "Brust/Torso";
 string PELVIS   = "Becken";
-string RIGHT    = "Rechts";
-string LEFT     = "Links";
+string RIGHT    = "Rechter";
+string LEFT     = "Linker";
 string BICEP    = "Bizeps/Oberarm";
 string FOREARM  = "Unterarm";
 string HAND     = "Hand";
@@ -65,5 +65,5 @@ string NEXT           = "Weiter";
 // The previous and next labels can be too small for some translations. If you want to specify
 // a value for these labels, set it here.  Setting these values to empty strings will result
 // in a label comprised of NEXT + MODEL.
-string NEXT_LABEL     = "";
-string PREVIOUS_LABEL = "";
+string PREVIOUS_LABEL = "< " + PREVIOUS;
+string NEXT_LABEL     = NEXT + " >";
