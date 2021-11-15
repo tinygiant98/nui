@@ -31,6 +31,7 @@ void NUI_HandleFormDefinition()
         NUI_SetTitle(TITLE);
         NUI_BindGeometry("geometry");
         NUI_SetOrientation(NUI_ORIENTATION_ROWS);
+        NUI_SetCustomProperty("toc", JsonBool(TRUE));
     {
         NUI_AddColumn();
 

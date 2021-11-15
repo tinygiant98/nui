@@ -75,6 +75,15 @@ int NUI_DisplayForm(object oPC, string sFormID);
 // Creates a json object containing a single set of coordinates.
 json NUI_DefinePoint(float x, float y);
 
+// ---< NUI_GetLinePoints >---
+// Creates a json array of coordinates required to draw a line with
+// NUI_DrawLine().  The line is defined by endpoints (x1, y1) and (x2, y2)
+json NUI_GetLinePoints(float x1, float y1, float x2, float y2);
+
+// ---< NUI_AddLinePoint >---
+// Adds a single endpoint (x, y) to an existing set of line coordinates jPoints
+json NUI_AddLinePoint(json jPoints, float x, float y);
+
 // ---< NUI_DefineRGBColor >---
 // Creates a json object containing elements defining an RGB color.
 json NUI_DefineRGBColor(int r, int g, int b, int a = 255);
@@ -86,6 +95,10 @@ json NUI_DefineHSVColor(float h, float s, float v);
 // ---< NUI_DefineHSVColor >---
 // Creates a json object containing elements defining a hex color.
 json NUI_DefineHexColor(int nColor);
+
+// ---< NUI_DefineRandomRGBColor >---
+// Creates a json object containing elements definine a randome RGB color.
+json NUI_DefineRandomRGBColor();
 
 // ---< NUI_DefineRectangle >---
 // Creates a json object containing elements defining the origin (x, y),
@@ -106,7 +119,7 @@ json NUI_GetDefinedRectanglePoints(json jRectangle);
 
 // ---< NUI_DefineCircle >---
 // Creates a json object containing elements defining a rectangle
-// surrounding a circle of origin (x, y) and radius r.
+// surrounding a circle of center (x, y) and radius r.
 json NUI_DefineCircle(float x, float y, float r);
 
 // ---< NUI_CreateTemplateControl >---
@@ -177,8 +190,6 @@ void NUI_AddCheckbox(string sID = "");
 // Adds a image control with id sID.
 void NUI_AddImage(string sID = "");
 
-// TODO imagegrid ?
-
 // ---< NUI_AddCombobox >---
 // Adds a combobox (dropdown) control with id sID.
 void NUI_AddCombobox(string sID = "");
@@ -207,6 +218,7 @@ void NUI_AddProgressBar(string sID = "");
 void NUI_AddListbox();
 
 // ---< NUI_CloseListbox >---
+// ** ADVANCED USAGE **
 // Terminates listbox rows template definition.
 void NUI_CloseListbox();
 
@@ -332,13 +344,21 @@ void NUI_DrawText(json jRect, string sText);
 //      NUI_ASPECT_STRETCH
 void NUI_DrawImage(string sResref, json jRect, int nAspect, int nHAlign, int nVAlign);
 
-// TODO Experiment with these to help define the comments
 // ---< NUI_DrawCurve >---
 // ** ADVANCED USAGE **
+// TODO
+// Stupid computers!  Still can't nail down exactly how jA and jB affect the arc/curvature
+// of the drawnline
 void NUI_DrawCurve(json jA, json jB, json jCtrl0, json jCtrl1);
 
 // ---< NUI_DrawArc >---
 // ** ADVANCED USAGE **
+// Drawn an arc centered at jC with radius fRadius from fAMin to fAMax.  fAMin and fAMax are
+// measure in fractions of PI radians from the start radian of (0 * PI) which is visually
+// represented as 090 degrees.  A complete circle is 2 * PI.  To draw a 90 degree arc from 
+// 180 degrees to 270 degrees, use NUI_DrawArc([jC], [fRadius], 0.5 * PI, PI);  The radius
+// arms will also be drawn.  To achieve any given angle with 0 degrees as straight up,
+// use fAMin = (-0.5 * PI) + (fAngle / 180.0) * PI;
 void NUI_DrawArc(json jC, float fRadius, float fAMin, float fAMax);
 
 // -----------------------------------------------------------------------------
@@ -360,7 +380,7 @@ void NUI_SetGeometry(float x, float y, float w, float h);
 
 // ---< NUI_SetCoordinateGeometry >---
 // Statically sets the form's geometry to a location defined by jGeometry.  jGeometry
-// can be defined NUI_DefineRectangle().
+// can be defined by NUI_DefineRectangle().
 void NUI_SetDefinedGeometry(json jGeometry);
 
 // ---< NUI_BindGeometry >---
@@ -375,6 +395,245 @@ void NUI_SetResizable(int bResizable = TRUE);
 // Dynamically binds the form's resizable property to sBind.
 void NUI_BindResizable(string sBind);
 
+// ---< NUI_SetCollapsible >---
+// Statically sets the form's resizable property to bResizable.
+void NUI_SetCollapsible(int bCollapsible = TRUE);
+
+// ---< NUI_BindCollapsible >---
+// Dynamically binds the form's resizable property to bCollapsible.
+void NUI_BindCollapsible(string sBind);
+
+// ---< NUI_SetModal >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindModal >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetTransparent >---
+// Statically sets the form's transparent property to bTransparent.
+void NUI_SetTransparent(int bTransparent = TRUE);
+
+// ---< NUI_BindTransparent >---
+// Dynamically binds the form's transparent property to sBind.
+void NUI_BindTransparent(string sBind);
+
+// ---< NUI_SetBorderVisible >---
+// Statically sets a form or control's border visibility to bVisible.
+void NUI_SetBorderVisible(int bVisible = TRUE);
+
+// ---< NUI_BindBorderVisible >---
+// Dynamically sets a form or control's border visibility to sBind.
+void NUI_BindBorderVisible(string sBind);
+
+// ---< NUI_SetVersion >---
+// Statically sets the form's version to nVersion.  This is a required
+// property and defaults to `1` if no version is explicitly set.
+void NUI_SetVersion(int nVersion = 1);
+
+// ---< NUI_SetOrientation >---
+// Statically sets a form or control group's layout orientation.
+// Orientation determines how various rows and columns are added
+// and displayed.  The default orientation for all forms and
+// control groups is NUI_ORIENTATION_COLUMNS.
+
+// nOrientation
+//      NUI_ORIENTATION_COLUMNS (default)
+//      NUI_ORIENTATION_ROWS
+void NUI_SetOrientation(string sOrientation = NUI_ORIENTATION_ROWS);
+
+// ---< NUI_SetWidth >---
+// Statically sets a control's width to fWidth (pixels).
+void NUI_SetWidth(float fWidth);
+
+// ---< NUI_SetHeight >---
+// Statically sets a control's height to fHeight (pixels).
+void NUI_SetHeight(float fHeight);
+
+// ---< NUI_SetAspectRatio >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetImageAspect >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetImageHorizontalAlignment >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetImageVerticalAlignment >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetMargin >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetPadding >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetID >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetLabel >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindLabel >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetEnabled >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindEnabled >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetVisible >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindVisible >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetTooltip >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindTooltip >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetRGBForegroundColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetDefinedForegroundColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindForegroundColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetRGBForegroundColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetDefinedForegroundColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindForegroundColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetRGBColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetDefinedColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindColor >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetHorizontalAlignment >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindHorizontalAlignment >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetVerticalAlignment >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindVerticalAlignment >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetResref >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindResref >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetStatic >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetPlaceholder >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindPlaceholder >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetMaxLength >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetMultiline >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetRowCount >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindRowCount >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetRowHeight >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_BindRowHeight >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetChecked >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindChecked >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetDrawColor >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindDrawColor >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetScissor >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetLineThickness >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindLineThickness >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetFill >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindFill >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetCenter >---
+// Dynamically binds the form's resizable property to sBind.
+
+// ---< NUI_SetDefinedCenter >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindCenter >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetRadius >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindRadius >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetAMin >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindAMin >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetAMax >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindAMax >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetText >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindText >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetPoints >---
+// Dynamically binds the form's resizable property to sBind.
+
+
+// ---< NUI_BindPoints >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetIntSliderBounds >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetFloatSliderBounds >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetProgress >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_BindProgress >---
+// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetScrollbars >---
+// Dynamically binds the form's resizable property to sBind.
+
+
+
+
+// ---< NUI_SetValue >---
+// Statically sets the current control's value property to jValue.  jValue
+// must be a define json element.
+void NUI_SetValue(json jValue);
+
+// ---< NUI_BindValue >---
+// Dynamically binds the current control's value property to sBind.
+void NUI_BindValue(string sBind);
 
 // -----------------------------------------------------------------------------
 //                             Private Functions
@@ -420,11 +679,14 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
-    if (FALSE)  // debugging only
+    if (FALSE)
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
         if (sError != "")
+        {
+            Notice("sChunk - " + sChunk);
             Error(sError);
+        }
 
         return sError == "";
     }
@@ -918,6 +1180,7 @@ void NUI_BindValue(string sBind)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
 }
 
+/*
 string NUI_GetFormID()
 {
     json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT, 0);
@@ -925,6 +1188,7 @@ string NUI_GetFormID()
 
     return JsonGetString(jID);
 }
+*/
 
 void NUI_SetCustomControlProperty(string sNode, string sProperty, json jValue)
 {
@@ -940,9 +1204,6 @@ void NUI_SetCustomControlProperty(string sNode, string sProperty, json jValue)
     NUI_ApplyPatchToRoot(jData, "add", sPath);
 }
 
-// ---< NUI_SetCustomProperty >---
-// Sets sProperty : jValue as a key : value pair in the current control's
-// "user_data" json object.
 void NUI_SetCustomProperty(string sProperty, json jValue)
 {
     NUI_SetCustomControlProperty(NUI_PROPERTY_USERDATA, sProperty, jValue);
@@ -1033,7 +1294,7 @@ void NUI_RunHandler(string sType, string sFormID, string sControlID, object oTar
 
             if (NUI_ExecuteFileFunction(sFormfile, sFunction, oTarget) == FALSE)
             {
-                if (TRUE)
+                if (FALSE)
                     Error("Handler not found for " + sType + ":" +
                         "\n  sFormID -> " + sFormID +
                         "\n  sControlID -> " + sControlID +
@@ -1051,13 +1312,13 @@ void NUI_RunEventHandler()
     string sFormID = NuiGetWindowId(oPC, NuiGetEventWindow());
     string sControlID = NuiGetEventElement();
     string sEventType = NuiGetEventType();
-    string sFunction = sControlID + "_" + sEventType;
+    string sFunction = (sControlID == "_window_" ? "form" : sControlID) + "_" + sEventType;
 
     if (HasListItem(NUI_IGNORE_EVENTS, sEventType))
         return;
 
     NUI_SetCurrentOperation(NUI_OPERATION_EVENT);
-    
+
     string sFormfile = NUI_GetFormfile(sFormID);
     if (NUI_ExecuteFileFunction(sFormfile, sFunction, oPC) == FALSE)
     {
@@ -1208,37 +1469,18 @@ void NUI_SetOrientation(string sOrientation = NUI_ORIENTATION_ROWS)
         Error("Attempted to set orientation after controls have been added; new orientation not set");
 }
 
-// ---< NUI_SetWidth >---
-// Statically sets the control's width to fWidth.  If control width is not set, the form will attempt to evenly
-// space controls in the available space.
 void NUI_SetWidth(float fWidth)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_WIDTH, JsonFloat(fWidth));
 }
 
-// ---< NUI_SetHeight >---
-// Statically sets the control's height to fWidth.  If control height is not set, the form will attempt to evenly
-// space controls in the available space.
 void NUI_SetHeight(float fHeight)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HEIGHT, JsonFloat(fHeight));
 }
 
-// TODO test what aspect does!
-// ---< NUI_SetAspect >---
-// Statically sets the control's aspect to fAspect.  If control height is not set, the form will attempt to evenly
-// space controls in the available space.
 void NUI_SetAspectRatio(float fRatio)
 {
-/*
-    NUI_ASPECT_FIT
-    NUI_ASPECT_FILL
-    NUI_ASPECT_FIT100
-    NUI_ASPECT_EXACT
-    NUI_ASPECT_EXACTSCALED
-    NUI_ASPECT_STRETCH
-*/
-
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ASPECT, JsonFloat(fRatio));
 }
 
@@ -1304,8 +1546,6 @@ void NUI_BindLabel(string sBind)
         NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, NUI_BindVariable(sBind));
 }
 
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
 void NUI_SetEnabled(int bEnabled = TRUE)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENABLED, JsonBool(bEnabled));
@@ -1316,8 +1556,6 @@ void NUI_BindEnabled(string sBind)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENABLED, NUI_BindVariable(sBind));
 }
 
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
 void NUI_SetVisible(int bVisible = TRUE)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, JsonBool(bVisible));
@@ -1328,8 +1566,6 @@ void NUI_BindVisible(string sBind)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, NUI_BindVariable(sBind));
 }
 
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
 void NUI_SetTooltip(string sTooltip)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, JsonString(sTooltip));
@@ -1441,11 +1677,6 @@ void NUI_SetPlaceholder(string sPlaceholder = "")
 void NUI_BindPlaceholder(string sBind)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, NUI_BindVariable(sBind));
-}
-
-void NUI_SetWordWrap(int bWrap = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty("wrap", JsonBool(bWrap));
 }
 
 // ---< NUI_SetMargin >---
@@ -1639,6 +1870,11 @@ void NUI_BindProgress(string sBind)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
 }
 
+void NUI_SetRectangle(json jRect)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RECT, jRect);
+}
+
 // ---< NUI_SetMargin >---
 // Statically sets the control's margin to fMargin.
 void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO)
@@ -1778,7 +2014,7 @@ void NUI_BindForm(object oPC, int nToken)
     }
 
     NUI_SetBindData(oPC, nToken, sFormID, jBinds);
-     
+
     NUI_SetCurrentOperation(NUI_OPERATION_BIND);
     if (NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC) == FALSE)
         return;
@@ -1806,6 +2042,7 @@ int NUI_DisplayForm(object oPC, string sFormID)
 
     return -1;
 }
+
 
 void NUI_DestroyForm(object oPC, int nToken)
 {
@@ -2262,7 +2499,7 @@ void NUI_AddCanvas()
         NUI_ResetRunningPath(TRUE);
 
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLIST, JsonArray());
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLISTSCISSOR, jTRUE);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLISTSCISSOR, jFALSE);
     NUI_AddBuildLayer(NUI_ELEMENT_CANVAS);
 }
 

@@ -16,20 +16,69 @@
 #include "util_i_csvlists"
 #include "util_i_debug"
 
-const string VERSION = "1.0.0";
+const string VERSION = "1.1.0";
+const string PROPERTIES = "APPEARANCE_EDITOR_PROPERTIES";
+const string FORM_ID = "appearance_editor";
 
-const string PROPERTIES = "APPEARANCE_PROPERTIES";
+const int CUSTOM_CONTENT = 0;
+const int BASE_CONTENT = 1;
+
+const string TWODA_INDEX = "TWODA_INDEX";
+const int SIMPLE = 0;
+const int LAYERED = 1;
+const int COMPOSITE = 2;
+const int ARMORANDAPPEARANCE = 3;
+
+int COLOR_WIDTH_CELLS = 16;
+int COLOR_HEIGHT_CELLS = 11;
+
+const string IGNORE_EVENTS = "mousedown,range,blur,focus,mousescroll";
 
 void ToggleItemEquippedFlags();
 void LoadColorCategoryOptions();
 void LoadPartCategoryOptions();
-void LoadItemParts();
-object GetItem();
+object GetItem(int nSlot = -1);
 void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE);
-json GetRaceAppearanceFromDatabase(int nGender, int nRace, int nPhenotype, string sPart);
-json GetHelmetsFromDatabase();
+json GetArmorAndAppearanceModelData(int nGender, int nRace, int nPhenotype, string sPart);
+void HandlePartCategoryToggles();
+void HandleModelMatrixToggles();
+void HandleColorCategoryToggles(int bClear = FALSE);
+void LoadParts(string sModel = "", string sPartCategory = "");
+void LoadItemParts(string sModel = "", string sPartCategory = "");
+string Get2DAListByCriteria(string s2DA, string sReturnColumn,
+                            string sCriteriaColumn = "", string sCriteria = "");
+json GetLayeredModelData(string sClass = "");
+void UpdateColorSelected();
+sqlquery PrepareQuery(string sQuery);
 
-void app_SetProperty(string sProperty, json jValue)
+string _GetKey(string sPair)
+{
+    int nIndex;
+
+    if ((nIndex = FindSubString(sPair, ":")) == -1)
+        nIndex = FindSubString(sPair, "=");
+
+    if (nIndex == -1) return sPair;
+    else              return GetSubString(sPair, 0, nIndex);
+}
+
+string _GetValue(string sPair)
+{
+    int nIndex;
+
+    if ((nIndex = FindSubString(sPair, ":")) == -1)
+        nIndex = FindSubString(sPair, "=");
+
+    if (nIndex == -1) return "";
+    else              return GetSubString(sPair, ++nIndex, GetStringLength(sPair));
+}
+
+int GetFormToken()
+{
+    return NuiFindWindow(OBJECT_SELF, FORM_ID);
+}
+
+void SetProperty(string sProperty, json jValue)
 {
     json jProperties = GetLocalJson(OBJECT_SELF, PROPERTIES);
 
@@ -40,191 +89,270 @@ void app_SetProperty(string sProperty, json jValue)
     SetLocalJson(OBJECT_SELF, PROPERTIES, jProperties);
 }
 
-json app_GetProperty(string sProperty)
+json GetProperty(string sProperty)
 {
     json jProperties = GetLocalJson(OBJECT_SELF, PROPERTIES);
     return JsonObjectGet(jProperties, sProperty);
 }
 
-int  GetItemCanBeEquipped() { return JsonGetInt(app_GetProperty("canEquipItem")); }
-void SetItemCanBeEquipped(int bEquipable)
-{
-    app_SetProperty("canEquipItem", JsonInt(bEquipable));
-    UpdateBinds("label_item_visible");
-    UpdateBinds("label_item_label");
-}
-
-
-int  GetIsAppearanceSelected() { return JsonGetInt(app_GetProperty("isAppearanceSelected")); }
+int  GetIsAppearanceSelected() { return JsonGetInt(GetProperty("isAppearanceSelected")); }
 void SetIsAppearanceSelected(int bSelected)
 {
-    app_SetProperty("isAppearanceSelected", JsonInt(bSelected));
+    SetProperty("isAppearanceSelected", JsonInt(bSelected));
     UpdateBinds("toggle_appearance_toggled");
     UpdateBinds("toggle_equipment_toggled");
-    UpdateBinds("combo_type_visible");
+    UpdateBinds("group_category_visible");
 }
 
-int  GetIsEquipmentSelected()              { return !JsonGetInt(app_GetProperty("isAppearanceSelected")); }
+int  GetIsEquipmentSelected()              { return !JsonGetInt(GetProperty("isAppearanceSelected")); }
 void SetIsEquipmentSelected(int bSelected) { SetIsAppearanceSelected(!bSelected); }
 
-string GetColorSheetResref() { return JsonGetString(app_GetProperty("colorSheetResref")); }
+string GetColorSheetResref() { return JsonGetString(GetProperty("colorSheetResref")); }
 void   SetColorSheetResref(string sResref) 
 { 
-    app_SetProperty("colorSheetResref", JsonString(sResref));
+    SetProperty("colorSheetResref", JsonString(sResref));
     UpdateBinds("image_colorsheet_resref");
 }
 
-int  GetHasItemEquipped()         { return JsonGetInt(app_GetProperty("hasItemEquipped")); }
-int  GetDoesNotHaveItemEquipped() { return !JsonGetInt(app_GetProperty("hasItemEquipped")); }
+json GetOriginalAppearance() { return GetProperty("originalAppearance"); }
+void SetOriginalAppearance(string sPartCategory, string sPart)
+{
+    string sProperty =  (GetIsAppearanceSelected() ? "appearance" : "equipment");
+           sProperty += ":" + sPartCategory;
+
+    json j = GetOriginalAppearance();
+    if (j == JsonNull())
+        j = JsonObject();
+
+    j = JsonObjectSet(j, sProperty, JsonString(sPart));
+    SetProperty("originalAppearance", j);
+}
+
+int  GetHasItemEquipped()         { return JsonGetInt(GetProperty("hasItemEquipped")); }
+int  GetDoesNotHaveItemEquipped() { return !JsonGetInt(GetProperty("hasItemEquipped")); }
 void SetHasItemEquipped(int bEquipped)
 {
-    app_SetProperty("hasItemEquipped", JsonInt(bEquipped));
+    SetProperty("hasItemEquipped", JsonInt(bEquipped));
     UpdateBinds("label_item_visible");
 }
 
-json GetColorCategoryOptions() { return app_GetProperty("colorCategoryOptions"); }
-void SetColorCategoryOptions(json jOptions) 
+string GetGroupOptions(string sFormID)
 {
-    app_SetProperty("colorCategoryOptions", jOptions);
-    UpdateBinds("toggle_colorcategory_label");
-    UpdateBinds("list_colorcategory_rowcount");
+    sqlquery sqlBinds = NUI_GetBindTable(sFormID);
+
+    string sBind, sIndexes;
+    while (SqlStep(sqlBinds))
+    {
+        sBind = SqlGetString(sqlBinds, 3);
+        sIndexes = AddListItem(sIndexes, _GetValue(sBind), TRUE);
+        UpdateBinds(sBind);
+    }
+
+    return sIndexes;
 }
 
-json GetPartCategoryOptions() { return app_GetProperty("partCategoryOptions"); }
-void SetPartCategoryOptions(json jOptions)
+string GetPartCategorySelected() { return JsonGetString(GetProperty("partCategorySelected")); }
+void SetPartCategorySelected(string sCategory)
 {
-    app_SetProperty("partCategoryOptions", jOptions);
-    UpdateBinds("toggle_partcategory_label");
-    UpdateBinds("list_partcategory_rowcount");
+    SetProperty("partCategorySelected", JsonString(sCategory));
+    HandlePartCategoryToggles();
+
+    LoadParts();
 }
 
-json GetPartCategorySelected() { return app_GetProperty("partCategorySelected"); }
-void SetPartCategorySelected(json jSelected, int nIndex = -1, int bSelected = TRUE)
-{ 
-    if (nIndex == -1)
-    {
-        app_SetProperty("partCategorySelected", jSelected);
-        UpdateBinds("toggle_partcategory_value");
-    }
-    else
-    {
-        json jSelect = GetPartCategorySelected();
-             jSelect = JsonArraySet(jSelect, nIndex, JsonBool(bSelected));
-
-        if (bSelected == FALSE)
-            app_SetProperty("partCategorySelected", jSelect);
-        else
-            SetPartCategorySelected(jSelect);
-    }
-}
-
-json GetColorCategorySelected() { return app_GetProperty("colorCategorySelected"); }
-void SetColorCategorySelected(json jSelected, int nIndex = -1, int bSelected = TRUE)
-{ 
-    if (nIndex == -1)
-    {
-        app_SetProperty("colorCategorySelected", jSelected);
-        UpdateBinds("toggle_colorcategory_value");
-    }
-    else
-    {
-        json jSelect = GetColorCategorySelected();
-             jSelect = JsonArraySet(jSelect, nIndex, JsonBool(bSelected));
-        
-        if (bSelected == FALSE)
-            app_SetProperty("colorCategorySelected", jSelect);
-        else
-            SetColorCategorySelected(jSelect);
-    }
-}
-
-int  GetSelectedColorCategoryIndex() { return JsonGetInt(app_GetProperty("selectedColorCategoryIndex")); }
-void SetSelectedColorCategoryIndex(int nIndex)
+string GetPartCategoryOptions() { return JsonGetString(GetProperty("partCategoryOptions")); }
+void SetPartCategoryOptions()
 {
-    SetColorCategorySelected(JsonNull(), GetSelectedColorCategoryIndex(), FALSE);
-    SetColorCategorySelected(JsonNull(), nIndex, TRUE);
+    string sCategory;
+    if (GetIsAppearanceSelected() == TRUE)
+        sCategory = "appearance";
+    else if (GetIsEquipmentSelected() == TRUE)
+        sCategory = "equipment";
 
-    app_SetProperty("selectedColorCategoryIndex", JsonInt(nIndex));
+    int nToken = GetFormToken();
+    string sFormID = "_appedit_tab_part_" + sCategory;
+    json j = NUI_GetFormRoot(sFormID);
 
-    string sAppearanceResrefs = "skin,hair01,tattoo,tattoo";
-    string sEquipmentResrefs = "tattoo,tattoo,tattoo,tattoo,armor01,armor01";
+    NuiSetGroupLayout(OBJECT_SELF, nToken, "part_category_tab", j);
+    SetProperty("partCategoryOptions", JsonString(GetGroupOptions(sFormID)));
+
+    if (GetPartCategorySelected() == "")
+        SetPartCategorySelected("head");
+}
+
+void HandlePartCategoryToggles()
+{
+    string sOptions = GetPartCategoryOptions();
+    string sSelected = GetPartCategorySelected();
+
+    int nToken = GetFormToken();
+    int n, nCount = CountList(sOptions);
+    for (n = 0; n < nCount; n++)
+    {
+        string sOption = GetListItem(sOptions, n);
+        NUI_SetBindValue(OBJECT_SELF, nToken, "part_cat_value:" + sOption, JsonBool(sOption == sSelected));
+    }
+}
+
+string GetColorCategorySelected() { return JsonGetString(GetProperty("colorCategorySelected")); }
+void SetColorCategorySelected(string sOption)
+{
+    SetProperty("colorCategorySelected", JsonString(sOption));
+    HandleColorCategoryToggles();
+
     string sResrefs, sPrefix = "gui_pal_";
+    if (GetIsAppearanceSelected() == TRUE)
+        sResrefs = "skin,hair01,tattoo,tattoo";
+    else if (GetIsEquipmentSelected() == TRUE)
+        sResrefs = "tattoo,tattoo,tattoo,tattoo,armor01,armor01";
 
-    if (GetIsAppearanceSelected())
-        sResrefs = sAppearanceResrefs;
-    else if (GetIsEquipmentSelected())
-        sResrefs = sEquipmentResrefs;
-
-    SetColorSheetResref(sPrefix + GetListItem(sResrefs, nIndex));
+    SetColorSheetResref(sPrefix + GetListItem(sResrefs, StringToInt(sOption)));
+    DelayCommand(0.04, UpdateColorSelected());
 }
 
-int  GetSelectedItemTypeIndex() { return JsonGetInt(app_GetProperty("selectedItemTypeIndex")); }
-void SetSelectedItemTypeIndex(int nIndex = 0)
+string GetCategoriesFromDatabase()
 {
-    app_SetProperty("selectedItemTypeIndex", JsonInt(nIndex));
+    string sCategory, sResult;
+    if (GetIsAppearanceSelected() == TRUE)
+        sCategory = "appearance";
+    else if (GetIsEquipmentSelected() == TRUE)
+        sCategory = "equipment";
 
-    ToggleItemEquippedFlags();
-    LoadColorCategoryOptions();
-    LoadPartCategoryOptions();
-    LoadItemParts();
+    string sFormID = "_appedit_tab_color_" + sCategory;
 
-    UpdateBinds("group_category_visible");
-    UpdateBinds("label_item_label");
-}
+    sQuery = "SELECT json_extract(value, '$.id') " +
+             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
+             "WHERE type = 'object' " +
+                "AND json_extract(value, '$.id') LIKE 'color_cat%' " +
+                "AND form = @form;";
 
-int  GetSelectedPartCategoryIndex() { return JsonGetInt(app_GetProperty("selectedPartCategoryIndex")); }
-void SetSelectedPartCategoryIndex(int nIndex) 
-{ 
-    SetPartCategorySelected(JsonNull(), GetSelectedPartCategoryIndex(), FALSE);
-    SetPartCategorySelected(JsonNull(), nIndex, TRUE);
+    sql = NUI_PrepareQuery(sQuery);
+    SqlBindString(sql, "@form", sFormID);
 
-    app_SetProperty("selectedPartCategoryIndex", JsonInt(nIndex));
-}
-
-json GetPartOptions() { return app_GetProperty("partOptions"); }
-void SetPartOptions(json jOptions)
-{ 
-    app_SetProperty("partOptions", jOptions); 
-    
-    UpdateBinds("toggle_partselected_label");
-    UpdateBinds("list_partselected_rowcount");
-}
-
-json GetPartSelected() { return app_GetProperty("partSelected"); }
-void SetPartSelected(json jSelected, int nIndex = -1, int bSelected = TRUE)
-{
-    if (nIndex == -1)
+    while (SqlStep(sql))
     {
-        app_SetProperty("partSelected", jSelected);
-        UpdateBinds("toggle_partselected_value");
+        string sID = SqlGetString(sql, 0);
+        sResult = AddListItem(sResult, _GetValue(sID));
     }
-    else
-    {
-        json jSelect = GetPartSelected();
-             jSelect = JsonArraySet(jSelect, nIndex, JsonBool(bSelected));
 
-        if (bSelected == FALSE)
-            app_SetProperty("partSelected", jSelect);
-        else
-            SetPartSelected(jSelect);
-    }  
+    return sResult;
 }
 
-int  GetSelectedPartIndex() { return JsonGetInt(app_GetProperty("selectedPartIndex")); }
-void SetSelectedPartIndex(int nIndex)
-{ 
-    SetPartSelected(JsonNull(), GetSelectedPartIndex(), FALSE);
-    SetPartSelected(JsonNull(), nIndex, TRUE);
+string GetColorCategoryOptions() { return JsonGetString(GetProperty("colorCategoryOptions")); }
+void SetColorCategoryOptions()
+{
+    HandleColorCategoryToggles(TRUE);
+
+    string sCategory;
+    if (GetIsAppearanceSelected() == TRUE)
+        sCategory = "appearance";
+    else if (GetIsEquipmentSelected() == TRUE)
+        sCategory = "equipment";
+    // TODO add weapons ...
+
+    int nToken = GetFormToken();
+    json j = NUI_GetFormRoot("_appedit_tab_color_" + sCategory);
     
-    app_SetProperty("selectedPartIndex", JsonInt(nIndex));
+    NuiSetGroupLayout(OBJECT_SELF, nToken, "color_category_tab", j);
+    SetProperty("colorCategoryOptions", JsonString(GetCategoriesFromDatabase()));
+    
+    if (GetColorCategorySelected() == "" || HasListItem(GetColorCategoryOptions(), GetColorCategorySelected()) == FALSE)
+        SetColorCategorySelected("0");
+    else 
+        SetColorCategorySelected(GetColorCategorySelected());
 }
 
-json GetPartIDToIndex()            { return app_GetProperty("partIDToIndex"); }
-void SetPartIDToIndex(json jArray) { app_SetProperty("partIDToIndex", jArray); }
+void HandleColorCategoryToggles(int bClear = FALSE)
+{
+    string sOptions = GetColorCategoryOptions();
+    string sSelected = GetColorCategorySelected();
+
+    int nToken = GetFormToken();
+    int n, nCount = CountList(sOptions);
+    for (n = 0; n < nCount; n++)
+    {
+        string sOption = GetListItem(sOptions, n);
+        json jValue = bClear == TRUE ? JsonBool(FALSE) : JsonBool(sOption == sSelected);
+        NUI_SetBindValue(OBJECT_SELF, nToken, "color_cat_value:" + sOption, jValue);
+    }
+}
+
+void HandleEquippedItemChanges()
+{
+    string sOptions = GetPartCategoryOptions();
+    int n, nCount = CountList(sOptions);
+    for (n = 0; n < nCount; n++)
+    {
+        string sOption = GetListItem(sOptions, n);
+        DelayCommand(0.05, UpdateBinds("part_cat_enabled:" + sOption));
+    }
+}
+
+string GetPartOptions() { return JsonGetString(GetProperty("partOptions")); }
+void SetPartOptions(string sOptions)
+{
+    SetProperty("partOptions", JsonString(sOptions));
+}
+
+string GetPartSelected() { return JsonGetString(GetProperty("partSelected")); }
+void SetPartSelected(string sPart, int bLoad = TRUE)
+{
+    SetProperty("partSelected", JsonString(sPart));
+    HandleModelMatrixToggles();
+
+    if (bLoad == TRUE)
+        LoadParts(sPart);
+}
+
+void HandleModelMatrixToggles()
+{
+    string sOptions = GetPartOptions();
+    string sSelected = GetPartSelected();
+
+    int nToken = GetFormToken();
+    int n, nCount = CountList(sOptions);
+    for (n = 0; n < nCount; n++)
+    {
+        string sOption = GetListItem(sOptions, n);
+        NUI_SetBindValue(OBJECT_SELF, nToken, "model_matrix_value:" + sOption, JsonBool(sOption == sSelected));
+    } 
+}
+
+object GetTargetObject()
+{
+    string sObject = JsonGetString(GetProperty("targetObject"));
+    return StringToObject(sObject);
+}
 
 void ToggleItemEquippedFlags()
 {
     SetHasItemEquipped(GetIsAppearanceSelected() || GetIsObjectValid(GetItem()));
+}
+
+void SetTargetObject(object oTarget)
+{
+    SetProperty("targetObject", JsonString(ObjectToString(oTarget)));
+
+    ToggleItemEquippedFlags();
+    SetIsAppearanceSelected(TRUE);
+
+    LoadColorCategoryOptions();
+    LoadPartCategoryOptions();
+    //SetSelectedColorCategoryIndex(0);
+}
+
+void HandlePlayerTargeting()
+{
+    object oPlayer = GetLastPlayerToSelectTarget();
+    object oTarget = GetTargetingModeSelectedObject();
+    vector vPosition = GetTargetingModeSelectedPosition();
+
+    SetTargetObject(oTarget);
+}
+
+void SetPlayerTargeting()
+{
+    EnterTargetingMode(OBJECT_SELF, OBJECT_TYPE_CREATURE);
 }
 
 void LoadColorCategoryOptions()
@@ -232,64 +360,7 @@ void LoadColorCategoryOptions()
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    string sAppearance, sBuild = SKIN + "," + HAIR + "," + TATTOO + " 1," + TATTOO + " 2";
-    
-    string sPrimary = ADJECTIVE_FOLLOWS == TRUE ? COLOR : sBuild;
-    string sSecondary = ADJECTIVE_FOLLOWS == TRUE ? sBuild : COLOR;
-    
-    int p, s, pCount = CountList(sPrimary), sCount = CountList(sSecondary);
-    for (p = 0; p < pCount; p++)
-    {
-        for (s = 0; s < sCount; s++)
-        {
-            string sLeft = GetListItem(sPrimary, p);
-            string sRight = GetListItem(sSecondary, s);
-
-            sAppearance = AddListItem(sAppearance, sLeft + " " + sRight);
-        }
-    }
-
-    string sEquipment;
-    sBuild = LEATHER + " 1," + LEATHER + " 2," +
-             CLOTH   + " 1," + CLOTH   + " 2," +
-             METAL   + " 1," + METAL   + " 2";
-
-    sPrimary = ADJECTIVE_FOLLOWS == TRUE ? COLOR : sBuild;
-    sSecondary = ADJECTIVE_FOLLOWS == TRUE ? sBuild : COLOR;
-    
-    pCount = CountList(sPrimary);
-    sCount = CountList(sSecondary);
-    for (p = 0; p < pCount; p++)
-    {
-        for (s = 0; s < sCount; s++)
-        {
-            string sLeft = GetListItem(sPrimary, p);
-            string sRight = GetListItem(sSecondary, s);
-
-            sEquipment = AddListItem(sEquipment, sLeft + " " + sRight);
-        }
-    }
-
-    string sOptions;
-
-    if (GetIsAppearanceSelected())
-        sOptions = sAppearance;
-    else if (GetIsEquipmentSelected())
-        sOptions = sEquipment;
-
-    json jOptions = JsonArray();
-    json jSelected = JsonArray();
-
-    int n, nCount = CountList(sOptions);
-    for (n = 0; n < nCount; n++)
-    {
-        jOptions = JsonArrayInsert(jOptions, JsonString(GetListItem(sOptions, n)));
-        jSelected = JsonArrayInsert(jSelected, JsonBool(FALSE));
-    }
-
-    SetColorCategoryOptions(jOptions);
-    SetColorCategorySelected(jSelected);
-    SetSelectedColorCategoryIndex(0);
+    SetColorCategoryOptions();
 }
 
 void LoadPartCategoryOptions()
@@ -297,255 +368,326 @@ void LoadPartCategoryOptions()
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    string sSides = RIGHT + "," + LEFT;
-    string sSharedParts = BICEP + "," + FOREARM + "," + HAND + "," + THIGH + "," + SHIN + "," + FOOT;
-    string sShoulders = SHOULDER;
-
-    if (GetIsEquipmentSelected())
-        sSharedParts = MergeLists(sShoulders, sSharedParts);
-
-    string sAppearance = HEAD + "," + CHEST + "," + PELVIS;
-    string sArmor = NECK + "," + CHEST + "," + BELT + "," + PELVIS;
-    string sHelmet = HELMET;
-
-    string sPrimary = ADJECTIVE_FOLLOWS == TRUE ? sSharedParts : sSides;
-    string sSecondary = ADJECTIVE_FOLLOWS == TRUE ? sSides : sSharedParts;
-
-    int p, s, pCount = CountList(sPrimary), sCount = CountList(sSecondary);
-    for (p = 0; p < pCount; p++)
-    {
-        for (s = 0; s < sCount; s++)
-        {
-            string sLeft = GetListItem(sPrimary, p);
-            string sRight = GetListItem(sSecondary, s);
-
-            if (ADJECTIVE_FOLLOWS == TRUE ? p < pCount - 1 : s < sCount - 1)
-                sAppearance = AddListItem(sAppearance, sLeft + " " + sRight);
-            
-            sArmor = AddListItem(sArmor, sLeft + " " + sRight);
-        }
-    }
-
-    sArmor = AddListItem(sArmor, ROBE);
-
-    string sOptions;
-
-    if (GetIsAppearanceSelected())
-        sOptions = sAppearance;
-    else if (GetIsEquipmentSelected())
-    {
-        int nIndex = GetSelectedItemTypeIndex();
-        if (nIndex == 0)
-            sOptions = sArmor;
-        else if (nIndex == 1)
-            sOptions = sHelmet;
-    }
-
-    json jOptions = JsonArray();
-    json jSelected = JsonArray();
-
-    int n, nCount = CountList(sOptions);
-    for (n = 0; n < nCount; n++)
-    {
-        jOptions = JsonArrayInsert(jOptions, JsonString(GetListItem(sOptions, n)));
-        jSelected = JsonArrayInsert(jSelected, JsonBool(FALSE));
-    }
-
-    SetPartCategoryOptions(jOptions);
-    SetPartCategorySelected(jSelected);
-    SetSelectedPartCategoryIndex(0);
+    SetPartCategoryOptions();
 }
 
-json GetPartLists(json jPartIDs)
+object GetItem(int nSlot = -1)
 {
-    json jPartNames = JsonArray();
-    json jPartSelected = JsonArray();
-    json jPartIDToIndex = JsonObject();
-    json jReturn = JsonObject();
-    int nIndex = 0;
-
-    int n, nCount = JsonGetLength(jPartIDs);
-    for (n = 0; n < nCount; n++)
+    if (nSlot == -1)
     {
-        int nPartID = JsonGetInt(JsonArrayGet(jPartIDs, n));
-        jPartNames = JsonArrayInsert(jPartNames, JsonString(MODEL + " #" + IntToString(nPartID)));
-        jPartSelected = JsonArrayInsert(jPartSelected, JsonBool(FALSE));
-        jPartIDToIndex = JsonObjectSet(jPartIDToIndex, IntToString(nPartID), JsonInt(nIndex++));
+        if (GetPartCategorySelected() == "helm")
+            return GetItemInSlot(INVENTORY_SLOT_HEAD, GetTargetObject());
+        else
+            return GetItemInSlot(INVENTORY_SLOT_CHEST, GetTargetObject());
     }
-
-    jReturn = JsonObjectSet(jReturn, "partNames", jPartNames);
-    jReturn = JsonObjectSet(jReturn, "partSelected", jPartSelected);
-    SetPartIDToIndex(jPartIDToIndex);
-
-    return jReturn;
-}
-
-object GetItem()
-{
-    if (GetSelectedItemTypeIndex() == 0)
-        return GetItemInSlot(INVENTORY_SLOT_CHEST, OBJECT_SELF);
-    else if (GetSelectedItemTypeIndex() == 1)
-        return GetItemInSlot(INVENTORY_SLOT_HEAD, OBJECT_SELF);
+    else
+        return GetItemInSlot(nSlot, GetTargetObject());
 
     return OBJECT_INVALID;
 }
 
-void LoadBodyParts()
+int GetHasRequiredArmorFeat(object oTarget, string sModel)
 {
-    object oPC = OBJECT_SELF;
+    int nAC = StringToInt(Get2DAString("parts_chest", "acbonus", StringToInt(sModel)));
+    if (nAC > 0)
+    {
+        int nFeat = nAC >= 6 ? FEAT_ARMOR_PROFICIENCY_HEAVY :
+                    nAC >= 4 ? FEAT_ARMOR_PROFICIENCY_MEDIUM :
+                               FEAT_ARMOR_PROFICIENCY_LIGHT;
+
+        return GetHasFeat(nFeat, oTarget);
+    }
+
+    return TRUE;
+}
+
+json FilterArmorPartIDs(json jPartIDs)
+{
+    json jResult = JsonArray();
+    int n, nCount = JsonGetLength(jPartIDs);
+    for (n = 0; n < nCount; n++)
+    {
+        int nID = JsonGetInt(JsonArrayGet(jPartIDs, n));
+        if (GetHasRequiredArmorFeat(GetTargetObject(), IntToString(nID)) == TRUE)
+            jResult = JsonArrayInsert(jResult, JsonInt(nID));
+    }
+
+    return jResult;
+}
+
+void BuildModelSelectMatrix(json jPartIDs, int bForce = FALSE)
+{
+    string sIndexes, sVarName = "appedit_modelmatrix:" +
+        (GetIsAppearanceSelected() ? "appearance" : "equipment") + ":" +
+        GetPartCategorySelected();    
+
+    json j = GetProperty(sVarName);
+    if (j == JsonNull() || bForce == TRUE)
+    {
+        string mtb = "model_tb";
+        int nRowMax = 5;
+
+        NUI_CreateTemplateControl(mtb);
+        {
+            NUI_AddToggleButton();
+                NUI_SetHeight(25.0);
+                NUI_SetWidth(40.0);
+        } NUI_SaveTemplateControl();
+
+        NUI_CreateForm("");
+        {
+            int n, nCount = JsonGetLength(jPartIDs);
+            float fSpacer = nCount > (7 * nRowMax) ? 0.0 : 12.0;
+
+            NUI_AddRow();
+            NUI_AddSpacer();
+                NUI_SetWidth(fSpacer);
+
+            if (nCount > 0)
+            {
+                if (GetIsEquipmentSelected() && GetPartCategorySelected() == "chest")
+                    jPartIDs = FilterArmorPartIDs(jPartIDs);
+
+                for (n = 0; n < nCount; n++)
+                {
+                    json jPartID = JsonArrayGet(jPartIDs, n);
+                    string sLabel = IntToString(JsonGetInt(jPartID));
+
+                    NUI_AddTemplateControl(mtb);
+                        NUI_SetID("model_matrix:" + sLabel);
+                        NUI_SetLabel(sLabel);
+                        NUI_BindValue("model_matrix_value:" + sLabel);
+
+                    if ((n + 1) % nRowMax == 0)
+                    {
+                        NUI_AddRow();
+                        NUI_AddSpacer();
+                            NUI_SetWidth(fSpacer);
+                    }
+
+                    sIndexes = AddListItem(sIndexes, sLabel);
+                }
+            }
+        }
+
+        j = JsonObjectGet(NUI_GetBuildVariable(NUI_BUILD_ROOT), "root");
+
+        SetProperty(sVarName, j);
+        SetProperty(sVarName + ":select", JsonString(sIndexes));
+    }
+    else
+        sIndexes = JsonGetString(GetProperty(sVarName + ":select"));
+
+    SetPartOptions(sIndexes);
+
+    int nToken = GetFormToken();
+    NuiSetGroupLayout(OBJECT_SELF, nToken, "model_matrix", j);
+}
+
+void LoadParts(string sModel = "", string sPartCategory = "")
+{
+    object oPC = GetTargetObject();
+
     int nRace = GetRacialType(oPC);
     int nGender = GetGender(oPC);
     int nPhenotype = GetPhenoType(oPC);
+    string sPart = (sPartCategory == "" ? GetPartCategorySelected() : sPartCategory);
+    int bAppearance = GetIsAppearanceSelected();
+    int bEquipment = !bAppearance;
 
-    int nSelectedPartID, nPart;
-    string sPart;
+    int nPart;
 
-    switch (GetSelectedPartCategoryIndex())
+    if      (sPart == "head") nPart = CREATURE_PART_HEAD;    
+    else if (sPart == "robe") nPart = ITEM_APPR_ARMOR_MODEL_ROBE;
+    else
+        nPart = StringToInt(Get2DAListByCriteria("capart", TWODA_INDEX, "mdlname", sPart));
+
+    if (sModel == "")
     {
-        case 0: nPart = CREATURE_PART_HEAD; sPart = "head"; break;
-        case 1: nPart = CREATURE_PART_TORSO; sPart = "chest"; break;
-        case 2: nPart = CREATURE_PART_PELVIS; sPart = "pelvis"; break;
-        case 3: nPart = CREATURE_PART_RIGHT_BICEP; sPart = "bicepr"; break;
-        case 4: nPart = CREATURE_PART_RIGHT_FOREARM; sPart = "forer"; break;
-        case 5: nPart = CREATURE_PART_RIGHT_HAND; sPart = "handr"; break;
-        case 6: nPart = CREATURE_PART_RIGHT_THIGH; sPart = "legr"; break;
-        case 7: nPart = CREATURE_PART_RIGHT_SHIN; sPart = "shinr"; break;
-        case 8: nPart = CREATURE_PART_LEFT_BICEP; sPart = "bicepl"; break;
-        case 9: nPart = CREATURE_PART_LEFT_FOREARM; sPart = "forel"; break;
-        case 10: nPart = CREATURE_PART_LEFT_HAND; sPart = "handl"; break;
-        case 11: nPart = CREATURE_PART_LEFT_THIGH; sPart = "legl"; break;
-        case 12: nPart = CREATURE_PART_LEFT_SHIN; sPart = "shinl"; break;
-    }
-
-    //json jPartIDs = JsonObjectGet(jAppearance, sPart);
-    json jPartIDs = GetRaceAppearanceFromDatabase(nGender, nRace, nPhenotype, sPart);
-    json jPartLists = GetPartLists(jPartIDs);
+        json jPartIDs;
+        if (GetPartCategorySelected() == "helm")
+            jPartIDs = GetLayeredModelData("helm");
+        else 
+            jPartIDs = GetArmorAndAppearanceModelData(nGender, nRace, nPhenotype, sPart);
+        
+        BuildModelSelectMatrix(jPartIDs);
     
-    nSelectedPartID = GetCreatureBodyPart(nPart, oPC);
-
-    SetPartOptions(JsonObjectGet(jPartLists, "partNames"));
-    SetPartSelected(JsonObjectGet(jPartLists, "partSelected"));
-    SetSelectedPartIndex(JsonGetInt(JsonObjectGet(GetPartIDToIndex(), IntToString(nSelectedPartID))));
-}
-
-void LoadItemParts()
-{
-    if (GetDoesNotHaveItemEquipped())
-        return;
-
-    int nSelectedPartID, nIndex;
-    object oItem = GetItem();
-    string sPart;
-    json jPartIDs;
-
-    if (GetSelectedItemTypeIndex() == 0)
-    {
-        switch (GetSelectedPartCategoryIndex())
+        if (bAppearance == TRUE)
+            SetPartSelected(IntToString(GetCreatureBodyPart(nPart, oPC)), FALSE);
+        else if (bEquipment == TRUE)
         {
-            case 0: nIndex = ITEM_APPR_ARMOR_MODEL_NECK; sPart = "neck"; break;
-            case 1: nIndex = ITEM_APPR_ARMOR_MODEL_TORSO; sPart = "chest"; break;
-            case 2: nIndex = ITEM_APPR_ARMOR_MODEL_BELT; sPart = "belt"; break;
-            case 3: nIndex = ITEM_APPR_ARMOR_MODEL_PELVIS; sPart = "pelvis"; break;
-            case 4: nIndex = ITEM_APPR_ARMOR_MODEL_RSHOULDER; sPart = "shor"; break;
-            case 5: nIndex = ITEM_APPR_ARMOR_MODEL_RBICEP; sPart = "bicepr"; break;
-            case 6: nIndex = ITEM_APPR_ARMOR_MODEL_RFOREARM; sPart = "forer"; break;
-            case 7: nIndex = ITEM_APPR_ARMOR_MODEL_RHAND; sPart = "handr"; break;
-            case 8: nIndex = ITEM_APPR_ARMOR_MODEL_RTHIGH; sPart = "legr"; break;
-            case 9: nIndex = ITEM_APPR_ARMOR_MODEL_RSHIN; sPart = "shinr"; break;
-            case 10: nIndex = ITEM_APPR_ARMOR_MODEL_RFOOT; sPart = "footr"; break;
-            case 11: nIndex = ITEM_APPR_ARMOR_MODEL_LSHOULDER; sPart = "shol"; break;
-            case 12: nIndex = ITEM_APPR_ARMOR_MODEL_LBICEP; sPart = "bicepl"; break;
-            case 13: nIndex = ITEM_APPR_ARMOR_MODEL_LFOREARM; sPart = "forel"; break;
-            case 14: nIndex = ITEM_APPR_ARMOR_MODEL_LHAND; sPart = "handl"; break;
-            case 15: nIndex = ITEM_APPR_ARMOR_MODEL_LTHIGH; sPart = "legl"; break;
-            case 16: nIndex = ITEM_APPR_ARMOR_MODEL_LSHIN; sPart = "shinl"; break;
-            case 17: nIndex = ITEM_APPR_ARMOR_MODEL_LFOOT; sPart = "footl"; break;
-            case 18: nIndex = ITEM_APPR_ARMOR_MODEL_ROBE; sPart = "robe"; break;
+            int nModelType;
+            if (GetPartCategorySelected() == "helm") nModelType = ITEM_APPR_TYPE_SIMPLE_MODEL;
+            else                                     nModelType = ITEM_APPR_TYPE_ARMOR_MODEL;
+
+            object oItem = GetItem();
+            SetPartSelected(IntToString(GetItemAppearance(oItem, nModelType, nPart)));
         }
-
-        int nGender = GetGender(OBJECT_SELF);
-        int nRace = GetRacialType(OBJECT_SELF);
-        int nPhenotype = GetPhenoType(OBJECT_SELF);
-        jPartIDs = GetRaceAppearanceFromDatabase(nGender, nRace, nPhenotype, sPart);
-
-        nSelectedPartID = GetItemAppearance(oItem, ITEM_APPR_TYPE_ARMOR_MODEL, nIndex);
     }
-    else if (GetSelectedItemTypeIndex() == 1)
+    else
     {
-        sPart = "helmet";
-        jPartIDs = GetHelmetsFromDatabase();
-        nSelectedPartID = GetItemAppearance(oItem, ITEM_APPR_TYPE_SIMPLE_MODEL, -1);
+        if (bAppearance == TRUE)
+            SetCreatureBodyPart(nPart, StringToInt(sModel), oPC);
+        else if (bEquipment == TRUE)
+        {
+            int bHelmet = GetPartCategorySelected() == "helm";
+
+            object oItem = GetItem();
+            int nModelType, nSlot = bHelmet == TRUE ? INVENTORY_SLOT_HEAD : INVENTORY_SLOT_CHEST;
+            if (bHelmet == TRUE) nModelType = ITEM_APPR_TYPE_SIMPLE_MODEL;
+            else                 nModelType = ITEM_APPR_TYPE_ARMOR_MODEL;
+
+            object oCopy = CopyItemAndModify(oItem, nModelType, nPart, StringToInt(GetPartSelected()));
+            DestroyObject(oItem);
+            AssignCommand(oPC, ActionEquipItem(oCopy, nSlot));
+        }
+    }
+}
+
+int GetIsWeaponsSelected()
+{
+    return FALSE;
+}
+
+void ToggleFormMode(string sType)
+{
+    int bChange = (sType == "equipment" && GetIsEquipmentSelected() == FALSE) ||
+                  (sType == "appearance" && GetIsAppearanceSelected() == FALSE) ||
+                  (sType == "weapons" && GetIsWeaponsSelected() == FALSE);
+
+    if (bChange == FALSE)
+    {
+        UpdateBinds("toggle_" + sType + "_toggled");
+        return;
     }
 
-    json jPartLists = GetPartLists(jPartIDs);
-
-    SetPartOptions(JsonObjectGet(jPartLists, "partNames"));
-    SetPartSelected(JsonObjectGet(jPartLists, "partSelected"));
-    SetSelectedPartIndex(JsonGetInt(JsonObjectGet(GetPartIDToIndex(), IntToString(nSelectedPartID))));
-}
-
-void OnSelectAppearance()
-{
-    SetIsAppearanceSelected(TRUE);
+    SetIsAppearanceSelected(!GetIsAppearanceSelected());
     ToggleItemEquippedFlags();
 
     LoadColorCategoryOptions();
     LoadPartCategoryOptions();
-    SetSelectedColorCategoryIndex(0);
+
+    string sOptions = GetPartCategoryOptions();
+    if (HasListItem(sOptions, GetPartCategorySelected()) == FALSE)
+        SetPartCategorySelected(GetListItem(sOptions, GetIsEquipmentSelected()));
+    else
+        SetPartCategorySelected(GetPartCategorySelected());
+    
+    //SetSelectedColorCategoryIndex(0);
 
     UpdateBinds("group_category_visible");
 }
 
-void OnSelectEquipment()
+void form_open()
 {
-    SetIsAppearanceSelected(FALSE);
-    ToggleItemEquippedFlags();
+    int nLoader = NuiFindWindow(OBJECT_SELF, "appearance_editor_loader");
+    int nEditor = NuiFindWindow(OBJECT_SELF, "appearance_editor");
 
-    LoadColorCategoryOptions();
-    LoadPartCategoryOptions();
-    LoadItemParts();
-    SetSelectedColorCategoryIndex(0);
+    if (nLoader > 0)
+    {   
+        string sTables = DATABASE_TABLE_SIMPLE + "," + DATABASE_TABLE_COMPOSITE + "," + DATABASE_TABLE_ARMOR;
+        string sValues = "simple,composite,armor";
 
-    UpdateBinds("group_category_visible");
+        int n, nCount = CountList(sTables);
+        for (n = 0; n < nCount; n++)
+        {
+            string sTable = GetListItem(sTables, n);
+            sQuery = "SELECT COUNT(*) FROM " + sTable + ";";
+            sql = PrepareQuery(sQuery);
+
+            SqlStep(sql);
+            
+            string sPrefix = "data_" + GetListItem(sValues, n);
+            json jValue, jColor;
+
+            if (SqlGetInt(sql, 0) > 0)
+            {
+                jValue = JsonString("Loaded");
+                jColor = NUI_DefineRGBColor(0, 255, 0);
+            }
+            else
+            {
+                jValue = JsonString("Not Loaded");
+                jColor = NUI_DefineRGBColor(255, 0, 0);
+            }
+
+            NUI_SetBindValue(OBJECT_SELF, nLoader, sPrefix + "_value", jValue);
+            NUI_SetBindValue(OBJECT_SELF, nLoader, sPrefix + "_color", jColor);
+        }
+    }
 }
 
-void OnSelectColorCategory(int nIndex)
+void setTargetObject_click()
+{
+    SetPlayerTargeting();
+}
+
+void toggle_appearance_mouseup()
+{
+    ToggleFormMode("appearance");
+}
+
+void toggle_equipment_mouseup()
+{
+    ToggleFormMode("equipment");
+}
+
+void toggle_weapons_mouseup()
+{
+    ToggleFormMode("weapons");
+}
+
+void open_loader_click()
+{
+    string sFormID = "appearance_editor_loader";
+    int nToken = GetFormToken();
+
+    NUI_DisplayForm(OBJECT_SELF, sFormID);
+    NUI_DestroyForm(OBJECT_SELF, nToken);
+}
+
+void OnSelectColorCategory(string sControl)
 {
     ToggleItemEquippedFlags();
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    SetSelectedColorCategoryIndex(nIndex);
+    SetColorCategorySelected(sControl);
 }
 
-void OnSelectPartCategory(int nIndex)
+void OnSelectPartCategory(string sControl)
 {
     ToggleItemEquippedFlags();
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    SetSelectedPartCategoryIndex(nIndex);
+    if (_GetKey(sControl) == "swap")
+    {
+        string sPart = GetPartCategorySelected();
+        sPart = GetStringLeft(sPart, GetStringLength(sPart) - 1) +
+            (GetStringRight(sPart, 1) == "l" ? "r" : "l");
+        LoadParts(GetPartSelected(), sPart);
+        return;
+    }
 
-    if (GetIsAppearanceSelected())
-        LoadBodyParts();
-    else if (GetIsEquipmentSelected())
-        LoadItemParts();
-}
+    if (GetPartCategorySelected() == sControl)
+    {
+        UpdateBinds("part_cat_value:" + sControl);
+        return;
+    }
 
-void OnSelectItemType(int nIndex)
-{
-    SetSelectedItemTypeIndex(nIndex);
+    SetPartCategorySelected(sControl);
 }
 
 void ModifyItemColor(int nColorChannel, int nColorID)
 {
-    object oPC = OBJECT_SELF;
+    object oPC = GetTargetObject();
 
     ToggleItemEquippedFlags();
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    int nSlot = GetSelectedItemTypeIndex() == 0 ? INVENTORY_SLOT_CHEST : INVENTORY_SLOT_HEAD;
+    int nSlot = 0; //GetSelectedItemTypeIndex() == 0 ? INVENTORY_SLOT_CHEST : INVENTORY_SLOT_HEAD;
     object oItem = GetItem();
     object oCopy = CopyItemAndModify(oItem, ITEM_APPR_TYPE_ARMOR_COLOR, nColorChannel, nColorID, TRUE);
 
@@ -553,60 +695,47 @@ void ModifyItemColor(int nColorChannel, int nColorID)
     AssignCommand(oPC, ActionEquipItem(oCopy, nSlot));
 }
 
-int CanPCEquipItem(object oPC, object oItem)
+void UpdateColorSelected()
 {
-    int nAC = GetItemACValue(oItem);
-    if (nAC > 0)
+    int nColor, nChannel = StringToInt(GetColorCategorySelected());
+    if (GetIsAppearanceSelected() == TRUE)
+        nColor = GetColor(GetTargetObject(), nChannel);
+    else if (GetIsEquipmentSelected() == TRUE)
+        nColor = GetItemAppearance(GetItem(), ITEM_APPR_TYPE_ARMOR_COLOR, nChannel);
+
+    if (nColor == -1)
+        NUI_SetBindValue(OBJECT_SELF, GetFormToken(), "image_colorcategory_enabled", JsonBool(FALSE));
+    else
     {
-        int nFeat = nAC >= 6 ? FEAT_ARMOR_PROFICIENCY_HEAVY :
-                    nAC >= 4 ? FEAT_ARMOR_PROFICIENCY_MEDIUM :
-                               FEAT_ARMOR_PROFICIENCY_LIGHT;
+        int nRow = nColor / COLOR_WIDTH_CELLS;
+        int nColumn = FloatToInt(frac((nColor * 1.0) / COLOR_WIDTH_CELLS) * COLOR_WIDTH_CELLS);
 
-        return GetHasFeat(nFeat, oPC);
+        float fScale = GetPlayerDeviceProperty(OBJECT_SELF, PLAYER_DEVICE_PROPERTY_GUI_SCALE) / 100.0;
+        float fTileWidth = 16.0 * fScale;
+        float fTileHeight = 16.0 * fScale;
+
+        float x = nColumn * fTileWidth;
+        float y = nRow * fTileHeight;
+
+        json jPoints = NUI_GetRectanglePoints(x, y, fTileWidth, fTileHeight);
+
+        int nToken = GetFormToken();
+        NUI_SetBindValue(OBJECT_SELF, nToken, "image_colorsheet_enabled", JsonBool(TRUE));
+        NUI_SetBindValue(OBJECT_SELF, nToken, "image_colorsheet_points", jPoints);
+        NUI_SetBindValue(OBJECT_SELF, nToken, "image_colorsheet_color", NUI_DefineRGBColor(255, 255, 0));
+        NUI_SetBindValue(OBJECT_SELF, nToken, "image_colorsheet_linethickness", JsonFloat(2.0));
     }
-
-    return TRUE;
-}
-
-void ModifyItemPart(int nPart, int nPartID, int nPreviousPart = -1)
-{
-    object oPC = OBJECT_SELF;
-
-    ToggleItemEquippedFlags();
-    if (GetDoesNotHaveItemEquipped())
-        return;
-
-    int nSlot = GetSelectedItemTypeIndex() == 0 ? INVENTORY_SLOT_CHEST : INVENTORY_SLOT_HEAD;
-    object oItem = GetItem();
-    int nModelType = GetSelectedItemTypeIndex() == 0 ? ITEM_APPR_TYPE_ARMOR_MODEL : ITEM_APPR_TYPE_SIMPLE_MODEL;
-    object oCopy = CopyItemAndModify(oItem, nModelType, nPart, nPartID);
-
-    if (CanPCEquipItem(oPC, oCopy) == FALSE)
-    {
-        SetItemCanBeEquipped(FALSE);
-        DelayCommand(3.0, SetItemCanBeEquipped(TRUE));
-        SetSelectedPartIndex(nPreviousPart);
-        DestroyObject(oCopy);
-        return;
-    }
-
-    SetItemCanBeEquipped(TRUE);
-
-    DestroyObject(oItem);
-    AssignCommand(oPC, ActionEquipItem(oCopy, nSlot));
 }
 
 void OnSelectColor(json jPayload)
 {
-    object oPC = OBJECT_SELF;
-    int COLOR_WIDTH_CELLS = 16;
-    int COLOR_HEIGHT_CELLS = 11;
+    object oPC = GetTargetObject();
 
     ToggleItemEquippedFlags();
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    float fScale = GetPlayerDeviceProperty(oPC, PLAYER_DEVICE_PROPERTY_GUI_SCALE) / 100.0;
+    float fScale = GetPlayerDeviceProperty(OBJECT_SELF, PLAYER_DEVICE_PROPERTY_GUI_SCALE) / 100.0;
     json jMousePosition = JsonObjectGet(jPayload, "mouse_pos");
     json jX = JsonObjectGet(jMousePosition, "x");
     json jY = JsonObjectGet(jMousePosition, "y");
@@ -623,243 +752,258 @@ void OnSelectColor(json jPayload)
     nCellX = clamp(nCellX, 0, COLOR_WIDTH_CELLS);
     nCellY = clamp(nCellY, 0, COLOR_HEIGHT_CELLS);
 
-    int nChannel, nColorID = nCellX + nCellY * COLOR_WIDTH_CELLS;
+    int nColorID = nCellX + nCellY * COLOR_WIDTH_CELLS;
+    int nChannel = StringToInt(GetColorCategorySelected());
 
     if (GetIsAppearanceSelected())
-    {
-        switch (GetSelectedColorCategoryIndex())
-        {
-            case 0: nChannel = COLOR_CHANNEL_SKIN; break;
-            case 1: nChannel = COLOR_CHANNEL_HAIR; break;
-            case 2: nChannel = COLOR_CHANNEL_TATTOO_1; break;
-            case 3: nChannel = COLOR_CHANNEL_TATTOO_2; break;
-        }
-
         SetColor(oPC, nChannel, nColorID);
-    }
     else if (GetIsEquipmentSelected())
-    {
-        switch (GetSelectedColorCategoryIndex())
-        {
-            case 0: nChannel = ITEM_APPR_ARMOR_COLOR_LEATHER1; break;
-            case 1: nChannel = ITEM_APPR_ARMOR_COLOR_LEATHER2; break;
-            case 2: nChannel = ITEM_APPR_ARMOR_COLOR_CLOTH1; break;
-            case 3: nChannel = ITEM_APPR_ARMOR_COLOR_CLOTH2; break;
-            case 4: nChannel = ITEM_APPR_ARMOR_COLOR_METAL1; break;
-            case 5: nChannel = ITEM_APPR_ARMOR_COLOR_METAL2; break;
-        }
-
         ModifyItemColor(nChannel, nColorID);
-    }
+
+    UpdateColorSelected();
 }
 
-void LoadBodyPart()
+void OnSelectPart(string sPart)
 {
-    object oPC = OBJECT_SELF;
-
-    int nRace = GetRacialType(oPC);
-    int nGender = GetGender(oPC);
-    int nPhenotype = GetPhenoType(oPC);
-    string sPart;
-    int nPart, nModel;
-
-    switch (GetSelectedPartCategoryIndex())
-    {
-        case 0: nPart = CREATURE_PART_HEAD; sPart = "head"; break;
-        case 1: nPart = CREATURE_PART_TORSO; sPart = "chest"; break;
-        case 2: nPart = CREATURE_PART_PELVIS; sPart = "pelvis"; break;
-        case 3: nPart = CREATURE_PART_RIGHT_BICEP; sPart = "bicepr"; break;
-        case 4: nPart = CREATURE_PART_RIGHT_FOREARM; sPart = "forer"; break;
-        case 5: nPart = CREATURE_PART_RIGHT_HAND; sPart = "handr"; break;
-        case 6: nPart = CREATURE_PART_RIGHT_THIGH; sPart = "legr"; break;
-        case 7: nPart = CREATURE_PART_RIGHT_SHIN; sPart = "shinr"; break;
-        case 8: nPart = CREATURE_PART_LEFT_BICEP; sPart = "bicepl"; break;
-        case 9: nPart = CREATURE_PART_LEFT_FOREARM; sPart = "forel"; break;
-        case 10: nPart = CREATURE_PART_LEFT_HAND; sPart = "handl"; break;
-        case 11: nPart = CREATURE_PART_LEFT_THIGH; sPart = "legl"; break;
-        case 12: nPart = CREATURE_PART_LEFT_SHIN; sPart = "shinl"; break;
-    }
-
-    json jPartIDs = GetRaceAppearanceFromDatabase(nGender, nRace, nPhenotype, sPart);
-
-    nModel = JsonGetInt(JsonArrayGet(jPartIDs, GetSelectedPartIndex()));
-    SetCreatureBodyPart(nPart, nModel, oPC);
-}
-
-void LoadArmorPart(int nPreviousPart = -1)
-{
-    ToggleItemEquippedFlags();
-    if (GetDoesNotHaveItemEquipped())
-        return;
-
-    string sPart;
-    int nIndex, nSelectedPartID;
-
-    if (GetSelectedItemTypeIndex() == 0)
-    {
-        switch (GetSelectedPartCategoryIndex())
-        {
-            case 0: nIndex = ITEM_APPR_ARMOR_MODEL_NECK; sPart = "neck"; break;
-            case 1: nIndex = ITEM_APPR_ARMOR_MODEL_TORSO; sPart = "chest"; break;
-            case 2: nIndex = ITEM_APPR_ARMOR_MODEL_BELT; sPart = "belt"; break;
-            case 3: nIndex = ITEM_APPR_ARMOR_MODEL_PELVIS; sPart = "pelvis"; break;
-            case 4: nIndex = ITEM_APPR_ARMOR_MODEL_RSHOULDER; sPart = "shor"; break;
-            case 5: nIndex = ITEM_APPR_ARMOR_MODEL_RBICEP; sPart = "bicepr"; break;
-            case 6: nIndex = ITEM_APPR_ARMOR_MODEL_RFOREARM; sPart = "forer"; break;
-            case 7: nIndex = ITEM_APPR_ARMOR_MODEL_RHAND; sPart = "handr"; break;
-            case 8: nIndex = ITEM_APPR_ARMOR_MODEL_RTHIGH; sPart = "legr"; break;
-            case 9: nIndex = ITEM_APPR_ARMOR_MODEL_RSHIN; sPart = "shinr"; break;
-            case 10: nIndex = ITEM_APPR_ARMOR_MODEL_RFOOT; sPart = "footr"; break;
-            case 11: nIndex = ITEM_APPR_ARMOR_MODEL_LSHOULDER; sPart = "shol"; break;
-            case 12: nIndex = ITEM_APPR_ARMOR_MODEL_LBICEP; sPart = "bicepl"; break;
-            case 13: nIndex = ITEM_APPR_ARMOR_MODEL_LFOREARM; sPart = "forel"; break;
-            case 14: nIndex = ITEM_APPR_ARMOR_MODEL_LHAND; sPart = "handl"; break;
-            case 15: nIndex = ITEM_APPR_ARMOR_MODEL_LTHIGH; sPart = "legl"; break;
-            case 16: nIndex = ITEM_APPR_ARMOR_MODEL_LSHIN; sPart = "shinl"; break;
-            case 17: nIndex = ITEM_APPR_ARMOR_MODEL_LFOOT; sPart = "footl"; break;
-            case 18: nIndex = ITEM_APPR_ARMOR_MODEL_ROBE; sPart = "robe"; break;
-        }
-
-        int nGender = GetGender(OBJECT_SELF);
-        int nRace = GetRacialType(OBJECT_SELF);
-        int nPhenotype = GetPhenoType(OBJECT_SELF);
-        json jPartIDs = GetRaceAppearanceFromDatabase(nGender, nRace, nPhenotype, sPart);
-
-        nSelectedPartID = JsonGetInt(JsonArrayGet(jPartIDs, GetSelectedPartIndex()));
-
-        ModifyItemPart(nIndex, nSelectedPartID, nPreviousPart);
-    }
-    else if (GetSelectedItemTypeIndex() == 1)
-    {
-        sPart = "helmet";
-        nSelectedPartID = JsonGetInt(JsonArrayGet(GetHelmetsFromDatabase(), GetSelectedPartIndex()));
-        ModifyItemPart(-1, nSelectedPartID);
-    }
-}
-
-void LoadPart(int nPreviousPart = -1)
-{
-    if (GetIsAppearanceSelected())
-        LoadBodyPart();
-    else if (GetIsEquipmentSelected())
-        LoadArmorPart(nPreviousPart);
-}
-
-void OnSelectPart(int nIndex)
-{
-    int nPreviousPart = GetSelectedPartIndex();
-    SetSelectedPartIndex(nIndex);
-    LoadPart(nPreviousPart);
+    SetPartSelected(sPart, TRUE);
 }
 
 void OnPreviousPart()
 {
-    int nNewPartIndex = GetSelectedPartIndex() - 1;
-    nNewPartIndex = max(0, nNewPartIndex);
+    string sParts = GetPartOptions();
+    string sPart = GetPartSelected();
+    int nIndex = FindListItem(sParts, sPart);
 
-    OnSelectPart(nNewPartIndex);
+    if (nIndex <= 0)
+        nIndex = CountList(sParts) - 1;
+    else
+        nIndex -= 1;
+
+    sPart = GetListItem(sParts, nIndex);
+    OnSelectPart(sPart);
 }
 
 void OnNextPart()
 {
-    int nNewPartIndex = GetSelectedPartIndex() + 1;
-    nNewPartIndex = min(nNewPartIndex, JsonGetLength(GetPartIDToIndex()) - 1);
+    string sParts = GetPartOptions();
+    string sPart = GetPartSelected();
+    int nIndex = FindListItem(sParts, sPart);
 
-    OnSelectPart(nNewPartIndex);
+    if (nIndex >= CountList(sParts) - 1)
+        nIndex = 0;
+    else
+        nIndex += 1;
+
+    sPart = GetListItem(sParts, nIndex);
+    OnSelectPart(sPart);
 }
 
-void OnFormOpen()
-{
-    SetIsAppearanceSelected(TRUE);
-    ToggleItemEquippedFlags();
-    LoadColorCategoryOptions();
-    LoadPartCategoryOptions();
-    SetSelectedColorCategoryIndex(0);
-    SetSelectedPartCategoryIndex(0);
-    SetSelectedPartIndex(0);
-    SetSelectedItemTypeIndex(0);
-    LoadBodyParts();
-    SetItemCanBeEquipped(TRUE);
-}
-
-void OnFormClose()
+void form_close()
 {
     DeleteLocalJson(OBJECT_SELF, PROPERTIES);
 }
 
-void InitializeDatabase()
+sqlquery PrepareQuery(string sQuery)
 {
-    sQuery = "CREATE TABLE IF NOT EXISTS " + DATABASE_TABLE + " (" +
-        "gender TEXT, " +
-        "race TEXT, " +
-        "phenotype TEXT, " +
-        "part TEXT, " +
-        "models TEXT, " +
-        "PRIMARY KEY (gender, race, phenotype, part));";
-    sql = NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
-    SqlStep(sql);
+    return NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
 }
 
-json SortJsonArray(json jArray)
+string GetObjectAsString(json j, string sProperty)
 {
-    int n, x, nIndex, nCount = JsonGetLength(jArray);
+    return JsonGetString(JsonObjectGet(j, sProperty));
+}
 
-    if (nCount <= 1)
-        return jArray;
-
-    for (n = 0; n < nCount; n++)
+void AddModelToDatabase(int nType, json jModel)
+{
+    if (nType == SIMPLE || nType == LAYERED)
     {
-        nIndex = n;
-        for (x = n + 1; x < nCount; x++)
-        {
-            int n1 = JsonGetInt(JsonArrayGet(jArray, x));
-            int n2 = JsonGetInt(JsonArrayGet(jArray, nIndex));
+        string sType = GetObjectAsString(jModel, "type");
+        string sClass = GetObjectAsString(jModel, "class");
+        string sVariant = GetObjectAsString(jModel, "variant");
+        string sFile = GetObjectAsString(jModel, "file");
 
-            if (n1 < n2)
-                nIndex = x;
-        }
-        
-        json jTemp = JsonArrayGet(jArray, nIndex);
-        jArray = JsonArraySet(jArray, nIndex, JsonArrayGet(jArray, n));
-        jArray = JsonArraySet(jArray, n, jTemp);
+        sQuery = "INSERT INTO " + DATABASE_TABLE_SIMPLE + " (type, class, variant, file) " +
+                 "VALUES (@type, @class, @variant, @file);";
+                 "ON CONFLICT (file) DO NOTHING;";
+        sql = PrepareQuery(sQuery);
+        SqlBindString(sql, "@type", sType);
+        SqlBindString(sql, "@class", sClass);
+        SqlBindString(sql, "@variant", sVariant);
+        SqlBindString(sql, "@file", sFile);
+
+        SqlStep(sql);
+    }
+    else if (nType == COMPOSITE)
+    {
+        string sClass = GetObjectAsString(jModel, "class");
+        string sPosition = GetObjectAsString(jModel, "position");
+        string sShape = GetObjectAsString(jModel, "shape");
+        string sColor = GetObjectAsString(jModel, "color");
+        string sFile = GetObjectAsString(jModel, "file");
+
+        sQuery = "INSERT INTO " + DATABASE_TABLE_COMPOSITE + " (class, position, shape, color, file) " +
+                 "VALUES (@class, @position, @shape, @color, @file) " +
+                 "ON CONFLICT (class, position, shape, color) DO NOTHING;";
+        sql = PrepareQuery(sQuery);
+        SqlBindString(sql, "@class", sClass);
+        SqlBindString(sql, "@position", sPosition);
+        SqlBindString(sql, "@shape", sShape);
+        SqlBindString(sql, "@color", sColor);
+        SqlBindString(sql, "@file", sFile);
+
+        SqlStep(sql);
+    }
+    else if (nType == ARMORANDAPPEARANCE)
+    {
+        string sGender = GetObjectAsString(jModel, "gender");
+        string sRace = GetObjectAsString(jModel, "race");
+        string sPhenotype = GetObjectAsString(jModel, "phenotype");
+        string sPart = GetObjectAsString(jModel, "part");
+        string sModel = GetObjectAsString(jModel, "model");
+        string sFile = GetObjectAsString(jModel, "file");
+
+        sQuery = "INSERT INTO " + DATABASE_TABLE_ARMOR + " (gender, race, phenotype, part, model, file) " +
+                 "VALUES (@gender, @race, @phenotype, @part, @model, @file) " +
+                 "ON CONFLICT (gender, race, phenotype, part, model) DO NOTHING;";
+        sql = PrepareQuery(sQuery);
+        SqlBindString(sql, "@gender", sGender);
+        SqlBindString(sql, "@race", sRace);
+        SqlBindString(sql, "@phenotype", sPhenotype);
+        SqlBindString(sql, "@part", sPart);
+        SqlBindInt(sql, "@model", StringToInt(sModel));
+        SqlBindString(sql, "@file", sFile);
+
+        SqlStep(sql);
+    }
+}
+
+void InitializeDatabase(int nType = -1)
+{
+    if (nType == -1 || nType == SIMPLE || nType == LAYERED)
+    {
+        sQuery = "CREATE TABLE IF NOT EXISTS " + DATABASE_TABLE_SIMPLE + " (" +
+            "type INTEGER, " +
+            "class TEXT, " +
+            "variant INTEGER, " +
+            "file TEXT, " + 
+            "PRIMARY KEY (file));";
+        sql = PrepareQuery(sQuery);
+        SqlStep(sql);
     }
 
-    return jArray;
+    if (nType == -1 || nType == COMPOSITE)
+    {
+        sQuery = "CREATE TABLE IF NOT EXISTS " + DATABASE_TABLE_COMPOSITE + " (" +
+            "class TEXT, " +
+            "position TEXT, " + 
+            "shape INTEGER, " +
+            "color INTEGER, " +
+            "file TEXT, " +
+            "PRIMARY KEY (class, position, shape, color));";
+        sql = PrepareQuery(sQuery);
+        SqlStep(sql);
+    }
+
+    if (nType == -1 || nType == ARMORANDAPPEARANCE)
+    {
+        sQuery = "CREATE TABLE IF NOT EXISTS " + DATABASE_TABLE_ARMOR + " (" +
+            "gender TEXT, " +
+            "race TEXT, " +
+            "phenotype TEXT, " +
+            "part TEXT, " +
+            "model INTEGER, " +
+            "file TEXT, " +
+            "PRIMARY KEY (gender, race, phenotype, part, model));";
+        sql = NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
+        SqlStep(sql);
+    }
 }
 
-void AddRaceAppearanceToDatabase(string sGender, string sRace, string sPhenotype,
-                                 string sPart, json jModels)
+void ClearDatabaseTables(int nType = -1)
 {
-    sQuery = "INSERT INTO " + DATABASE_TABLE + " (gender, race, phenotype, part, models) " +
-            "VALUES (@gender, @race, @phenotype, @part, @models) " +
-            "ON CONFLICT (gender, race, phenotype, part) DO UPDATE SET models = @models;";
-    sql = NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
-    SqlBindString(sql, "@gender", sGender);
-    SqlBindString(sql, "@race", sRace);
-    SqlBindString(sql, "@phenotype", sPhenotype);
-    SqlBindString(sql, "@part", sPart);
-    SqlBindJson(sql, "@models", SORT_MODEL_ARRAYS ? SortJsonArray(jModels) : jModels);
+    string sTable, sTables = DATABASE_TABLE_SIMPLE + "," + DATABASE_TABLE_COMPOSITE + "," + DATABASE_TABLE_ARMOR;
 
-    SqlStep(sql);
+    if (nType != -1)
+    {
+        if (nType == SIMPLE || nType == LAYERED)
+            sTables = DATABASE_TABLE_SIMPLE;
+        else if (nType == COMPOSITE)
+            sTables = DATABASE_TABLE_COMPOSITE;
+        else if (nType == ARMORANDAPPEARANCE)
+            sTables = DATABASE_TABLE_ARMOR;
+    }
 
-    SetLocalInt(GetModule(), "APPEARANCE_COUNT", GetLocalInt(GetModule(), "APPEARANCE_COUNT") - 1);
-    if (GetLocalInt(GetModule(), "APPEARANCE_COUNT") == 0)
-        Notice("Appearance loading complete.");
+    int n, nTables = CountList(sTables);
+    for (n = 0; n < nTables; n++)
+    {
+        string sTable = GetListItem(sTables, n);
+        sQuery = "DELETE FROM " + sTable + ";";
+        sql = PrepareQuery(sQuery);
+
+        SqlStep(sql);
+    }
 }
 
-json GetRaceAppearanceFromDatabase(int nGender, int nRace, int nPhenotype, string sPart)
+json GetModelData(string sType, string sClass)
 {
-    string sGender = nGender == -1 ? "" : nGender == 0 ? "m" : "f";
-    string sRace = nRace == -1 ? "" : GetStringLowerCase(Get2DAString("appearance", "race", nRace));
-    string sPhenotype = nPhenotype == -1 ? "" : IntToString(nPhenotype);
+    string sSubQuery = "SELECT * " +
+            "FROM " + DATABASE_TABLE_SIMPLE + " " +
+            "WHERE type = @type " +
+                "AND class = @class " +
+            "ORDER BY variant ASC";
 
-    sQuery = "SELECT models " +
-             "FROM " + DATABASE_TABLE + " " +
+    sQuery = "SELECT json_group_array (json(variant)) " +
+             "FROM (" + sSubQuery + ");";
+
+    sql = PrepareQuery(sQuery);
+    SqlBindString(sql, "@type", sType);
+    SqlBindString(sql, "@class", sClass);
+
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
+}
+
+json GetSimpleModelData(string sClass = "")
+{
+    return GetModelData("0", sClass);
+}
+
+json GetLayeredModelData(string sClass = "")
+{
+    return GetModelData("1", sClass);
+}
+
+sqlquery GetCompositeModelData(string sClass, string sShapes)
+{
+    sQuery = "SELECT class, position, shape, color, file " +
+             "FROM " + DATABASE_TABLE_COMPOSITE + " " +
+             "WHERE class = @class " +
+                "AND shape IN (" + sShapes + ") " +
+             "ORDER BY shape, color ASC;";
+    sql = PrepareQuery(sQuery);
+    SqlBindString(sql, "@class", sClass);
+
+    return sql;
+}
+
+json GetArmorAndAppearanceModelData(int nGender, int nRace, int nPhenotype, string sPart)
+{
+
+    string sGender = GetStringLowerCase(Get2DAString("gender", "gender", nGender));
+    string sRace = GetStringLowerCase(Get2DAString("appearance", "race", nRace));
+    string sPhenotype = IntToString(nPhenotype);
+
+    string sSubQuery = "SELECT * " +
+             "FROM " + DATABASE_TABLE_ARMOR + " " +
              "WHERE gender = @gender " +
                 "AND race = @race " +
                 "AND phenotype = @phenotype " +
-                "AND part = @part;";
-    sql = NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
+                "AND part = @part " +
+             "ORDER BY model ASC";
+ 
+    sQuery = "SELECT json_group_array (json(model)) " +
+             "FROM (" + sSubQuery + ");";  
+
+    sql = PrepareQuery(sQuery);
     SqlBindString(sql, "@gender", sGender);
     SqlBindString(sql, "@race", sRace);
     SqlBindString(sql, "@phenotype", sPhenotype);
@@ -868,123 +1012,234 @@ json GetRaceAppearanceFromDatabase(int nGender, int nRace, int nPhenotype, strin
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
 }
 
-void ClearDatabase()
+// Return a command-delimited list of results from a given 2da file.  See the comments below to determine how to
+// use this function.
+string Get2DAListByCriteria(string s2DA, string sReturnColumn,
+                            string sCriteriaColumn = "", string sCriteria = "")
 {
-    sQuery = "DELETE FROM " + DATABASE_TABLE + ";";
-    sql = NUI_PrepareQuery(sQuery, USE_CAMPAIGN_DATABASE, CAMPAIGN_DATABASE);
-
-    SqlStep(sql);
-}
-
-json GetHelmetsFromDatabase()
-{
-    string sPart = "helmet";
-    return GetRaceAppearanceFromDatabase(-1, -1, -1, sPart);
-}
-
-string Get2DAList(string s2DA, string sColumn = "", string sGoal = "", string sIndexes = "")
-{
-    int n, nCount, bIndex, nTolerance = 50;
     string sReturn;
+    int bUseCriteria = sCriteriaColumn != "";
+    int bReturnByIndex = sCriteriaColumn == TWODA_INDEX && sCriteria != "";
+    int bReturnIndices = (sCriteriaColumn == TWODA_INDEX && sCriteria == "") ||
+                         (sReturnColumn == TWODA_INDEX && sCriteriaColumn != "" && sCriteria != "");
+    int bReturnAllResults = sCriteriaColumn == "" && sCriteria == "";
 
-    if (sColumn == "")
-    {
-        sColumn = "label";
-        bIndex = TRUE;
-    }
+    // Ok, this requires a comment because it's rather cryptic
+    // To get a list of everything from sReturnColumn in s2DA, leave sCriteraColumn and sCritera as empty strings
+    // To get a list of indices (the first column) in which sReturnColumn is not "" (****/blank), set sCriteriaColumn
+    //      to the constant TWODA_INDEX and leave sCriteria blank
+    // To get a list of indices (the first column) in which sCriteriaColumn = sCritera, set sReturnColumn to TWODA_INDEX
+    // To get a list of what's in sReturnColumn by row/index number, set sCriteriaColumn to the constant TWODA_INDEX
+    //      and pass a command delimited string list of row/index numbers into sCriteria
+    // To get a list of whats in sReturnColumn based on the value of a different column, set sCriteriaColumn to the
+    //      column name and sCriteria to the value you want to find in the sCriteriaColumn column.  For example, if you
+    //      want to return the value from column "itemclass" in "baseitems.2da", but only if the column "modeltype" in
+    //      the same 2da file is "1", use the following:  Get2DAListByCriteria("baseitems", "itemclass", "modeltype", "1");
 
-    if (sIndexes == "")
+    // Since there's no non-NWNX/third-party method to determine how many rows are in any given 2da file, set
+    //  nTolerance to the number of blank lines (in a row) you're willing to search before you call it a day.
+    //  For example, if this is set to 15, if Get2DAListByCriteria returns 15 blank lines in a row, the function will
+    //  stop attempting to read additional rows and return whatever has already been found.
+    int n, nCount, nTolerance = 15;
+    
+    if (bReturnAllResults == TRUE)
     {
         do {
-            string sResult = Get2DAString(s2DA, sColumn, n++);
+            string sResult = Get2DAString(s2DA, sReturnColumn, n++);
+            if (sResult != "")
+            {
+                sReturn = AddListItem(sReturn, GetStringLowerCase(sResult));
+                nCount = 0;
+            }
+            else
+                nCount++;
+        } while (nCount <= nTolerance);
 
-            if (sResult == "") nCount ++;
+        return sReturn;
+    }
+
+    if (bReturnIndices == TRUE)
+    {
+        n = 0; nCount = 0;
+        string sResult;
+
+        do {
+            if (sReturnColumn == TWODA_INDEX)
+            {
+                sResult = GetStringLowerCase(Get2DAString(s2DA, sCriteriaColumn, n++));
+                if (HasListItem(sCriteria, sResult) == TRUE)
+                    sReturn = AddListItem(sReturn, IntToString(n - 1), TRUE);
+
+                if (sResult == "") nCount ++;
+                else               nCount = 0;
+            }
             else
             {
-                if (bIndex == TRUE || (sGoal != "" && sResult == sGoal))
-                    sReturn = AddListItem(sReturn, IntToString(n - 1));
+                sResult = Get2DAString(s2DA, sReturnColumn, n++);
+                if (sResult != "")
+                {
+                    sReturn = AddListItem(sReturn, IntToString(n - 1), TRUE);
+                    nCount = 0;
+                }
                 else
-                    sReturn = AddListItem(sReturn, GetStringLowerCase(sResult), TRUE);
+                    nCount++;
+            }                
+        } while (nCount <= nTolerance);
+
+        return sReturn;
+    }
+
+    if (bReturnByIndex == TRUE)
+    {
+        nCount = CountList(sCriteria);
+        for (n = 0; n < nCount; n++)
+        {
+            int nIndex = StringToInt(GetListItem(sCriteria, n));
+            sReturn = AddListItem(sReturn, GetStringLowerCase(Get2DAString(s2DA, sReturnColumn, nIndex)), TRUE);
+        }
+
+        return sReturn;
+    }
+
+    if (bUseCriteria == TRUE)
+    {
+        n = 0;
+        nCount = 0;
+
+        do {
+            string sTargetColumn = bUseCriteria == TRUE ? sCriteriaColumn : sReturnColumn;
+            string sResult = Get2DAString(s2DA, sTargetColumn, n);
+
+            if (sResult == "") nCount++;
+            else
+            {
+                if (bUseCriteria == TRUE)
+                {
+                    if (HasListItem(sCriteria, sResult) == TRUE)
+                    {
+                        if (sReturnColumn == TWODA_INDEX)
+                            sReturn = AddListItem(sReturn, IntToString(n));
+                        else
+                            sReturn = AddListItem(sReturn, GetStringLowerCase(Get2DAString(s2DA, sReturnColumn, n)));
+                    }
+                }
+                else
+                    sReturn = AddListItem(sReturn, GetStringLowerCase(sResult));
 
                 nCount = 0;
             }
-        } while (nCount <= nTolerance);
-    }
-    else
-    {
-        int n, nCount = CountList(sIndexes);
-        for (n = 0; n < nCount; n++)
-        {
-            int nIndex = StringToInt(GetListItem(sIndexes, n));
-            string sResult = Get2DAString(s2DA, sColumn, nIndex);
 
-            sReturn = AddListItem(sReturn, GetStringLowerCase(sResult), TRUE);
-        }
+            n++;
+        } while (nCount <= nTolerance);
     }
 
     return sReturn;
 }
 
-string GetPartsList()
+void PopulateSimpleModelData(int nType = BASE_CONTENT)
 {
-    string sParts = CountList(MODEL_PARTS) > 0 ? MODEL_PARTS : Get2DAList("capart", "mdlname");
-           sParts = AddListItem(sParts, "head");
-
-    return sParts;
-}
-
-void PopulateHelmetData()
-{
-    string sPrefix = "helm_";
-    int nPrefix = GetStringLength(sPrefix);
-            
-    json jResult = JsonArray(), jResrefs = NUI_GetResrefArray(sPrefix, RESTYPE_MDL, TRUE);
-    if (jResrefs == JsonNull())
-        return;
-
-    int n, nCount = JsonGetLength(jResrefs);
-    for (n = 0; n < nCount; n++)
+    string sTypes = "0,1";
+    int t, tCount = CountList(sTypes);
+    for (t = 0; t < tCount; t++)
     {
-        string sFile = JsonGetString(JsonArrayGet(jResrefs, n));
-        string sPartNumber = GetStringRight(sFile, GetStringLength(sFile) - nPrefix);
-        int nPartNumber = StringToInt(sPartNumber);
-
-        jResult = JsonArrayInsert(jResult, JsonInt(nPartNumber));
-    }
-
-    if (jResult == JsonArray())
-        return;
-    else
-        DelayCommand(0.1, AddRaceAppearanceToDatabase("", "", "", "helmet", jResult));
-}
-
-void PopulateAppearanceData(string sFormID, int bForceLoad = FALSE)
-{
-    if (bForceLoad == FALSE)
-    {
-        if (LOAD_MODEL_DATA == FALSE || USE_CAMPAIGN_DATABASE == FALSE)
+        string sType = GetListItem(sTypes, t);
+        string sClasses = Get2DAListByCriteria("baseitems", "itemclass", "modeltype", sType);
+        
+        int n, nClasses = CountList(sClasses);
+        for (n = 0; n < nClasses; n++)
         {
-            Notice("Skipping appearance loading for form " + sFormID + ".  To reload all models, set " +
-                "LOAD_MODEL_DATA to TRUE in " + NUI_GetFormfile(sFormID) + ".nss.");
-            return;
-        }  
-    }    
-    
-    Notice("Initializing appearances for form " + sFormID + ".  This can take more than 60 seconds to complete " +
-            "for all the base-game models.  Any customzied models can increase the required time dramatically. " +
-            "To prevent reloading appearances on future module loads, set LOAD_MODEL_DATA to FALSE in " + 
-            NUI_GetFormfile(sFormID) + ".nss");
+            string sClass = GetListItem(sClasses, n);
+            string sPrefix = sClass + "_";
+            int nPrefix = GetStringLength(sPrefix);
 
-    InitializeDatabase();  
-    PopulateHelmetData();
+            json jResrefs = NUI_GetResrefArray(sPrefix, RESTYPE_MDL, nType);
+            if (jResrefs == JsonNull())
+            {
+                Notice("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
+                    (sType == "0" ? "simple" : "layered") + " model content found for model file prefix '" + sPrefix + "'");
+                continue;
+            }
 
-    string sGenders = CountList(MODEL_GENDER) > 0 ? MODEL_GENDER : Get2DAList("gender", "gender");
+            int r, rCount = JsonGetLength(jResrefs);
+            for (r = 0; r < rCount; r++)
+            {
+                string sFile = JsonGetString(JsonArrayGet(jResrefs, r));
+                string sNumber = GetStringRight(sFile, GetStringLength(sFile) - nPrefix);
+                int nNumber = StringToInt(sNumber);
 
-    string sPlayableRaceIndexes = CountList(MODEL_RACE) > 0 ? MODEL_RACE : Get2DAList("racialtypes", "playerrace", "1");
-    string sRaces = Get2DAList("appearance", "race", "", sPlayableRaceIndexes);
+                json jModel = JsonObject();
+                     jModel = JsonObjectSet(jModel, "type", JsonString(sType));
+                     jModel = JsonObjectSet(jModel, "class", JsonString(GetStringLowerCase(sClass)));
+                     jModel = JsonObjectSet(jModel, "variant", JsonString(IntToString(nNumber)));
+                     jModel = JsonObjectSet(jModel, "file", JsonString(sFile));
 
-    string sPhenotypes = CountList(MODEL_PHENOTYPE) > 0 ? MODEL_PHENOTYPE : Get2DAList("phenotype");
-    string sParts = GetPartsList();
+                DelayCommand(0.1, AddModelToDatabase(SIMPLE, jModel));
+            }
+        }
+    }
+}
+
+void PopulateCompositeModelData(int nType = BASE_CONTENT)
+{
+    string sTypes = "2";
+    int t, tCount = CountList(sTypes);
+    for (t = 0; t < tCount; t++)
+    {
+        string sType = GetListItem(sTypes, t);
+        string sClasses = Get2DAListByCriteria("baseitems", "itemclass", "modeltype", sType);
+        int c, nClasses = CountList(sClasses);
+
+        string sPositions = "b,m,t";
+        int p, nPosition = CountList(sPositions);
+        
+        for (c = 0; c < nClasses; c++)
+        {
+            string sClass = GetListItem(sClasses, c);
+            for (p = 0; p < nPosition; p++)
+            {
+                string sPosition = GetListItem(sPositions, p);
+                string sPrefix = sClass + "_" + sPosition + "_";
+                int nPrefix = GetStringLength(sPrefix);
+            
+                json jResrefs = NUI_GetResrefArray(sPrefix, RESTYPE_MDL, nType);
+                if (jResrefs == JsonNull())
+                {
+                    Notice("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
+                        "composite model content found for model file prefix '" + sPrefix + "'");
+                    continue;
+                }
+
+                int r, nResrefs = JsonGetLength(jResrefs);
+                for (r = 0; r < nResrefs; r++)
+                {
+                    string sFile = JsonGetString(JsonArrayGet(jResrefs, r));
+                    string sNumber = GetStringRight(sFile, GetStringLength(sFile) - nPrefix);
+                    int nNumber = StringToInt(sNumber);
+                    int nShape = nNumber / 10;
+                    int nColor = nNumber - (nShape * 10);
+
+                    json jModel = JsonObject();
+                         jModel = JsonObjectSet(jModel, "class", JsonString(GetStringLowerCase(sClass)));
+                         jModel = JsonObjectSet(jModel, "position", JsonString(sPosition));
+                         jModel = JsonObjectSet(jModel, "shape", JsonString(IntToString(nShape)));
+                         jModel = JsonObjectSet(jModel, "color", JsonString(IntToString(nColor)));
+                         jModel = JsonObjectSet(jModel, "file", JsonString(sFile));
+
+                    DelayCommand(0.1, AddModelToDatabase(COMPOSITE, jModel));
+                }
+            }
+        }
+    }
+}
+
+void PopulateArmorAndAppearanceModelData(int nType = BASE_CONTENT)
+{
+    string sGenders = CountList(MODEL_GENDER) > 0 ? MODEL_GENDER : Get2DAListByCriteria("gender", "gender");
+    string sRaceIndices = Get2DAListByCriteria("racialtypes", TWODA_INDEX, "playerrace", "1");
+    string sRaces = CountList(MODEL_RACE) > 0 ? MODEL_RACE : Get2DAListByCriteria("appearance", "race", TWODA_INDEX, sRaceIndices);
+    string sPhenotypes = CountList(MODEL_PHENOTYPE) > 0 ? MODEL_PHENOTYPE : Get2DAListByCriteria("phenotype", "label", TWODA_INDEX);
+    string sParts = Get2DAListByCriteria("capart", "mdlname");
+           sParts = AddListItem(sParts, "head");
 
     int g, nGenders = CountList(sGenders);
     int r, nRaces = CountList(sRaces);
@@ -1013,44 +1268,270 @@ void PopulateAppearanceData(string sFormID, int bForceLoad = FALSE)
                           
                     json jResrefs = NUI_GetResrefArray(sPrefix, RESTYPE_MDL, TRUE);
                     if (jResrefs == JsonNull())
+                    {
+                        Notice("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
+                            "armor/appearance model content found for model file prefix '" + sPrefix + "'");
                         continue;
+                    }
 
                     int n, nCount = JsonGetLength(jResrefs);
                     for (n = 0; n < nCount; n++)
                     {
                         string sFile = JsonGetString(JsonArrayGet(jResrefs, n));
-                        string sPartNumber = GetStringRight(sFile, GetStringLength(sFile) - nPrefix);
-                        int nPartNumber = StringToInt(sPartNumber);
+                        string sModel = GetStringRight(sFile, GetStringLength(sFile) - nPrefix);
+                        int nModel = StringToInt(sModel);
 
-                        jResult = JsonArrayInsert(jResult, JsonInt(nPartNumber));
+                        json jModel = JsonObject();
+                             jModel = JsonObjectSet(jModel, "gender", JsonString(sGender));
+                             jModel = JsonObjectSet(jModel, "race", JsonString(GetStringLowerCase(sRace)));
+                             jModel = JsonObjectSet(jModel, "phenotype", JsonString(sPhenotype));
+                             jModel = JsonObjectSet(jModel, "part", JsonString(sPart));
+                             jModel = JsonObjectSet(jModel, "model", JsonString(IntToString(nModel)));
+                             jModel = JsonObjectSet(jModel, "file", JsonString(sFile));
+
+                        DelayCommand(0.1, AddModelToDatabase(ARMORANDAPPEARANCE, jModel));
                     }
-
-                    if (jResult == JsonArray())
-                        continue;
-                    else
-                    {
-                        DelayCommand(0.1, AddRaceAppearanceToDatabase(sGender, sRace, sPhenotype, sPart, jResult));
-                        SetLocalInt(GetModule(), "APPEARANCE_COUNT", GetLocalInt(GetModule(), "APPEARANCE_COUNT") + 1);
-                    }
-
-                    jResult = JsonArray();
                 }
             }
         }
     }
 }
 
+void CreateColorCategoryTabs()
+{
+    string sFormPrefix = "_appedit_tab_color_";
+    string sCategories = "appearance,equipment";
+
+    string tb = "toggle_button";
+    NUI_CreateTemplateControl(tb);
+    {
+        NUI_AddToggleButton();
+            NUI_SetWidth(150.0);
+            NUI_SetHeight(25.0);
+    } NUI_SaveTemplateControl();
+
+    // Appearance stuff
+    string sFormID = sFormPrefix + "appearance";
+    string sAppearanceOptions = SKIN + ":" + HAIR + "," + TATTOO + " 1:" + TATTOO + " 2";
+    string sEquipmentOptions = LEATHER + " 1:" + LEATHER + " 2," +
+                               CLOTH   + " 1:" + CLOTH   + " 2," +
+                               METAL   + " 1:" + METAL   + " 2";
+
+    int n, nCount = CountList(sCategories);
+    for (n = 0; n < nCount; n++)
+    {
+        string sCategory = GetListItem(sCategories, n);
+        string sOptions = (sCategory == "appearance" ? sAppearanceOptions :
+                           sCategory == "equipment" ? sEquipmentOptions :
+                           "");
+        
+        if (sOptions == "")
+            return;
+
+        NUI_CreateForm("_appedit_tab_color_" + sCategory);
+
+        int c, x, cCount = CountList(sOptions);
+        for (c = 0; c < cCount; c++)
+        {
+            string sPointer, sOption = GetListItem(sOptions, c);
+            string sLeftOption = _GetKey(sOption);
+            string sRightOption = _GetValue(sOption);
+
+            NUI_AddRow();
+            if (sRightOption == "")
+                NUI_AddSpacer();
+            
+            NUI_AddTemplateControl(tb);
+                sPointer = IntToString(x++);
+                NUI_SetID("color_cat:" + sPointer);
+                NUI_SetLabel(sLeftOption);
+                NUI_BindValue("color_cat_value:" + sPointer);
+                //NUI_BindEnabled("color_cat_enabled:" + sPointer);
+
+            if (sRightOption == "")
+                NUI_AddSpacer();
+            else
+            {
+                NUI_AddTemplateControl(tb);
+                    sPointer = IntToString(x++);
+                    NUI_SetID("color_cat:" + sPointer);
+                    NUI_SetLabel(sRightOption);
+                    NUI_BindValue("color_cat_value:" + sPointer);
+                    //NUI_BindEnabled("color_cat_enabled:" + sPointer);
+            }
+        } NUI_SaveForm();
+    }
+}
+
+void CreatePartCategoryTabs()
+{
+    string sCategories = "appearance,equipment";
+    int c, cCount = CountList(sCategories);
+    for (c = 0; c < cCount; c++)
+    {
+        string sCategory = GetListItem(sCategories, c);
+        string sFormID = "_appedit_tab_part_" + sCategory;
+        int bAppearance = sCategory == "appearance";
+        int bEquipment = sCategory == "equipment";
+
+        string sParts, sPointers, sTemp;
+        if (bAppearance == TRUE)        
+        {
+            sParts = AddListItem(sParts, HEAD);
+            sPointers = AddListItem(sPointers, "head");
+        }
+        
+        if (bEquipment == TRUE) 
+        {
+            sParts = AddListItem(sParts, HELMET);
+            sPointers = AddListItem(sPointers, "helm");
+            
+            sParts = AddListItem(sParts, NECK);
+            sPointers = AddListItem(sPointers, "neck");
+
+            sParts = AddListItem(sParts, ROBE);
+            sPointers = AddListItem(sPointers, "robe");
+        }
+
+        sParts = AddListItem(sParts, CHEST);
+        sPointers = AddListItem(sPointers, "chest");
+
+        if (bEquipment == TRUE)
+        {
+            sParts = AddListItem(sParts, LEFT_SHOULDER + ":" + RIGHT_SHOULDER); 
+            sPointers = AddListItem(sPointers, "shol:shor");       
+        }
+
+        sParts = AddListItem(sParts, LEFT_BICEP + ":" + RIGHT_BICEP);
+        sPointers = AddListItem(sPointers, "bicepl:bicepr");
+
+        sParts = AddListItem(sParts, LEFT_FOREARM + ":" + RIGHT_FOREARM);
+        sPointers = AddListItem(sPointers, "forel:forer");
+
+        sParts = AddListItem(sParts, LEFT_HAND + ":" + RIGHT_HAND);
+        sPointers = AddListItem(sPointers, "handl:handr");
+
+        if (bEquipment == TRUE)
+        {
+            sParts = AddListItem(sParts, BELT);
+            sPointers = AddListItem(sPointers, "belt");
+        }
+
+        sParts = AddListItem(sParts, PELVIS);
+        sPointers = AddListItem(sPointers, "pelvis");
+        
+        sParts = AddListItem(sParts, LEFT_THIGH + ":" + RIGHT_THIGH);
+        sPointers = AddListItem(sPointers, "legl:legr");
+        
+        sParts = AddListItem(sParts, LEFT_SHIN + ":" + RIGHT_SHIN);
+        sPointers = AddListItem(sPointers, "shinl:shinr");
+
+        if (bEquipment == TRUE)
+        {
+            sParts = AddListItem(sParts, LEFT_FOOT + ":" + RIGHT_FOOT);
+            sPointers = AddListItem(sPointers, "footl:footr");
+        }
+
+        string tb = "category_toggle";
+        NUI_CreateTemplateControl(tb);
+        {
+            NUI_AddToggleButton();
+                NUI_SetWidth(150.0);
+                NUI_SetHeight(25.0);
+        } NUI_SaveTemplateControl();
+
+        NUI_CreateForm(sFormID);
+        {
+            int n, nCount = CountList(sParts);
+            for (n = 0; n < nCount; n++)
+            {
+                string sPart = GetListItem(sParts, n);
+                string sPointer = GetListItem(sPointers, n);
+                
+                string sLeftPart = _GetKey(sPart);
+                string sRightPart = _GetValue(sPart);
+
+                string sLeftPointer = _GetKey(sPointer);
+                string sRightPointer = _GetValue(sPointer);
+
+                NUI_AddRow();
+                if (sRightPart == "")
+                    NUI_AddSpacer();
+
+                NUI_AddTemplateControl(tb);
+                    NUI_SetID("part_cat:" + sLeftPointer);
+                    NUI_SetLabel(sLeftPart);
+                    NUI_BindValue("part_cat_value:" + sLeftPointer);
+                    NUI_BindEnabled("part_cat_enabled:" + sLeftPointer);
+
+                if (sRightPart == "")
+                    NUI_AddSpacer();
+                else
+                {
+                        NUI_SetWidth(125.0);
+                    NUI_AddCommandButton();
+                        NUI_SetHeight(25.0);
+                        NUI_SetWidth(30.0);
+                        NUI_SetID("part_cat:swap:" + GetStringLeft(sLeftPointer, GetStringLength(sLeftPointer) - 1));
+                        NUI_SetLabel("<->");
+                        NUI_SetTooltip("Copy Model");
+                    NUI_AddTemplateControl(tb);
+                        NUI_SetWidth(135.0);
+                        NUI_SetID("part_cat:" + sRightPointer);
+                        NUI_SetLabel(sRightPart);
+                        NUI_BindValue("part_cat_value:" + sRightPointer);
+                        NUI_BindEnabled("part_cat_enabled:" + sRightPointer);
+                }
+            }
+        } NUI_SaveForm();
+    }
+}
+
+void CreateColumnTabs()
+{
+    string sColumns = "left,right";
+    int n, nCount = CountList(sColumns);
+    for (n = 0; n < nCount; n++)
+    {
+        string sColumn = GetListItem(sColumns, n);
+        string sFormID = "_appedit_tab_" + sColumn;
+        NUI_CreateForm(sFormID);
+        {
+            NUI_AddControlGroup();
+                NUI_SetID("appedit_" + sColumn + "_top");
+            {
+                NUI_AddSpacer();
+            } NUI_CloseControlGroup();
+
+            NUI_AddControlGroup();
+                NUI_SetID("appedit_" + sColumn + "_bottom");
+            {
+                NUI_AddSpacer();
+            } NUI_CloseControlGroup();
+        } NUI_SaveForm();
+    }
+}
+
 void NUI_HandleFormDefinition()
 {
     float fHeight = 32.0;
-    string sFormID = "appearance_editor";
+    string sFormID = FORM_ID;
 
     NUI_CreateForm(sFormID);
         NUI_SetResizable(TRUE);
         NUI_BindGeometry("geometry");
         NUI_SetTitle(TITLE);
+        NUI_SetCollapsible(FALSE);
+        NUI_SetCustomProperty("toc", JsonBool(TRUE));
     {
         NUI_AddRow();
+            NUI_AddCommandButton("open_loader");
+                NUI_SetLabel("Data");
+                NUI_SetWidth(64.0);
+                NUI_SetHeight(64.0);
+                //NUI_SetHeight(fHeight);
+                NUI_SetTooltip("Open Model Data Loading Form");
+
             NUI_AddSpacer();
 
             NUI_AddToggleButton("toggle_appearance");
@@ -1063,59 +1544,69 @@ void NUI_HandleFormDefinition()
                 NUI_SetHeight(fHeight);
                 NUI_BindValue("toggle_equipment_toggled");
 
-            NUI_AddSpacer();
-
-        NUI_AddRow();
-            NUI_AddSpacer();
-
-            NUI_AddCombobox("combo_type");
-                NUI_AddComboboxEntryList(ARMOR + "," + HELMET);
+            NUI_AddToggleButton("toggle_weapons");
+                NUI_SetLabel("Weapons");
                 NUI_SetHeight(fHeight);
-                NUI_BindValue("combo_type_value");
-                NUI_BindVisible("combo_type_visible");
-
-            //NUI_AddCommandButton("command_outfits");
-            //    NUI_SetLabel("Outfits");
-            //    NUI_SetHeight(fHeight);
+                NUI_BindValue("toggle_weapons_toggled");
+                NUI_SetEnabled(FALSE);
 
             NUI_AddSpacer();
+
+            NUI_AddImageButton("setTargetObject");
+                NUI_SetWidth(64.0);
+                NUI_SetHeight(64.0);
+                NUI_SetLabel("gui_mp_examineu");
+                NUI_SetTooltip("Select Target Object");
+            //NUI_AddCommandButton("setTargetObject");
+            //    //NUI_SetLabel("");
+            //    NUI_SetWidth(50.0);
+            //    NUI_SetHeight(fHeight);
 
         NUI_AddRow();
             NUI_AddLabel("label_item");
-                NUI_BindLabel("label_item_label");
+                NUI_BindValue("label_item_label");
                 NUI_BindVisible("label_item_visible");
                 NUI_SetHeight(20.0);
 
         NUI_AddRow();
             NUI_AddControlGroup();
+                NUI_SetID("left_column");
                 NUI_SetBorderVisible(FALSE);
                 NUI_BindVisible("group_category_visible");
+                NUI_SetWidth(350.0);
             {
                 NUI_AddRow();
+                    NUI_AddControlGroup();
+                        NUI_SetID("color_category_tab");
+                        NUI_SetHeight(176.0);
+                    {
+                        NUI_AddSpacer();
+                    } NUI_CloseControlGroup();
+
+/*
                     NUI_AddListbox();
                         NUI_SetID("list_colorcategory");
                         NUI_BindRowCount("list_colorcategory_rowcount");
                         NUI_SetRowHeight(25.0);
+                        NUI_SetHeight(140.0);
                     {
                         NUI_AddToggleButton("toggle_colorcategory");
                             NUI_BindLabel("toggle_colorcategory_label");
                             NUI_BindValue("toggle_colorcategory_value");
                     } NUI_CloseListbox();
+*/
              
                 NUI_AddRow();
-                    NUI_AddListbox();
-                        NUI_SetID("list_partcategory");
-                        NUI_BindRowCount("list_partcategory_rowcount");
-                        NUI_SetRowHeight(25.0);
+                    NUI_AddControlGroup();
+                        NUI_SetID("part_category_tab");
                     {
-                        NUI_AddToggleButton("toggle_partcategory");
-                            NUI_BindLabel("toggle_partcategory_label");
-                            NUI_BindValue("toggle_partcategory_value");
-                    } NUI_CloseListbox();
+                        NUI_AddSpacer();
+                    } NUI_CloseControlGroup();
             } NUI_CloseControlGroup();
 
 
             NUI_AddControlGroup();
+                NUI_SetID("right_column");
                 NUI_SetBorderVisible(FALSE);
                 NUI_BindVisible("group_category_visible");
             {
@@ -1127,17 +1618,28 @@ void NUI_HandleFormDefinition()
                         NUI_SetImageVerticalAlignment(NUI_VALIGN_TOP);
                         NUI_SetImageHorizontalAlignment(NUI_HALIGN_LEFT);
                         NUI_SetImageAspect(NUI_ASPECT_EXACTSCALED);
+                        NUI_AddCanvas();
+                        {
+                            NUI_DrawLine(JsonNull());
+                                //NUI_SetPoints(JsonParse("[0.0,0.0,16.0,0.0,16.0,16.0,0.0,16.0,0.0,0.0]"));
+                                
+                                NUI_BindPoints("image_colorsheet_points");
+                                NUI_SetEnabled(TRUE);
+                                //NUI_BindEnabled("image_colorsheet_enabled");
+                                NUI_BindDrawColor("image_colorsheet_color");
+                                //NUI_SetDrawColor(NUI_DefineRGBColor(255, 0, 0));
+                                //NUI_BindLineThickness("image_colorsheet_linethickness");
+                                //NUI_SetFill(FALSE);
+                                NUI_SetLineThickness(2.0);
+                                //NUI_SetFill(TRUE);
+                        } NUI_CloseCanvas();
 
                 NUI_AddRow();
-                    NUI_AddListbox();
-                        NUI_SetID("list_partselected");
-                        NUI_BindRowCount("list_partselected_rowcount");
-                        NUI_SetRowHeight(25.0);
+                    NUI_AddControlGroup();
+                        NUI_SetID("model_matrix");
                     {
-                        NUI_AddToggleButton("toggle_partselected");
-                            NUI_BindLabel("toggle_partselected_label");
-                            NUI_BindValue("toggle_partselected_value");
-                    } NUI_CloseListbox();
+                        NUI_AddSpacer();
+                    } NUI_CloseControlGroup();
 
                 NUI_AddRow();
                     NUI_AddCommandButton("button_previous");
@@ -1157,71 +1659,194 @@ void NUI_HandleFormDefinition()
     } NUI_SaveForm();
 
     Notice("Defining form " + sFormID + " (Version " + VERSION + ")");
-    PopulateAppearanceData(sFormID);
+    InitializeDatabase(); 
+
+    CreateColumnTabs(); 
+    CreateColorCategoryTabs();
+    CreatePartCategoryTabs();
+
+    sFormID = "appearance_editor_loader";
+    NUI_CreateTemplateControl("handler_button");
+    {
+        NUI_AddCommandButton();
+            NUI_SetWidth(300.0);
+            NUI_SetHeight(35.0);
+    } NUI_SaveTemplateControl();
+
+    NUI_CreateForm(sFormID);
+        NUI_BindGeometry("geometry_handler");
+        NUI_SetTitle("Appearance Editor Data Loading");
+        NUI_SetResizable(TRUE);
+    {
+        NUI_AddRow();
+
+        fHeight = 25.0;
+        NUI_AddControlGroup();
+            NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
+            NUI_SetWidth(320.0);
+            NUI_SetHeight(fHeight * 7.0);
+        {
+            NUI_AddRow();
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_SetValue(JsonString("Model Data Status"));
+
+            NUI_AddRow();
+            NUI_AddCommandButton();
+                NUI_SetHeight(10.0);
+                NUI_SetEnabled(FALSE);
+                NUI_SetWidth(300.0);
+
+            NUI_AddRow();
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_SetValue(JsonString("Simple/Layered Models"));
+                NUI_SetWidth(200.0);
+
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_BindValue("data_simple_value");
+                NUI_BindForegroundColor("data_simple_color");
+                NUI_SetWidth(90.0);
+        
+            NUI_AddRow();
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_SetValue(JsonString("Composite Models"));
+                NUI_SetWidth(200.0);
+
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_BindValue("data_composite_value");
+                NUI_BindForegroundColor("data_composite_color");
+                NUI_SetWidth(90.0);
+
+            NUI_AddRow();
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_SetValue(JsonString("Armor/Appearance Models"));
+                NUI_SetWidth(200.0);
+
+            NUI_AddLabel();
+                NUI_SetHeight(fHeight);
+                NUI_BindValue("data_armor_value");
+                NUI_BindForegroundColor("data_armor_color");    
+                NUI_SetWidth(90.0);   
+        } NUI_CloseControlGroup();
+
+        NUI_AddRow();
+            NUI_AddSpacer();
+                NUI_SetHeight(10.0);
+
+        NUI_AddRow();
+
+        NUI_AddControlGroup();
+            NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
+            NUI_SetWidth(320.0);
+        {
+            NUI_AddRow();
+            NUI_AddSpacer();
+            NUI_AddCombobox("combo_type");
+                NUI_SetWidth(200.0);
+                NUI_AddComboboxEntryList("All Model Types,Simple/Layered,Composite,Armor/Appearance");
+                NUI_BindValue("handler_type_value");
+            NUI_AddSpacer();
+
+            NUI_AddRow();
+            NUI_AddTemplateControl("handler_button");
+                NUI_SetID("handler_load:all");
+                NUI_SetLabel("Load Custom and NWN Models");
+
+            NUI_AddRow();
+            NUI_AddTemplateControl("handler_button");
+                NUI_SetID("handler_load:custom");
+                NUI_SetLabel("Load Custom Models");
+            
+            NUI_AddRow();
+            NUI_AddTemplateControl("handler_button");
+                NUI_SetID("handler_load:base");
+                NUI_SetLabel("Load NWN Models");
+
+            NUI_AddRow();
+            NUI_AddTemplateControl("handler_button");
+                NUI_SetID("clear_data");
+                NUI_SetLabel("Clear Database Tables");
+        } NUI_CloseControlGroup();
+
+        NUI_AddRow();
+            NUI_AddSpacer();
+                NUI_SetHeight(10.0);
+
+        NUI_AddRow();
+            NUI_AddCommandButton("open_form:editor");
+            NUI_SetWidth(320.0);
+            NUI_SetHeight(70.0);
+            NUI_SetLabel("Open Appearance Editor");
+    } NUI_SaveForm();
 }
 
 void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
 {
     if (nToken == -1)
-        nToken = NuiGetEventWindow();
+        nToken = GetFormToken();
 
-    json jReturn;
+    json jReturn = JsonNull();
 
     if (sBind == "geometry")
-        jReturn = NUI_DefineRectangle(0.0, 0.0, 575.57895, 650.2632);
+        jReturn = NUI_DefineRectangle(0.0, 0.0, 650.0, 610.0);
+    else if (sBind == "geometry_handler")
+        jReturn = NUI_DefineRectangle(0.0, 0.0, 350.0, 580.0);
+    else if (sBind == "handler_type_value")
+        jReturn = JsonInt(0);
     else if (sBind == "toggle_appearance_toggled")
         jReturn = JsonInt(GetIsAppearanceSelected());
     else if (sBind == "toggle_equipment_toggled")
         jReturn = JsonInt(GetIsEquipmentSelected());
     else if (sBind == "list_colorcategory_rowcount")
-        jReturn = JsonInt(JsonGetLength(GetColorCategoryOptions()));
-    else if (sBind == "toggle_colorcategory_label")
-        jReturn = GetColorCategoryOptions();
-    else if (sBind == "toggle_colorcategory_value")
-        jReturn = GetColorCategorySelected();
-    else if (sBind == "list_partcategory_rowcount")
-        jReturn = JsonInt(JsonGetLength(GetPartCategoryOptions()));
-    else if (sBind == "toggle_partcategory_label")
-        jReturn = GetPartCategoryOptions();
-    else if (sBind == "toggle_partcategory_value")
-        jReturn = GetPartCategorySelected();
+        jReturn = JsonInt(CountList(GetColorCategoryOptions()));
     else if (sBind == "image_colorsheet_resref")
         jReturn = JsonString(GetColorSheetResref());
-    else if (sBind == "list_partselected_rowcount")
-        jReturn = JsonInt(JsonGetLength(GetPartOptions()));
-    else if (sBind == "toggle_partselected_label")
-        jReturn = GetPartOptions();
-    else if (sBind == "toggle_partselected_value")
-        jReturn = GetPartSelected();
-    else if (sBind == "combo_type_value")
-        jReturn = JsonInt(GetSelectedItemTypeIndex());
-    else if (sBind == "combo_type_visible")
-        jReturn = JsonInt(GetIsEquipmentSelected());
     else if (sBind == "group_category_visible")
         jReturn = JsonBool(GetHasItemEquipped());
     else if (sBind == "label_item_visible")
-            jReturn = GetItemCanBeEquipped() == FALSE ? JsonInt(TRUE) :
-                    JsonInt(GetDoesNotHaveItemEquipped());
+        //jReturn = JsonBool(GetDoesNotHaveItemEquipped());
+        jReturn = JsonBool(FALSE);
     else if (sBind == "label_item_label")
-            jReturn = GetItemCanBeEquipped() == FALSE ? JsonString(CANNOT_EQUIP) :
-                      GetSelectedItemTypeIndex() == 0 ? JsonString(NO_EQUIPMENT) : 
-                                                        JsonString(NO_HELMET);
-
-    if (bSetDefaults == TRUE)
-        NUI_DelayBindValue(OBJECT_SELF, nToken, sBind, jReturn);
+        jReturn = JsonString(CANNOT_EQUIP);
     else
-        NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
+    {
+        string sKey = _GetKey(sBind);
+        if (sKey == "part_cat_enabled")
+        {
+            if (_GetValue(sBind) == "helm")
+            {
+                jReturn = JsonBool(GetIsObjectValid(GetItem(INVENTORY_SLOT_HEAD)));
+                if (GetPartCategorySelected() == "helm" && jReturn == jFALSE)
+                    SetPartCategorySelected("neck");
+            }
+            else if (GetIsEquipmentSelected() == TRUE)
+                jReturn = JsonBool(GetIsObjectValid(GetItem(INVENTORY_SLOT_CHEST)));
+            else
+                jReturn = JsonBool(TRUE);
+        }
+        else if (sKey == "part_cat_value" || sKey == "model_matrix_value")
+            jReturn = JsonBool(GetPartCategorySelected() == _GetValue(sBind));
+        else if (sKey == "color_cat_value")
+            jReturn = JsonBool(GetColorCategorySelected() == _GetValue(sBind));
+    }
+
+    NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
 }
 
 void NUI_HandleFormBinds()
 {
     object oPC = OBJECT_SELF;
     struct NUIBindData bd = NUI_GetBindData();
+
+    // Set default values here...
+    SetTargetObject(OBJECT_SELF);
+
     int n;
-
-    OnFormOpen();
-    NUI_SetBindWatch(oPC, bd.nToken, "combo_type_value");
-
     for (n = 0; n < bd.nCount; n++)
     {
         struct NUIBindArrayData bad = NUI_GetBindArrayData(bd.jBinds, n);
@@ -1232,25 +1857,109 @@ void NUI_HandleFormBinds()
 void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
+/*
+    if (HasListItem(IGNORE_EVENTS, ed.sEvent))
+        return;
+*/
+    Notice("** EVENT MARKER - " + ed.sEvent + " **");
 
     if (ed.sEvent == "open")
     {
 
     }
-    else if (ed.sEvent == "close")
-        OnFormClose();
+
+    if (ed.sFormID == "appearance_editor_loader")
+    {
+        if (ed.sEvent == "click")
+        {
+            int nType = JsonGetInt(NUI_GetBindValue(ed.oPC, ed.nFormToken, "handler_type_value"));
+
+            string sFunction = _GetKey(ed.sControlID);
+            string sType = _GetValue(ed.sControlID);
+
+            if (sFunction == "clear_data")
+            {
+                if      (nType == 0) ClearDatabaseTables();
+                else if (nType == 1) ClearDatabaseTables(SIMPLE);
+                else if (nType == 2) ClearDatabaseTables(COMPOSITE);
+                else if (nType == 3) ClearDatabaseTables(ARMORANDAPPEARANCE);
+
+                form_open();
+            }
+            else if (sFunction == "handler_load")
+            {
+                if (sType == "all")
+                {
+                    if (nType == 0)
+                    {
+                        DelayCommand(0.1, PopulateSimpleModelData(BASE_CONTENT));
+                        DelayCommand(0.1, PopulateSimpleModelData(CUSTOM_CONTENT));
+                        DelayCommand(0.1, PopulateCompositeModelData(BASE_CONTENT));
+                        DelayCommand(0.1, PopulateCompositeModelData(CUSTOM_CONTENT));
+                        DelayCommand(0.1, PopulateArmorAndAppearanceModelData(BASE_CONTENT));
+                        DelayCommand(0.1, PopulateArmorAndAppearanceModelData(CUSTOM_CONTENT));   
+                    }
+                    else if (nType == 1)
+                    {
+                        DelayCommand(0.1, PopulateSimpleModelData(BASE_CONTENT));
+                        DelayCommand(0.1, PopulateSimpleModelData(CUSTOM_CONTENT));
+                    }
+                    else if (nType == 2)
+                    {
+                        DelayCommand(0.1, PopulateCompositeModelData(BASE_CONTENT));
+                        DelayCommand(0.1, PopulateCompositeModelData(CUSTOM_CONTENT));
+                    }
+                    else if (nType == 3)
+                    {
+                        DelayCommand(0.1, PopulateArmorAndAppearanceModelData(BASE_CONTENT));
+                        DelayCommand(0.1, PopulateArmorAndAppearanceModelData(CUSTOM_CONTENT)); 
+                    }
+                }
+                else
+                {
+                    int nContent = (sType == "custom" ? CUSTOM_CONTENT : BASE_CONTENT);
+
+                    if (nType == 0)
+                    {
+                        DelayCommand(0.1, PopulateSimpleModelData(nContent));
+                        DelayCommand(0.1, PopulateCompositeModelData(nContent));
+                        DelayCommand(0.1, PopulateArmorAndAppearanceModelData(nContent));   
+                    }
+                    else if (nType == 1)
+                        DelayCommand(0.1, PopulateSimpleModelData(nContent));
+                    else if (nType == 2)
+                        DelayCommand(0.1, PopulateCompositeModelData(nContent));
+                    else if (nType == 3)
+                        DelayCommand(0.1, PopulateArmorAndAppearanceModelData(nContent));   
+                }
+
+                form_open();
+            }
+            else if (sFunction == "open_form")
+            {
+                string sValue = _GetValue(ed.sControlID);
+                if (sValue == "editor")
+                {
+                    NUI_DisplayForm(ed.oPC, FORM_ID);
+                    NUI_DestroyForm(ed.oPC, ed.nFormToken);
+                }
+            }
+        }
+    }
     else if (ed.sEvent == "mouseup")
     {
-        if (ed.sControlID == "toggle_appearance")
-            OnSelectAppearance();
-        else if (ed.sControlID == "toggle_equipment")
-            OnSelectEquipment();
-        else if (ed.sControlID == "toggle_colorcategory")
-            OnSelectColorCategory(ed.nIndex);
-        else if (ed.sControlID == "toggle_partcategory")
-            OnSelectPartCategory(ed.nIndex);
-        else if (ed.sControlID == "toggle_partselected")
-            OnSelectPart(ed.nIndex);
+        string sKey = _GetKey(ed.sControlID);
+
+        if (sKey == "part_cat")
+            OnSelectPartCategory(_GetValue(ed.sControlID));
+        else if (sKey == "model_matrix")
+        {  
+            string sValue = _GetValue(ed.sControlID);
+            if (sValue != "")
+                OnSelectPart(sValue);
+        }
+        else if (sKey == "color_cat")
+            OnSelectColorCategory(_GetValue(ed.sControlID));
         else if (ed.sControlID == "button_previous")
             OnPreviousPart();
         else if (ed.sControlID == "button_next")
@@ -1260,7 +1969,9 @@ void NUI_HandleFormEvents()
     }
     else if (ed.sEvent == "watch")
     {
-        if (ed.sControlID == "combo_type_value")
-            OnSelectItemType(JsonGetInt(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
+        Notice("  >> sControlID - " + ed.sControlID);
+        Notice("  >> bind value - " + JsonDump(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
     }
 }
+
+//void main () {}

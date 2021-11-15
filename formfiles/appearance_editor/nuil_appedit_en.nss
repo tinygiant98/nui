@@ -21,8 +21,10 @@ string HEAD     = "Head";
 string NECK     = "Neck";
 string CHEST    = "Chest/Torso";
 string PELVIS   = "Pelvis";
+
 string RIGHT    = "Right";
 string LEFT     = "Left";
+
 string BICEP    = "Bicep";
 string FOREARM  = "Forearm";
 string HAND     = "Hand";
@@ -33,6 +35,28 @@ string BELT     = "Belt";
 string SHOULDER = "Shoulder";
 string HELMET   = "Helmet";
 string ROBE     = "Robe";
+
+string RIGHT_SHOULDER = "Right Shoulder";
+string LEFT_SHOULDER = "Left Shoulder";
+
+string RIGHT_BICEP = "Right Bicep";
+string LEFT_BICEP = "Left Bicep";
+
+string RIGHT_FOREARM = "Right Forearm";
+string LEFT_FOREARM = "Left Forearm";
+
+string RIGHT_HAND = "Right Hand";
+string LEFT_HAND = "Left Hand";
+
+string RIGHT_THIGH = "Right Thigh";
+string LEFT_THIGH = "Left Thigh";
+
+string RIGHT_SHIN = "Right Shin";
+string LEFT_SHIN = "Left Shin";
+
+string RIGHT_FOOT = "Right Foot";
+string LEFT_FOOT = "Left Foot";
+
 
 string SKIN     = "Skin";
 string HAIR     = "Hair";

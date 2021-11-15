@@ -50,6 +50,20 @@ void NUI_InitializeDatabase()
     SqlStep(sql);
 }
 
+sqlquery NUI_GetTOCForms()
+{
+    sQuery = "SELECT DISTINCT json_extract(" + NUI_FORMS + ".json, '$.title') t, " +
+                    "json_extract(" + NUI_FORMS + ".json, '$.id') " +
+             "FROM " + NUI_FORMS + ", json_each(" + NUI_FORMS + ".json, '$') " +
+             "WHERE type = 'object' " +
+                "AND json_extract(" + NUI_FORMS + ".json, '$.user_data.toc') = @toc " +
+             "ORDER BY t ASC;";
+    sql = NUI_PrepareQuery(sQuery);
+    SqlBindInt(sql, "@toc", 1);
+
+    return sql;
+}
+
 json NUI_GetJSONValueByPath(string sFormID, string sControlID, string sPath)
 {
     // Only works for returning arrays and objects, not individual values?

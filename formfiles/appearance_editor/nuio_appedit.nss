@@ -29,9 +29,12 @@ int USE_CAMPAIGN_DATABASE = TRUE;
 // will be used.
 string CAMPAIGN_DATABASE = "";
 
-// Whether the model data is saved into a campaign database or module sqlite database, set this
-// value to the name of the table for all model/appearance data that this form uses.
-string DATABASE_TABLE = "nuif_appedit_model";
+// Whether the model data is saved into a campaign database or module sqlite database, set
+// these values to the tables names to be used for simple/layered models, composite models,
+// and armor/personal appearance models.
+string DATABASE_TABLE_SIMPLE = "nuif_appedit_simple";
+string DATABASE_TABLE_COMPOSITE = "nuif_appedit_composite";
+string DATABASE_TABLE_ARMOR = "nuif_appedit_armor";
 
 // ---------------------------------------------------------------------------------------
 //                                MODEL DATA CONFIGURATION
