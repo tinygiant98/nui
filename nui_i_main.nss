@@ -679,7 +679,7 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
-    if (FALSE)
+    if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION"))
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
         if (sError != "")

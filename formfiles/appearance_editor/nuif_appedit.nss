@@ -50,6 +50,7 @@ string Get2DAListByCriteria(string s2DA, string sReturnColumn,
 json GetLayeredModelData(string sClass = "");
 void UpdateColorSelected();
 sqlquery PrepareQuery(string sQuery);
+void HighlightTarget(int bHighlight = TRUE);
 
 string _GetKey(string sPair)
 {
@@ -331,14 +332,15 @@ void ToggleItemEquippedFlags()
 
 void SetTargetObject(object oTarget)
 {
+    HighlightTarget(FALSE);
     SetProperty("targetObject", JsonString(ObjectToString(oTarget)));
+    HighlightTarget();
 
     ToggleItemEquippedFlags();
     SetIsAppearanceSelected(TRUE);
 
     LoadColorCategoryOptions();
     LoadPartCategoryOptions();
-    //SetSelectedColorCategoryIndex(0);
 }
 
 void HandlePlayerTargeting()
@@ -403,6 +405,9 @@ int GetHasRequiredArmorFeat(object oTarget, string sModel)
 
 json FilterArmorPartIDs(json jPartIDs)
 {
+    Notice("FilterArmorPartIDs :: Enter");
+    Notice(" - jPartIDs - " + JsonDump(jPartIDs));
+
     json jResult = JsonArray();
     int n, nCount = JsonGetLength(jPartIDs);
     for (n = 0; n < nCount; n++)
@@ -412,6 +417,7 @@ json FilterArmorPartIDs(json jPartIDs)
             jResult = JsonArrayInsert(jResult, JsonInt(nID));
     }
 
+    Notice(" - Filtered - " + JsonDump(jResult));
     return jResult;
 }
 
@@ -436,8 +442,13 @@ void BuildModelSelectMatrix(json jPartIDs, int bForce = FALSE)
 
         NUI_CreateForm("");
         {
+            if (GetIsEquipmentSelected() && GetPartCategorySelected() == "chest")
+                jPartIDs = FilterArmorPartIDs(jPartIDs);
+
             int n, nCount = JsonGetLength(jPartIDs);
             float fSpacer = nCount > (7 * nRowMax) ? 0.0 : 12.0;
+
+            Notice(" > fSpacer - " + FloatToString(fSpacer));
 
             NUI_AddRow();
             NUI_AddSpacer();
@@ -445,9 +456,6 @@ void BuildModelSelectMatrix(json jPartIDs, int bForce = FALSE)
 
             if (nCount > 0)
             {
-                if (GetIsEquipmentSelected() && GetPartCategorySelected() == "chest")
-                    jPartIDs = FilterArmorPartIDs(jPartIDs);
-
                 for (n = 0; n < nCount; n++)
                 {
                     json jPartID = JsonArrayGet(jPartIDs, n);
@@ -472,6 +480,9 @@ void BuildModelSelectMatrix(json jPartIDs, int bForce = FALSE)
 
         j = JsonObjectGet(NUI_GetBuildVariable(NUI_BUILD_ROOT), "root");
 
+        //Notice(" > sIndexes - " + sIndexes);
+        //Notice(" > json - " + JsonDump(j,2));
+
         SetProperty(sVarName, j);
         SetProperty(sVarName + ":select", JsonString(sIndexes));
     }
@@ -482,6 +493,14 @@ void BuildModelSelectMatrix(json jPartIDs, int bForce = FALSE)
 
     int nToken = GetFormToken();
     NuiSetGroupLayout(OBJECT_SELF, nToken, "model_matrix", j);
+}
+
+int GetPartIndex(string sPart)
+{
+    if      (sPart == "head") return CREATURE_PART_HEAD;    
+    else if (sPart == "robe") return ITEM_APPR_ARMOR_MODEL_ROBE;
+    else
+        return StringToInt(Get2DAListByCriteria("capart", TWODA_INDEX, "mdlname", sPart));
 }
 
 void LoadParts(string sModel = "", string sPartCategory = "")
@@ -495,12 +514,7 @@ void LoadParts(string sModel = "", string sPartCategory = "")
     int bAppearance = GetIsAppearanceSelected();
     int bEquipment = !bAppearance;
 
-    int nPart;
-
-    if      (sPart == "head") nPart = CREATURE_PART_HEAD;    
-    else if (sPart == "robe") nPart = ITEM_APPR_ARMOR_MODEL_ROBE;
-    else
-        nPart = StringToInt(Get2DAListByCriteria("capart", TWODA_INDEX, "mdlname", sPart));
+    int nPart = GetPartIndex(sPart);
 
     if (sModel == "")
     {
@@ -510,7 +524,8 @@ void LoadParts(string sModel = "", string sPartCategory = "")
         else 
             jPartIDs = GetArmorAndAppearanceModelData(nGender, nRace, nPhenotype, sPart);
         
-        BuildModelSelectMatrix(jPartIDs);
+        // TODO when debug complete, remove TRUE
+        BuildModelSelectMatrix(jPartIDs, TRUE);
     
         if (bAppearance == TRUE)
             SetPartSelected(IntToString(GetCreatureBodyPart(nPart, oPC)), FALSE);
@@ -646,6 +661,31 @@ void open_loader_click()
     NUI_DestroyForm(OBJECT_SELF, nToken);
 }
 
+void HighlightTarget(int bHighlight = TRUE)
+{
+    object oTarget = GetTargetObject();
+
+    if (bHighlight == FALSE)
+    {
+        effect e = GetFirstEffect(oTarget);
+        while (GetIsEffectValid(e))
+        {
+            if (GetEffectTag(e) == "_appedit_highlight")
+                RemoveEffect(oTarget, e);
+            
+            e = GetNextEffect(oTarget);
+        }
+
+        return;
+    }
+
+    effect e = EffectVisualEffect(VFX_DUR_LIGHT_WHITE_20);
+    e = EffectLinkEffects(e, EffectVisualEffect(VFX_DUR_AURA_WHITE));
+    e = ExtraordinaryEffect(e);
+    e = TagEffect(e, "_appedit_highlight");
+    ApplyEffectToObject(DURATION_TYPE_PERMANENT, e, oTarget);
+}
+
 void OnSelectColorCategory(string sControl)
 {
     ToggleItemEquippedFlags();
@@ -687,9 +727,29 @@ void ModifyItemColor(int nColorChannel, int nColorID)
     if (GetDoesNotHaveItemEquipped())
         return;
 
-    int nSlot = 0; //GetSelectedItemTypeIndex() == 0 ? INVENTORY_SLOT_CHEST : INVENTORY_SLOT_HEAD;
+    int nSlot = INVENTORY_SLOT_CHEST;
+    int bPartly, nPart, nIndex;
+    
+    if (GetIsEquipmentSelected() == TRUE)
+    {
+        bPartly = JsonGetInt(NUI_GetBindValue(OBJECT_SELF, GetFormToken(), "per_part_coloring_value"));
+        if (bPartly == TRUE)
+        {
+            nPart = GetPartIndex(GetPartCategorySelected());
+            nIndex = ITEM_APPR_ARMOR_NUM_COLORS + (nPart * ITEM_APPR_ARMOR_NUM_COLORS) + nColorID;
+        }
+        else
+            nIndex = nColorChannel;
+
+        Notice(" > bPartly - " + (bPartly ? "TRUE":"FALSE"));
+        Notice(" > nPart - " + IntToString(nPart) + " (" + GetPartCategorySelected() + ")");
+        Notice(" > nIndex - " + IntToString(nIndex));
+    }
+    else
+        nIndex = nColorChannel;
+
     object oItem = GetItem();
-    object oCopy = CopyItemAndModify(oItem, ITEM_APPR_TYPE_ARMOR_COLOR, nColorChannel, nColorID, TRUE);
+    object oCopy = CopyItemAndModify(oItem, ITEM_APPR_TYPE_ARMOR_COLOR, nIndex, nColorID, TRUE);
 
     DestroyObject(oItem);
     AssignCommand(oPC, ActionEquipItem(oCopy, nSlot));
@@ -760,7 +820,7 @@ void OnSelectColor(json jPayload)
     else if (GetIsEquipmentSelected())
         ModifyItemColor(nChannel, nColorID);
 
-    UpdateColorSelected();
+    DelayCommand(0.04, UpdateColorSelected());
 }
 
 void OnSelectPart(string sPart)
@@ -800,6 +860,7 @@ void OnNextPart()
 
 void form_close()
 {
+    HighlightTarget(FALSE);
     DeleteLocalJson(OBJECT_SELF, PROPERTIES);
 }
 
@@ -1306,7 +1367,7 @@ void CreateColorCategoryTabs()
     NUI_CreateTemplateControl(tb);
     {
         NUI_AddToggleButton();
-            NUI_SetWidth(150.0);
+            NUI_SetWidth(157.0);
             NUI_SetHeight(25.0);
     } NUI_SaveTemplateControl();
 
@@ -1359,7 +1420,19 @@ void CreateColorCategoryTabs()
                     NUI_BindValue("color_cat_value:" + sPointer);
                     //NUI_BindEnabled("color_cat_enabled:" + sPointer);
             }
-        } NUI_SaveForm();
+        } 
+        
+        if (sCategory == "equipment")
+        {
+            NUI_AddRow();
+            NUI_AddSpacer();
+            NUI_AddCheckbox("per_part_coloring");
+                NUI_SetLabel("Per Part Coloring");
+                NUI_BindValue("per_part_coloring_value");
+            NUI_AddSpacer();
+        }
+    
+        NUI_SaveForm();
     }
 }
 
@@ -1557,10 +1630,6 @@ void NUI_HandleFormDefinition()
                 NUI_SetHeight(64.0);
                 NUI_SetLabel("gui_mp_examineu");
                 NUI_SetTooltip("Select Target Object");
-            //NUI_AddCommandButton("setTargetObject");
-            //    //NUI_SetLabel("");
-            //    NUI_SetWidth(50.0);
-            //    NUI_SetHeight(fHeight);
 
         NUI_AddRow();
             NUI_AddLabel("label_item");
@@ -1583,19 +1652,6 @@ void NUI_HandleFormDefinition()
                         NUI_AddSpacer();
                     } NUI_CloseControlGroup();
 
-/*
-                    NUI_AddListbox();
-                        NUI_SetID("list_colorcategory");
-                        NUI_BindRowCount("list_colorcategory_rowcount");
-                        NUI_SetRowHeight(25.0);
-                        NUI_SetHeight(140.0);
-                    {
-                        NUI_AddToggleButton("toggle_colorcategory");
-                            NUI_BindLabel("toggle_colorcategory_label");
-                            NUI_BindValue("toggle_colorcategory_value");
-                    } NUI_CloseListbox();
-*/
-             
                 NUI_AddRow();
                     NUI_AddControlGroup();
                         NUI_SetID("part_category_tab");
@@ -1621,17 +1677,10 @@ void NUI_HandleFormDefinition()
                         NUI_AddCanvas();
                         {
                             NUI_DrawLine(JsonNull());
-                                //NUI_SetPoints(JsonParse("[0.0,0.0,16.0,0.0,16.0,16.0,0.0,16.0,0.0,0.0]"));
-                                
                                 NUI_BindPoints("image_colorsheet_points");
                                 NUI_SetEnabled(TRUE);
-                                //NUI_BindEnabled("image_colorsheet_enabled");
                                 NUI_BindDrawColor("image_colorsheet_color");
-                                //NUI_SetDrawColor(NUI_DefineRGBColor(255, 0, 0));
-                                //NUI_BindLineThickness("image_colorsheet_linethickness");
-                                //NUI_SetFill(FALSE);
                                 NUI_SetLineThickness(2.0);
-                                //NUI_SetFill(TRUE);
                         } NUI_CloseCanvas();
 
                 NUI_AddRow();
@@ -1857,11 +1906,11 @@ void NUI_HandleFormBinds()
 void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
-/*
+
     if (HasListItem(IGNORE_EVENTS, ed.sEvent))
         return;
-*/
-    Notice("** EVENT MARKER - " + ed.sEvent + " **");
+
+    //Notice("** EVENT MARKER - " + ed.sEvent + " **");
 
     if (ed.sEvent == "open")
     {
@@ -1969,8 +2018,8 @@ void NUI_HandleFormEvents()
     }
     else if (ed.sEvent == "watch")
     {
-        Notice("  >> sControlID - " + ed.sControlID);
-        Notice("  >> bind value - " + JsonDump(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
+        //Notice("  >> sControlID - " + ed.sControlID);
+        //Notice("  >> bind value - " + JsonDump(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
     }
 }
 

@@ -136,7 +136,7 @@ void NUI_HandleFormEvents()
             string sFormID = _GetValue(ed.sControlID);
             
             int n = NUI_DisplayForm(OBJECT_SELF, sFormID);
-            NUI_DestroyForm(OBJECT_SELF, ed.nFormToken);
+            //NUI_DestroyForm(OBJECT_SELF, ed.nFormToken);
         }
     }  
 }
