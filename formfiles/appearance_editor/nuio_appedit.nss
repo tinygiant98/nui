@@ -23,7 +23,7 @@
 // module load and the LOAD_MODEL_DATA variable below will have no effect.
 int USE_CAMPAIGN_DATABASE = TRUE;
 
-// If using the campaign database, the model data can be saved to a different database then
+// If using the campaign database, the model data can be saved to a different database than
 // set in nui_i_database.nss.  Set this value to the name of the campaign database to save
 // all model data.  If this value is left blank, the nui system's campaign database setting
 // will be used.
@@ -52,10 +52,6 @@ string DATABASE_TABLE_ARMOR = "nuif_appedit_armor";
 // all model data is saved.
 int LOAD_MODEL_DATA = FALSE;
 
-// The model files are found randomly by resman and may not be in numerical order.  Setting this
-// option to TRUE forces the model number arrays to be sorted numerically.
-int SORT_MODEL_ARRAYS = TRUE;
-
 // This system sources the gender identifiers from the GENDER column in gender.2da.  If you're
 // not using all the genders contains in gender.2da, set this value to a comma-delimited list
 // of genders you are using.  The default value is "m,f" which represents male and female.
@@ -80,16 +76,3 @@ string MODEL_PHENOTYPE = "0,2";
 // are using.  These values need to match the naming scheme for model parts (handl, shinr, etc.).
 // Typically, this will be left as a blank string.
 string MODEL_PARTS = "";
-
-// Some builders may have models that players shouldn't be able to access.  The following filters
-// allow module builders to restrict non-DM PCs from accessing specific models.
-
-// Models can be restriced by filename.  To restrict models by filename, set this value to a comma-
-// delmited list of .mdl filenames without the file extension.
-string MODEL_FILTER_FILE = "";
-
-// Models can be restricted by prefix.  NWN uses a very specific file naming process for .mdl files.
-// To restrict models by prefix, set this value to a comma-delimited list of prefixes.  This
-// must include the entire portion of the filename before the underscore.  For example, if you
-// want to restrict access to all male dwarves with a normal phenotype, you would enter "pmd0".
-string MODEL_FILTER_PREFIX = "";

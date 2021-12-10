@@ -55,6 +55,10 @@ json CreateFormsList()
                 NUI_SetLabel(sTitle);
                 NUI_SetWidth(275.0);
                 NUI_SetHeight(45.0);
+            NUI_AddImageButton("reload:" + sFormID);
+                NUI_SetLabel("gui_mp_nowalkd");
+                NUI_SetHeight(45.0);
+                NUI_SetWidth(45.0);
             NUI_AddSpacer();
         }
     }
@@ -78,6 +82,7 @@ void NUI_HandleFormDefinition()
         NUI_SetTitle("Available Forms");
         NUI_BindGeometry("geometry");
         NUI_SetOrientation(NUI_ORIENTATION_ROWS);
+        NUI_SetResizable(TRUE);
     {
         NUI_AddRow();
         NUI_AddControlGroup();
@@ -98,7 +103,7 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
     json jReturn = JsonNull();
 
     if (sBind == "geometry")
-        jReturn = NUI_DefineRectangle(-1.0, -1.0, 325.0, 300.0);
+        jReturn = NUI_DefineRectangle(-1.0, -1.0, 375.0, 350.0);
 
     if (bSetDefaults == TRUE)
         NUI_DelayBindValue(OBJECT_SELF, nToken, sBind, jReturn);
@@ -136,7 +141,24 @@ void NUI_HandleFormEvents()
             string sFormID = _GetValue(ed.sControlID);
             
             int n = NUI_DisplayForm(OBJECT_SELF, sFormID);
-            //NUI_DestroyForm(OBJECT_SELF, ed.nFormToken);
+        }
+        else if (sKey == "reload")
+        {
+            string sFormID = _GetValue(ed.sControlID);
+            string sFormfile = NUI_GetFormfile(sFormID);    
+
+            Notice(" TOC: HandleFormEvents");
+            Notice("  > sFormID - " + sFormID);
+            Notice("  > sFormfile - " + sFormfile);
+
+            NUI_ExecuteFileFunction(sFormfile, "NUI_HandleFormDefinition");
+            
+            int nToken = NuiFindWindow(OBJECT_SELF, sFormID);
+            if (nToken > 0)
+            {
+                NuiDestroy(OBJECT_SELF, nToken);
+                NUI_DisplayForm(OBJECT_SELF, sFormID);
+            }
         }
     }  
 }

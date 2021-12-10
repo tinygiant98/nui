@@ -60,7 +60,7 @@ struct NUIBindArrayData {
 // Creates a form template with id sID and starts
 // form definition.  Form definition must be terminated
 // with NUI_SaveForm().
-void NUI_CreateForm(string sID);
+void NUI_CreateForm(string sID, string sVersion = "");
 
 // ---< NUI_SaveForm >---
 // Terminates form defintion.
@@ -149,14 +149,14 @@ void NUI_AddTemplateControl(string sID);
 // This function is error resistent.  If the layout requires a row 
 // to be added before a column may be added, the row will be 
 // automatically added before the column is added.
-void NUI_AddColumn();
+void NUI_AddColumn(float fWidth = -1.0);
 
 // ---< NUI_AddRow >---
 // Adds a row to the current form or control group layout.
 // This function is error resistent.  If the layout requires a column 
 // to be added before a row may be added, the column will be 
 // automatically added before the row is added.
-void NUI_AddRow();
+void NUI_AddRow(float fHeight = -1.0);
 
 // ---< NUI_AddSpacer >---
 // Adds a spacer control with id sID.
@@ -649,7 +649,29 @@ void NUI_DeleteBindData(object oPC);
 string NUI_GetStandardBind(object oPC, string sValue);
 void NUI_CreateListbox();
 void NUI_CreateGroup();
-json NUI_CreateCellTemplate(string sElement);
+json NUI_CreateCellTemplate(string sElement, float fDimension = 1.0);
+
+string NUI_GetKey(string sPair)
+{
+    int nIndex;
+
+    if ((nIndex = FindSubString(sPair, ":")) == -1)
+        nIndex = FindSubString(sPair, "=");
+
+    if (nIndex == -1) return sPair;
+    else              return GetSubString(sPair, 0, nIndex);
+}
+
+string NUI_GetValue(string sPair)
+{
+    int nIndex;
+
+    if ((nIndex = FindSubString(sPair, ":")) == -1)
+        nIndex = FindSubString(sPair, "=");
+
+    if (nIndex == -1) return "";
+    else              return GetSubString(sPair, ++nIndex, GetStringLength(sPair));
+}
 
 void NUI_SetCurrentOperation(int nOperation)
 {
@@ -811,7 +833,7 @@ void NUI_NormalizeRunningPath(string sElement)
     string sOrientation = NUI_GetLayoutOrientation();
     string sMode = NUI_GetBuildMode();
     int bMatch, nCount, bLayer = NUI_GetBuildLayer() > 0;
-    
+
     if (sOrientation != "")
     {
         if (sElement == NUI_ELEMENT_CONTROL)
@@ -1479,6 +1501,12 @@ void NUI_SetHeight(float fHeight)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HEIGHT, JsonFloat(fHeight));
 }
 
+void NUI_SetSquare(float fSide)
+{
+    NUI_SetHeight(fSide);
+    NUI_SetWidth(fSide);
+}
+
 void NUI_SetAspectRatio(float fRatio)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ASPECT, JsonFloat(fRatio));
@@ -1650,6 +1678,11 @@ void NUI_SetResref(string sResref)
 {
     // Need special handling
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, JsonString(sResref));
+}
+
+void NUI_BindImage(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGE, NUI_BindVariable(sBind));
 }
 
 void NUI_BindResref(string sBind)
@@ -2043,7 +2076,6 @@ int NUI_DisplayForm(object oPC, string sFormID)
     return -1;
 }
 
-
 void NUI_DestroyForm(object oPC, int nToken)
 {
     NuiDestroy(oPC, nToken);
@@ -2060,7 +2092,7 @@ void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
 
 void NUI_DelayBindValue(object oPC, int nToken, string sBind, json jValue)
 {
-    DelayCommand(0.05, NUI_SetBindValue(oPC, nToken, sBind, jValue));
+    DelayCommand(0.001, NUI_SetBindValue(oPC, nToken, sBind, jValue));
 }
 
 void NUI_SetBindWatch(object oPC, int nToken, string sBind, int bWatch = TRUE)
@@ -2192,7 +2224,7 @@ void NUI_CloseCanvas()
     NUI_DropBuildLayer();
 }
   
-void NUI_CreateForm(string sID)
+void NUI_CreateForm(string sID, string sVersion = "")
 {
     json jRoot = JsonObject();
          jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_CHILDREN, JsonArray());
@@ -2221,6 +2253,14 @@ void NUI_CreateForm(string sID)
     NUI_ResetBuildLayer();
     NUI_ClearBuildVariables();
     NUI_SetBuildVariable(NUI_BUILD_ROOT, j);
+
+    if (sID != "")
+    {
+        if (GetStringLeft(sID, 1) == "_")
+            Notice(" > Defining tab " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
+        else
+            Notice("Defining form " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
+    }
 }
 
 void NUI_SaveForm()
@@ -2329,7 +2369,7 @@ int NUI_GetCellsExistAtDepth(int nDepth)
     return NUI_GetCellDepthPointer(nDepth) != JsonNull();
 }
 
-void NUI_IncrementCellsAtDepth(int nDepth)
+void NUI_IncrementCellsAtDepth(int nDepth, float fDimension = -1.0)
 {
     if (NUI_GetBuildLayer() == 0 && NUI_GetRunningPathSource() == "")
         NUI_ResetRunningPath();
@@ -2357,19 +2397,19 @@ void NUI_IncrementCellsAtDepth(int nDepth)
     NUI_NormalizeRunningPath(sElement);
     NUI_IncrementRunningPath();
 
-    json jTemplate = NUI_CreateCellTemplate(sElement);
+    json jTemplate = NUI_CreateCellTemplate(sElement, fDimension);
     NUI_ApplyPatchToRoot(jTemplate);
 }
 
-void NUI_AddColumn()
+void NUI_AddColumn(float fWidth = -1.0)
 {
-    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_COLUMNS);
+    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_COLUMNS, fWidth);
     NUI_ResetControlWrap();
 }
 
-void NUI_AddRow()
+void NUI_AddRow(float fHeight = -1.0)
 {
-    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_ROWS);
+    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_ROWS, fHeight);
     NUI_ResetControlWrap();
 }
 
@@ -2503,13 +2543,19 @@ void NUI_AddCanvas()
     NUI_AddBuildLayer(NUI_ELEMENT_CANVAS);
 }
 
-json NUI_CreateCellTemplate(string sElement)
+json NUI_CreateCellTemplate(string sElement, float fDimension = -1.0)
 {
     json jTemplate = JsonObject();
          jTemplate = JsonObjectSet(jTemplate, NUI_PROPERTY_CHILDREN, JsonArray());
          jTemplate = JsonObjectSet(jTemplate, NUI_PROPERTY_TYPE, JsonString(sElement));
          jTemplate = JsonObjectSet(jTemplate, NUI_PROPERTY_VISIBLE, jTRUE);
          jTemplate = JsonObjectSet(jTemplate, NUI_PROPERTY_ENABLED, jTRUE);
+
+    if (fDimension > -1.0)
+    {
+        string sProperty = (sElement == NUI_ELEMENT_COLUMN ? NUI_PROPERTY_WIDTH : NUI_PROPERTY_HEIGHT);
+        jTemplate = JsonObjectSet(jTemplate, sProperty, JsonFloat(fDimension));
+    }
 
     return jTemplate;
 }
@@ -2774,14 +2820,19 @@ json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchB
 {
     json jResrefs = JsonArray();
 
-    string sFormfile;
+    string sResref;
     int n = 1;
 
+    while ((sResref = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders)) != "")
+        jResrefs = JsonArrayInsert(jResrefs, JsonString(sResref));
+
+/*
     do {
-        sFormfile = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders);
-        if (sFormfile != "")
-            jResrefs = JsonArrayInsert(jResrefs, JsonString(sFormfile));
-    } while (sFormfile != "");
+        sResref = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders);
+        if (sResref != "")
+            jResrefs = JsonArrayInsert(jResrefs, JsonString(sResref));
+    } while (sResref != "");
+*/
 
     return JsonGetLength(jResrefs) == 0 ? JsonNull() : jResrefs;
 }

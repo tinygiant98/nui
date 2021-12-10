@@ -55,12 +55,6 @@ void NUI_HandleFormDefinition()
             NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
             NUI_SetHeight(140.0);
             NUI_SetPadding(0.0);
-            /*
-            NUI_AddCanvas();
-            {
-                NUI_DrawRectangle(170.0,5.0,2.0,131.0);
-                NUI_DrawRectangle(174.0,100.0,186.0,2.0);
-            } NUI_CloseCanvas();*/
         {
             NUI_AddColumn();
                 NUI_AddTemplateControl("cp_label");
@@ -111,9 +105,25 @@ void NUI_HandleFormDefinition()
                     NUI_SetRGBForegroundColor(176, 209, 34);
         } NUI_CloseControlGroup();
 
-        NUI_AddRow();
+        float fWidth = 60.0;
+        float fHeight = 35.0;
+
+        NUI_AddRow(fHeight);
             NUI_AddSpacer();
-            NUI_AddSpacer();
+                NUI_SetWidth(fWidth);
+                NUI_AddCanvas();
+                {
+                    json jPoints = NUI_GetRectanglePoints(0.0, 0.0, fWidth, fHeight);
+                    NUI_DrawLine(jPoints);
+                        NUI_SetFill(TRUE);
+                        NUI_BindDrawColor("box_color");
+                } NUI_CloseCanvas();
+
+            NUI_AddLabel();
+                NUI_SetValue(JsonString("The quick brown fox jumped over the lazy dog."));
+                NUI_BindForegroundColor("text_color");
+
+            //NUI_AddSpacer();
             NUI_AddCommandButton("command_close");
                 NUI_SetLabel(CLOSE);
                 NUI_SetHeight(35.0);
@@ -148,6 +158,8 @@ void UpdateColors(object oPlayer, int nToken)
            sHex = GetStringRight(sHex, 6);
 
     NuiSetBind(oPlayer, nToken, "hex", JsonString(sHex));
+    NuiSetBind(oPlayer, nToken, "box_color", jColor);
+    NuiSetBind(oPlayer, nToken, "text_color", jColor);
 
     NuiSetBindWatch(oPlayer, nToken, "cp_color", TRUE);
 }

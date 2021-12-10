@@ -78,6 +78,10 @@ string MODEL          = "Model";
 string PREVIOUS       = "Previous";
 string NEXT           = "Next";
 
+string TOP = "Top";
+string MIDDLE = "Middle";
+string BOTTOM = "Bottom";
+
 // The previous and next labels can be too small for some translations. If you want to specify
 // a value for these labels, set it here.  Setting these values to empty strings will result
 // in a label comprised of NEXT + MODEL.
