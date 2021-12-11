@@ -29,8 +29,10 @@ string HEAD     = "Kopf";
 string NECK     = "Nacken";
 string CHEST    = "Brust/Torso";
 string PELVIS   = "Becken";
+
 string RIGHT    = "Rechter";
 string LEFT     = "Linker";
+
 string BICEP    = "Bizeps/Oberarm";
 string FOREARM  = "Unterarm";
 string HAND     = "Hand";
@@ -41,6 +43,27 @@ string BELT     = "Gürtel";
 string SHOULDER = "Schulter";
 string HELMET   = "Helm";
 string ROBE     = "Robe";
+
+tring RIGHT_SHOULDER = "Rechte Schulter";
+string LEFT_SHOULDER = "Linke Schulter";
+
+string RIGHT_BICEP = "Rechter Bizeps";
+string LEFT_BICEP = "Linker Bizeps";
+
+string RIGHT_FOREARM = "Rechter Unterarm";
+string LEFT_FOREARM = "Linker Unterarm";
+
+string RIGHT_HAND = "Rechte Hand";
+string LEFT_HAND = "Linke Hand";
+
+string RIGHT_THIGH = "Rechter Oberschenkel";
+string LEFT_THIGH = "Linker Oberschenkel";
+
+string RIGHT_SHIN = "Rechter Unterschenkel";
+string LEFT_SHIN = "Linker Unterschenkel";
+
+string RIGHT_FOOT = "Rechter Fuss";
+string LEFT_FOOT = "Linker Fuss";
 
 string SKIN     = "Haut";
 string HAIR     = "Haar";
@@ -61,6 +84,10 @@ string OUTFITS        = "Kleidungsstück";
 string MODEL          = "Modell";
 string PREVIOUS       = "Zurück";
 string NEXT           = "Weiter";
+
+string TOP = "Oben";
+string MIDDLE = "Mitte";
+string BOTTOM = "Unten";
 
 // The previous and next labels can be too small for some translations. If you want to specify
 // a value for these labels, set it here.  Setting these values to empty strings will result
