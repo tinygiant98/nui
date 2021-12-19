@@ -16,7 +16,7 @@
 #include "util_i_csvlists"
 #include "util_i_debug"
 
-const string VERSION = "1.1.0";
+const string VERSION = "1.1.1";
 const string PROPERTIES = "APPEARANCE_EDITOR_PROPERTIES";
 const string FORM_ID = "appearance_editor";
 
@@ -177,32 +177,6 @@ void   SetColorSheetResref(string sResref)
     SetProperty("colorSheetResref", JsonString(sResref));
     UpdateBinds("image_colorsheet_resref");
 }
-
-/*
-json GetOriginalAppearance() { return GetProperty("originalAppearance"); }
-void SetOriginalAppearance(string sPartCategory, string sPart)
-{
-    string sProperty =  (GetIsAppearanceSelected() ? "appearance" : "equipment");
-           sProperty += ":" + sPartCategory;
-
-    json j = GetOriginalAppearance();
-    if (j == JsonNull())
-        j = JsonObject();
-
-    j = JsonObjectSet(j, sProperty, JsonString(sPart));
-    SetProperty("originalAppearance", j);
-}
-*/
-
-/*
-int  GetHasItemEquipped()         { return JsonGetInt(GetProperty("hasItemEquipped")); }
-int  GetDoesNotHaveItemEquipped() { return !JsonGetInt(GetProperty("hasItemEquipped")); }
-void SetHasItemEquipped(int bEquipped)
-{
-    SetProperty("hasItemEquipped", JsonInt(bEquipped));
-    UpdateBinds("label_item_visible");
-}
-*/
 
 string GetGroupOptions(string sFormID)
 {
@@ -569,8 +543,6 @@ void SetLinkGroupEnabled(int bEnabled = TRUE)
 
 void DisableItemIcons()
 {
-
-
     int n;
     for (n = 0; n < 3; n++)
         NuiSetBind(OBJECT_SELF, GetFormToken(), "item_icon_enabled:" + IntToString(n), jFALSE);
@@ -615,9 +587,6 @@ int UpdateItemIcons()
     int n, nCount = CountList(sIcons), nToken = GetFormToken();
     for (n = 0; n < nCount; n++)
     {
-        if (FALSE)
-            Notice("Setting icon for layer " + IntToString(n) + " to " + GetListItem(sIcons, n));
-
         NuiSetBind(OBJECT_SELF, nToken, "item_icon:" + IntToString(n), JsonString(GetListItem(sIcons, n)));
         NuiSetBind(OBJECT_SELF, nToken, "item_icon_enabled:" + IntToString(n), jTRUE);
     }
@@ -688,7 +657,6 @@ void UpdateTitleBlock()
         if (nStatus == STATUS_EQUIPPED)
         {
             string sSlot;
-            //sBRValue = "Equipped";
             int nSlot = GetTargetObjectSlot();
             if      (nSlot == INVENTORY_SLOT_HEAD) sSlot = "Head";
             else if (nSlot == INVENTORY_SLOT_CHEST) sSlot = "Chest";
@@ -706,13 +674,11 @@ void UpdateTitleBlock()
             else if (nSlot == INVENTORY_SLOT_BOLTS) sSlot = "Bolts";
 
             sBRValue = sSlot;
-            //sBRValue += " (" + sSlot + ")";
         }
         else if (nStatus == STATUS_INVENTORY)
             sBRValue = "Inventory";
         else if (nStatus == STATUS_LOOSE)
         {
-            //sBRValue = "Loose";
             vector vPosition = GetTargetObjectPosition();
 
             string sPosition = "[" + FloatToString(vPosition.x, 2, 1) + ", " +
@@ -720,7 +686,6 @@ void UpdateTitleBlock()
                                      FloatToString(vPosition.z, 2, 1) + "]";
 
             sBRValue = sPosition;
-            //sBRValue += " " + sPosition;
         }
     }
 
@@ -807,20 +772,6 @@ void PopulateTargetData(object oTarget, vector vPosition)
             else
                 ToggleFormMode("weapons");
         }
-    }
-
-    if (FALSE)
-    {
-        int nStatus = GetTargetObjectStatus();
-        string sStatus = (nStatus == STATUS_EQUIPPED ? "Equipped" :
-                          nStatus == STATUS_INVENTORY ? "Inventory" :
-                          nStatus == STATUS_LOOSE ? "Loose" :
-                          nStatus == STATUS_CREATURE ? "Creature" : "Unknown");
-
-        Notice("Target Object Selected :: " + GetName(GetTargetObject()));
-        Notice(" > Status - " + sStatus);
-        Notice(" > Slot - " + IntToString(GetTargetObjectSlot()));
-        Notice(" > Owner - " + GetName(GetTargetObjectOwner()));
     }
 
     int nStatus = GetTargetObjectStatus();
@@ -1163,15 +1114,6 @@ void UpdateItemIndicators(int bMute = FALSE)
 
 void ToggleFormMode(string sType, int bForce = FALSE)
 {
-/*
-    int nMode = GetFormMode();
-    int bChange = (sType == "equipment" && nMode != MODE_ARMOR) ||
-                  (sType == "appearance" && nMode != MODE_APPEARANCE) ||
-                  (sType == "weapons" && nMode != MODE_ITEMS);
-
-    if (bChange == FALSE && bForce == FALSE)
-        return;
-*/
     int nMode = sType == "appearance" ? MODE_APPEARANCE :
                 sType == "equipment" ?  MODE_ARMOR :
                                         MODE_ITEMS;
@@ -1203,28 +1145,6 @@ void ToggleFormMode(string sType, int bForce = FALSE)
 
         LoadItemShapes();
         UpdateItemIndicators();
-
-        if (FALSE)
-        {
-            object oTarget = GetTargetObject();
-            int nShapeT = GetItemAppearance(oTarget, ITEM_APPR_TYPE_WEAPON_MODEL, ITEM_APPR_WEAPON_MODEL_TOP);
-            int nShapeM = GetItemAppearance(oTarget, ITEM_APPR_TYPE_WEAPON_MODEL, ITEM_APPR_WEAPON_MODEL_MIDDLE);
-            int nShapeB = GetItemAppearance(oTarget, ITEM_APPR_TYPE_WEAPON_MODEL, ITEM_APPR_WEAPON_MODEL_BOTTOM);
-
-            int nColorT = GetItemAppearance(oTarget, ITEM_APPR_TYPE_WEAPON_COLOR, ITEM_APPR_WEAPON_COLOR_TOP);
-            int nColorM = GetItemAppearance(oTarget, ITEM_APPR_TYPE_WEAPON_COLOR, ITEM_APPR_WEAPON_COLOR_MIDDLE);
-            int nColorB = GetItemAppearance(oTarget, ITEM_APPR_TYPE_WEAPON_COLOR, ITEM_APPR_WEAPON_COLOR_BOTTOM);
-
-            int nType = GetBaseItemType(oTarget);
-            string sClass = Get2DAString("baseitems", "itemclass", nType);
-
-            Notice(" >> ITEM DATA <<");
-            Notice("   > object - " + GetName(oTarget));
-            Notice("   > class - " + sClass);
-            Notice("   > Top - (Shape) " + IntToString(nShapeT) + " | (color) " + IntToString(nColorT));
-            Notice("   > Middle - (Shape) " + IntToString(nShapeM) + " | (color) " + IntToString(nColorM));
-            Notice("   > Bottom - (Shape) " + IntToString(nShapeB) + " | (color) " + IntToString(nColorB));
-        }
     }
 }
 
@@ -1472,21 +1392,16 @@ void EnablePerPartCheckbox(int bEnabled = TRUE)
 void DisablePerPartCheckbox()
 {
     EnablePerPartCheckbox(FALSE);
-    //SetPerPartCheckboxValue(TRUE);
-    //NUI_SetBindValue(OBJECT_SELF, GetFormToken(), "per_part_checkbox_enabled", jFALSE);
 }
 
 void DisablePerPartIndicators(string sType = "all")
 {
-    string sColorCategoryOptions = GetColorCategoryOptions();
-    string sPartCategoryOptions = GetPartCategoryOptions();
     string sOptions;
-
     if (sType == "all" || sType == "color_categories")
-        sOptions = MergeLists(sOptions, sColorCategoryOptions);
+        sOptions = MergeLists(sOptions, GetColorCategoryOptions());
 
     if (sType == "all" || sType == "part_categories")
-        sOptions = MergeLists(sOptions, sPartCategoryOptions);
+        sOptions = MergeLists(sOptions, GetPartCategoryOptions());
 
     int n, nOptions = CountList(sOptions);
     int nToken = GetFormToken();
@@ -1559,8 +1474,6 @@ int GetPerPartColor()
 
 void DeletePerPartColor(string sType, string sControl = "")
 {
-    Notice("DeletePerPartColor :: sType - " + sType + " | sControl - " + sControl);
-
     string sColorCategory = GetColorCategorySelected();
     string sPartCategory = GetPartCategorySelected();
 
@@ -1569,16 +1482,11 @@ void DeletePerPartColor(string sType, string sControl = "")
     else if (sType == "color_cat" && sControl != "")
         sColorCategory = sControl;
 
-    Notice(" > sColorCategory - " + sColorCategory);
-    Notice(" > sPartCategory - " + sPartCategory);
-
     object oTarget = GetTargetObject();
 
     json jProperties = GetLocalJson(oTarget, PROPERTIES);
     if (jProperties == JsonNull())
         return;
-
-    Notice(" > jProperties - " + JsonDump(jProperties));
 
     json jParts = JsonObjectGet(jProperties, sPartCategory);
     if (jParts == JsonNull())
@@ -1587,13 +1495,11 @@ void DeletePerPartColor(string sType, string sControl = "")
     if (sType == "part_cat")
     {
         json jColors = JsonObjectKeys(jParts);
-        Notice(" > jColor - " + JsonDump(jColors));
-
         int n, nKeys = JsonGetLength(jColors);
+
         for (n = 0; n < nKeys; n++)
         {
             string sKey = JsonGetString(JsonArrayGet(jColors, n));
-            Notice(" > sKey - " + sKey);
             ModifyArmorColor(StringToInt(sKey), 255, sPartCategory);
         }
 
@@ -1671,16 +1577,6 @@ void ModifyItemShape()
 
     string sPositions = "b,m,t";
 
-    if (FALSE)
-    {
-        Notice("ModifyItemShape :: Enter");
-        Notice(" > oTarget - " + GetName(oTarget));
-        Notice(" > nShape - " + IntToString(nShape));
-        Notice(" > nColor - " + IntToString(nColor));
-        Notice(" > nLayer - " + IntToString(nLayer));
-        Notice(" > nModelType - " + IntToString(nModelType));
-    }
-
     if (nModelType == 0 || nModelType == 1)
         oTarget = ModifyAndDestroyItem(oTarget, ITEM_APPR_TYPE_SIMPLE_MODEL, -1, nShape);
     else if (nModelType == 2)
@@ -1697,11 +1593,6 @@ void ModifyItemShape()
 
 void ModifyArmorColor(int nColorChannel, int nColorID, string sPartCategory = "")
 {
-    Notice("ModifyArmorColor :: Enter");
-    Notice(" > nColorChannel - " + IntToString(nColorChannel));
-    Notice(" > nColorID - " + IntToString(nColorID));
-    Notice(" > sPartCategory - " + sPartCategory);
-
     object oTarget = GetTargetObject();
     int bPerPart = sPartCategory != "" || GetPerPartCheckboxValue();
 
@@ -1713,11 +1604,7 @@ void ModifyArmorColor(int nColorChannel, int nColorID, string sPartCategory = ""
         else
             nPart = GetPartIndex(sPartCategory);
 
-        Notice(" > nPart - " + IntToString(nPart));
-
         nIndex = ITEM_APPR_ARMOR_NUM_COLORS + (nPart * ITEM_APPR_ARMOR_NUM_COLORS) + nColorChannel;
-
-        Notice(" > nIndex - " + IntToString(nIndex));
     }
     else if (nMode == MODE_ITEMS)
         nIndex = StringToInt(GetPartCategorySelected());
@@ -1728,8 +1615,8 @@ void ModifyArmorColor(int nColorChannel, int nColorID, string sPartCategory = ""
     if (GetTargetObjectStatus() == STATUS_EQUIPPED)
         AssignCommand(GetTargetObjectOwner(), ActionEquipItem(oTarget, GetTargetObjectSlot()));
 
-    if (bPerPart == TRUE) // && sPartCategory == "")   
-    { // TODO
+    if (bPerPart == TRUE)
+    {
         SetPerPartColorVariable(oTarget, nColorID, nColorChannel, sPartCategory);
         EnablePerPartIndicator(IntToString(nColorChannel), nColorID != 255);
     }
@@ -1858,36 +1745,12 @@ void OnNextColor()
 
 void OnPreviousPart()
 {
-/*
-    string sParts = GetPartOptions();
-    string sPart = GetPartSelected();
-    int nIndex = FindListItem(sParts, sPart);
-
-    if (nIndex <= 0)
-        nIndex = CountList(sParts) - 1;
-    else
-        nIndex -= 1;
-
-    sPart = GetListItem(sParts, nIndex);
-*/
     string sPart = GetMatrixNavigationIndex(GetPartOptions(), GetPartSelected(), FALSE);
     OnSelectPart(sPart);
 }
 
 void OnNextPart()
 {
-/*
-    string sParts = GetPartOptions();
-    string sPart = GetPartSelected();
-    int nIndex = FindListItem(sParts, sPart);
-
-    if (nIndex >= CountList(sParts) - 1)
-        nIndex = 0;
-    else
-        nIndex += 1;
-
-    sPart = GetListItem(sParts, nIndex);
-*/
     string sPart = GetMatrixNavigationIndex(GetPartOptions(), GetPartSelected(), TRUE);
     OnSelectPart(sPart);
 }
@@ -1964,13 +1827,6 @@ void AddModelToDatabase(int nType, json jModel, string sCategory = "")
                                                     "'" + IntToString(nShape) + "'," +
                                                     "'" + IntToString(nColor) + "'," +
                                                     "'" + sPrevious + "')";
-
-            if (FALSE)
-            {
-                string s = " | ";
-                string sReport = sClass + s + sPosition + s + IntToString(nShape) + s + IntToString(nColor) + s + sPrevious;
-                Notice(sReport);
-            }
         }
 
         sQuery = "INSERT OR REPLACE INTO " + DATABASE_TABLE_COMPOSITE + 
@@ -3259,19 +3115,6 @@ void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
 
-/*
-    if (HasListItem(IGNORE_EVENTS, ed.sEvent))
-        return;
-*/
-
-    //Notice("** EVENT MARKER - " + ed.sEvent + " **");
-    //Notice(" > sControlID - " + ed.sControlID);
-
-    if (ed.sEvent == "open")
-    {
-
-    }
-
     if (ed.sFormID == "appearance_editor_loader")
     {
         if (ed.sEvent == "click")
@@ -3349,32 +3192,20 @@ void NUI_HandleFormEvents()
                 }
             }
         }
-        else if (ed.sEvent == "watch")
-        {
-            Notice("  >> sControlID - " + ed.sControlID);
-            Notice("  >> bind value - " + JsonDump(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
-        }
     }
     else if (ed.sEvent == "mouseup")
     {
         string sKey = NUI_GetKey(ed.sControlID);
-
-        Notice(" > sControlID - " + ed.sControlID);
 
         if (sKey == "part_cat" || sKey == "color_cat")
         {
             string sValue = NUI_GetValue(ed.sControlID);
             if (GetIndicatorStatus(sValue) == TRUE)
             {
-                Notice(" > sKey - " + sKey);
-                Notice(" > sValue - " + sValue);
-
                 json jX = JsonObjectGet(JsonObjectGet(ed.jPayload, "mouse_pos"), "x");
                 if (JsonGetFloat(jX) <= 20.0)
                     DeletePerPartColor(sKey, sValue);
             }
-
-            Notice(" -- PROPERTIES -- " + JsonDump(GetLocalJson(GetTargetObject(), PROPERTIES)));
 
             if (sKey == "part_cat")
                 OnSelectPartCategory(NUI_GetValue(ed.sControlID));
@@ -3410,11 +3241,4 @@ void NUI_HandleFormEvents()
         else if (ed.sControlID == "link_item_models")
             OnLinkItemModels();
     }
-    else if (ed.sEvent == "watch")
-    {
-        Notice("  >> sControlID - " + ed.sControlID);
-        Notice("  >> bind value - " + JsonDump(NuiGetBind(ed.oPC, ed.nFormToken, ed.sControlID)));
-    }
 }
-
-//void main () {}

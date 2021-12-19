@@ -704,7 +704,7 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION"))
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
-        if (sError != "")
+        if (sError != "" && FindSubString(sError, "Chunk(1)") == -1)
         {
             Notice("sChunk - " + sChunk);
             Error(sError);
@@ -2083,10 +2083,6 @@ void NUI_DestroyForm(object oPC, int nToken)
 
 void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
 {
-    //Notice(HexColorString(" ** SETTING BIND VALUE **", COLOR_CYAN) +
-    //    "\n  > " + HexColorString(sBind, COLOR_GREEN_LIGHT) + " || " + HexColorString(JsonDump(jValue), COLOR_BLUE_LIGHT));
-
-    //NuiSetBindWatch(oPC, nToken, sBind, TRUE);
     NuiSetBind(oPC, nToken, sBind, jValue);
 }
 
@@ -2143,17 +2139,6 @@ void NUI_AddCheckbox(string sID = "")
 void NUI_AddImage(string sID = "")
 {
     NUI_CreateControl(NUI_ELEMENT_IMAGE, sID);
-}
-
-//TODO
-void NUI_AddImageGrid()
-{
-
-}
-
-void NUI_SetImageGridResrefs(json jResrefs)
-{
-    //TODO
 }
 
 void NUI_AddCombobox(string sID = "")
@@ -2825,14 +2810,6 @@ json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchB
 
     while ((sResref = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders)) != "")
         jResrefs = JsonArrayInsert(jResrefs, JsonString(sResref));
-
-/*
-    do {
-        sResref = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders);
-        if (sResref != "")
-            jResrefs = JsonArrayInsert(jResrefs, JsonString(sResref));
-    } while (sResref != "");
-*/
 
     return JsonGetLength(jResrefs) == 0 ? JsonNull() : jResrefs;
 }
