@@ -1237,8 +1237,8 @@ void NUI_IncrementRunningPath()
 
 void NUI_DropRunningPath(int nCount = 2)
 {
-    string sSource = NUI_GetRunningPathSource();
-    string sPath = CopyListItem(sSource, sPath, 0, CountList(sSource) - nCount);
+    string sPath, sSource = NUI_GetRunningPathSource();
+    sPath = CopyListItem(sSource, sPath, 0, CountList(sSource) - nCount);
 
     NUI_SetRunningPathSource(sPath);    
 }
