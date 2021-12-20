@@ -22,6 +22,27 @@ First things first.  Thanks to niv and all the great people at Beamdog for conti
 
 There are multiple configuration options in `nui_i_config.nss`.  If you are unsure of what they mean or how they are used, leave them alone.  The default configuration file is designed to ensure all standard formfiles will run correctly without compilation.
 
+The NUI function `NUI_Initialize()` must be run somewhere during your module's `OnModuleLoad` event.  It can be as simple as this:
+
+```c
+#include "nui_i_main"
+
+void main()
+{
+    NUI_Initialize();
+}
+```
+
+Additionally, you must integrate the NUI system into your module's NUI event handler, if you have one.  If you don't already have one, this system will set it up for you automatically.  If you do already have one, go to the configuration file `nui_i_config`, find the `NUI_SetEventHandler()` function, and comment out (or change) the line that assigns the event handler.
+
+If you already have an NUI event handler, you must `#include "nui_i_main"` and add this line to it somewhere:
+
+```c
+    NUI_RunEventHandler();
+```
+
+That's it!  The basic system should now run.
+
 ## Known Bugs/Issues
 The following issues are limitations of the NUI implementation and not causes by code in this repo.  Feel free to add any bugs you find in the issues section of this repo and they can be tested to determine if they're caused by this repo or by the game's implementation.
 
