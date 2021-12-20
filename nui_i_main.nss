@@ -56,6 +56,12 @@ struct NUIBindArrayData {
 //     Form Definition, Controls, Custom JSON Structures, Drawing Elements
 // -----------------------------------------------------------------------------
 
+// ---< NUI_Initialize >---
+// Should be called from the module's OnModuleLoad event
+// to initialize the system's database and load any
+// available formfiles.
+void NUI_Initialize();
+
 // ---< NUI_CreateForm >---
 // Creates a form template with id sID and starts
 // form definition.  Form definition must be terminated
@@ -71,18 +77,14 @@ void NUI_SaveForm();
 // bound controls.
 int NUI_DisplayForm(object oPC, string sFormID);
 
+// ---< NUI_DestroyForm >---
+// Destroys the form identified by nToken for oPC, if it's currently open.
+// No events are run by this system or triggered by NUI.
+void NUI_DestroyForm(object oPC, int nToken);
+
 // ---< NUI_DefinePoint >---
 // Creates a json object containing a single set of coordinates.
 json NUI_DefinePoint(float x, float y);
-
-// ---< NUI_GetLinePoints >---
-// Creates a json array of coordinates required to draw a line with
-// NUI_DrawLine().  The line is defined by endpoints (x1, y1) and (x2, y2)
-json NUI_GetLinePoints(float x1, float y1, float x2, float y2);
-
-// ---< NUI_AddLinePoint >---
-// Adds a single endpoint (x, y) to an existing set of line coordinates jPoints
-json NUI_AddLinePoint(json jPoints, float x, float y);
 
 // ---< NUI_DefineRGBColor >---
 // Creates a json object containing elements defining an RGB color.
@@ -99,6 +101,15 @@ json NUI_DefineHexColor(int nColor);
 // ---< NUI_DefineRandomRGBColor >---
 // Creates a json object containing elements definine a randome RGB color.
 json NUI_DefineRandomRGBColor();
+
+// ---< NUI_GetLinePoints >---
+// Creates a json array of coordinates required to draw a line with
+// NUI_DrawLine().  The line is defined by endpoints (x1, y1) and (x2, y2)
+json NUI_GetLinePoints(float x1, float y1, float x2, float y2);
+
+// ---< NUI_AddLinePoint >---
+// Adds a single endpoint (x, y) to an existing set of line coordinates jPoints
+json NUI_AddLinePoint(json jPoints, float x, float y);
 
 // ---< NUI_DefineRectangle >---
 // Creates a json object containing elements defining the origin (x, y),
@@ -121,6 +132,12 @@ json NUI_GetDefinedRectanglePoints(json jRectangle);
 // Creates a json object containing elements defining a rectangle
 // surrounding a circle of center (x, y) and radius r.
 json NUI_DefineCircle(float x, float y, float r);
+
+// ---< NUI_GetTrianglePoints >---
+// Creates a json array or coordinated required to draw triangles
+// with NUI_DrawLine().  The triangle is defined by center 
+// point x, y, height h and base b.
+json NUI_GetTrianglePoints(float x, float y, float h, float b);
 
 // ---< NUI_CreateTemplateControl >---
 // ** ADVANCED USAGE **
@@ -194,8 +211,26 @@ void NUI_AddImage(string sID = "");
 // Adds a combobox (dropdown) control with id sID.
 void NUI_AddCombobox(string sID = "");
 
-// TODO
+// ---< NUI_SetElements >---
+// Statically sets the current control's elements property
+// to jElements.
+void NUI_SetElements(json jElements);
+
+// ---< NUI_BindElements >---
+// Dynamically binds the current control's elements property
+// to sBind.
+void NUI_BindElements(string sBind);
+
+// ---< NUI_AddComboboxEntry >---
+// Adds a combobox entry with displayed value sEntry and
+// index nValue.  If nValue is not passed, sEntry will be
+// added as the last entry.
 void NUI_AddComboboxEntry(string sEntry, int nValue = -1);
+
+// ---< NUI_AddComboboxEntryList >---
+// Adds a CSV list of comobox entries to the current control.
+// nStart is the index to insert the list.  If nStart is not
+// passed, all values will be added to the end of the list.
 void NUI_AddComboboxEntryList(string sEntries, int nStart = -1);
 
 // ---< NUI_AddFloatSlider >---
@@ -318,6 +353,12 @@ void NUI_DrawCircle(float x, float y, float r);
 // Draws a circle on a previously defined canvas.  This function accepts a 
 // json structure previously defined by NUI_DefineCircle() or NUI_DefineRectangle().
 void NUI_DrawDefinedCircle(json jCircle);
+
+// ---< NUI_DrawTriangle >---
+// ** ADVANCED USAGE **
+// Draws a triangle on a previously defined canvas.  This function accepts
+// center point x, y and height h, base b.
+void NUI_DrawTriangle(float x, float y, float h, float b);
 
 // ---< NUI_DrawText >---
 // ** ADVANCED USAGE **
@@ -449,191 +490,502 @@ void NUI_SetWidth(float fWidth);
 // Statically sets a control's height to fHeight (pixels).
 void NUI_SetHeight(float fHeight);
 
+// ---< NUI_SetSquare >---
+// Convenience function to set both the control height and
+// width to fHeight.
+void NUI_SetSquare(float fSide);
+
 // ---< NUI_SetAspectRatio >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the controls aspect ratio to fRatio, defined
+// as x/y.  Do not use this to set the aspect ratio for images.
+void NUI_SetAspectRatio(float fRatio);
 
 // ---< NUI_SetImageAspect >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the aspect ratio for an image to one of the
+// following options:
+//
+// NUI_ASPECT_FIT
+// NUI_ASPECT_FILL
+// NUI_ASPECT_FIT100
+// NUI_ASPECT_EXACT
+// NUI_ASPECT_EXACTSCALED
+// NUI_ASPECT_STRETCH
+void NUI_SetImageAspect(int nAspect);
 
 // ---< NUI_SetImageHorizontalAlignment >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets an image's horizontal alignment to one of the
+// following options:
+//
+// NUI_HALIGN_CENTER
+// NUI_HALIGN_LEFT
+// NUI_HALIGN_RIGHT
+void NUI_SetImageHorizontalAlignment(int nHAlign);
 
 // ---< NUI_SetImageVerticalAlignment >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets an image's vertical alignment to one of the
+// following options:
+//
+// NUI_VALIGN_MIDDLE
+// NUI_VALIGN_TOP
+// NUI_VALIGN_BOTTOM
+void NUI_SetImageVerticalAlignment(int nVAlign);
 
 // ---< NUI_SetMargin >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's margin to fMargin.
+// Margin determines the distance between controls.
+void NUI_SetMargin(float fMargin);
 
 // ---< NUI_SetPadding >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's padding to fPadding.
+// Padding determines the distances between internal elements
+// of a control and its border.
+void NUI_SetPadding(float fPadding);
 
 // ---< NUI_SetID >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's ID to sID.  If set
+// while the control was added, this function does not need
+// to be called.  Controls without an ID will not generate 
+// NUI events.
+void NUI_SetID(string sID);
 
 // ---< NUI_SetLabel >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's label property to
+// sLabel.  Can be used to set the label for label controls,
+// the static value displayed in a static textbox, or to
+// set the "label" property on any other control that uses it.
+void NUI_SetLabel(string sLabel);
 
 // ---< NUI_BindLabel >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's label property to
+// sBind.  Can be used to bind the label for label controls,
+// the static value displayed in a static textbox, or to
+// bind the "label" property on any other control that uses it.
+void NUI_BindLabel(string sBind);
 
 // ---< NUI_SetEnabled >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's enabled property to
+// bEnabled.  All controls are enabled by default.
+void NUI_SetEnabled(int bEnabled = TRUE);
 
 // ---< NUI_BindEnabled >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's enabled property
+// to sBind.  All controls are enabled by default.  Binding 
+// a control's enabled property will change the control's 
+// default value to disabled/FALSE.
+void NUI_BindEnabled(string sBind);
 
 // ---< NUI_SetVisible >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's visible property to 
+// bVisible.  All controls are visible by default.  Setting 
+// a control to invisible does not collapse the control.
+// Invisible controls will be displayed as blank space.
+void NUI_SetVisible(int bVisible = TRUE);
 
 // ---< NUI_BindVisible >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's visible property to 
+// sBind.  All controls are visible by default.
+void NUI_BindVisible(string sBind);
 
 // ---< NUI_SetTooltip >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically set the current control's tooltip property to
+// sTooltip.  Tooltips are not displayed on disabled or
+// invisible controls.
+void NUI_SetTooltip(string sTooltip);
 
 // ---< NUI_BindTooltip >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's tooltip property to
+// sBind.  Tooltips are not displayed on disabled or
+// invisible controls.
+void NUI_BindTooltip(string sBind);
 
 // ---< NUI_SetRGBForegroundColor >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's foreground/text color
+// to an RGB color defined by r, g, b, a.
+void NUI_SetRGBForegroundColor(int r, int g, int b, int a = 255);
 
 // ---< NUI_SetDefinedForegroundColor >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's foreground/text color
+// to jColor, which can be defined by NUI_DefineRGBColor(),
+// NUI_DefineHSVColor(), NUI_DefineHexColor() or
+// NUI_DefineRandomRGBColor().
+void NUI_SetDefinedForegroundColor(json jColor);
 
 // ---< NUI_BindForegroundColor >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's foreground/text color
+// to sBind.
+void NUI_BindForegroundColor(string sBind);
 
-// ---< NUI_SetRGBForegroundColor >---
-// Dynamically binds the form's resizable property to sBind.
-
-// ---< NUI_SetDefinedForegroundColor >---
-// Dynamically binds the form's resizable property to sBind.
-
-// ---< NUI_BindForegroundColor >---
-// Dynamically binds the form's resizable property to sBind.
+// ---< NUI_SetColor >---
+// Statically sets the current control's color property to
+// jColor, which can be defined by NUI_DefineRGBColor(),
+// NUI_DefineHSVColor(), NUI_DefineHexColor() or
+// NUI_DefineRandomRGBColor().
+void NUI_SetDefinedColor(json jColor);
 
 // ---< NUI_SetRGBColor >---
-// Dynamically binds the form's resizable property to sBind.
-
-// ---< NUI_SetDefinedColor >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's color property to
+// an rgb color defined by r, g, b, a.
+void NUI_SetRGBColor(int r, int g, int b, int a = 255);
 
 // ---< NUI_BindColor >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's color property
+// to sBind.
+void NUI_BindColor(string sBind);
 
 // ---< NUI_SetHorizontalAlignment >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically set the current control's horizontal alignment
+// property to one of the following values:
+//
+// NUI_HALIGN_CENTER
+// NUI_HALIGN_LEFT
+// NUI_HALIGN_RIGHT
+void NUI_SetHorizontalAlignment(int nAlignment);
 
 // ---< NUI_BindHorizontalAlignment >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically bind the current control's horizontal
+// alignment property to sBind.
+void NUI_BindHorizontalAlignment(string sBind);
 
 // ---< NUI_SetVerticalAlignment >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically set the current control's vertical alignment
+// property to one of the following values:
+//
+// NUI_VALIGN_MIDDLE
+// NUI_VALIGN_TOP
+// NUI_VALIGN_BOTTOM
+void NUI_SetVerticalAlignment(int nAlignment);
 
 // ---< NUI_BindVerticalAlignment >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically bind the current control's vertical
+// alignment property to sBind.
+void NUI_BindVerticalAlignment(string sBind);
 
 // ---< NUI_SetResref >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's resref property
+// to sResref.
+void NUI_SetResref(string sResref);
 
 // ---< NUI_BindResref >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's resref property
+// to sBind.
+void NUI_BindResref(string sBind);
 
 // ---< NUI_SetStatic >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's static property
+// to bStatic.  If the current control is a textbox, the
+// textbo will not be editable.
+void NUI_SetStatic(int bStatic = TRUE);
 
 // ---< NUI_SetPlaceholder >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's placeholder property
+// to sPlaceholder.
+void NUI_SetPlaceholder(string sPlaceholder = "");
 
 // ---< NUI_BindPlaceholder >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's xxxxxx property
+// to sBind.
+void NUI_BindPlaceholder(string sBind);
 
 // ---< NUI_SetMaxLength >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's maxlength property
+// to nLength.
+void NUI_SetMaxLength(int nLength = 50);
 
 // ---< NUI_SetMultiline >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's multiline property
+// to bMultiline.
+void NUI_SetMultiline(int bMultiline = TRUE);
 
 // ---< NUI_SetRowCount >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's rowcount property
+// to nRowCount.
+void NUI_SetRowCount(int nRowCount);
 
 // ---< NUI_BindRowCount >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's rowcount property
+// to sBind.
+void NUI_BindRowCount(string sBind);
 
 // ---< NUI_SetRowHeight >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's rowheight property
+// to fRowHeight.
+void NUI_SetRowHeight(float fRowHeight);
 
 // ---< NUI_BindRowHeight >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's rowheight property
+// to sBind.
+void NUI_BindRowHeight(string sBind);
+
 // ---< NUI_SetChecked >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's checked property
+// to bChecked.
+void NUI_SetChecked(int bChecked = TRUE);
+
 // ---< NUI_BindChecked >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's checked property
+// to sBind.
+void NUI_BindChecked(string sBind);
+
 // ---< NUI_SetDrawColor >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's drawcolor property
+// to jColor.
+void NUI_SetDrawColor(json jColor);
+
 // ---< NUI_BindDrawColor >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetScissor >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's drawcolor property
+// to sBind.
+void NUI_BindDrawColor(string sBind);
+
+// ---< xxxxxx >---
+// Statically sets the current control's scissor property
+// to bScissor.
+void NUI_SetScissor(int bScissor);
+
 // ---< NUI_SetLineThickness >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's linethickness property
+// to fThickness.
+void NUI_SetLineThickness(float fThickness);
+
 // ---< NUI_BindLineThickness >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's linethickness property
+// to sBind.
+void NUI_BindLineThickness(string sBind);
+
 // ---< NUI_SetFill >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's fill property
+// to bFill.
+void NUI_SetFill(int bFill = TRUE);
+
 // ---< NUI_BindFill >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's fill property
+// to sBind.
+void NUI_BindFill(string sBind);
+
 // ---< NUI_SetCenter >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's center property
+// to a point defined by x, y.
+void NUI_SetCenter(float x, float y);
 
 // ---< NUI_SetDefinedCenter >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_BindCenter >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetRadius >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_BindRadius >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetAMin >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_BindAMin >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetAMax >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_BindAMax >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetText >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_BindText >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetPoints >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's center property
+// to jCenter, which can be defined by NUI_DefinePoint().
+void NUI_SetDefinedCenter(json jCenter);
 
+// ---< NUI_BindCenter >---
+// Dynamically binds the current control's center property
+// to sBind.
+void NUI_BindCenter(string sBind);
+
+// ---< NUI_SetRadius >---
+// Statically sets the current control's radius property
+// to r.
+void NUI_SetRadius(float r);
+
+// ---< NUI_BindRadius >---
+// Dynamically binds the current control's radius property
+// to sBind.
+void NUI_BindRadius(string sBind);
+
+// ---< NUI_SetAMin >---
+// Statically sets the current control's AMin property
+// to fMultiplier.
+void NUI_SetAMin(float fMultiplier);
+
+// ---< NUI_BindAMin >---
+// Dynamically binds the current control's AMin property
+// to sBind.
+void NUI_BindAMin(string sBind);
+
+// ---< NUI_SetAMax >---
+// Statically sets the current control's AMax property
+// to fMultiplier.
+void NUI_SetAMax(float fMultiplier);
+
+// ---< NUI_BindAMax >---
+// Dynamically binds the current control's AMax property
+// to sBind.
+void NUI_BindAMax(string sBind);
+
+// ---< NUI_SetText >---
+// Statically sets the current control's text property
+// to sText.
+void NUI_SetText(string sText);
+
+// ---< NUI_BindText >---
+// Dynamically binds the current control's text property
+// to sBind.
+void NUI_BindText(string sBind);
+
+// ---< NUI_SetPoints >---
+// Statically sets the current control's points property
+// to jPoints.
+void NUI_SetPoints(json jPoints);
 
 // ---< NUI_BindPoints >---
-// Dynamically binds the form's resizable property to sBind.
+// Dynamically binds the current control's points property
+// to sBind.
+void NUI_BindPoints(string sBind);
+
 // ---< NUI_SetIntSliderBounds >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's lower bound to
+// nLower, upper bound to nUpper and step value to nStep.
+void NUI_SetIntSliderBounds(int nLower, int nUpper, int nStep);
+
 // ---< NUI_SetFloatSliderBounds >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's lower bound to
+// fLower, upper bound to fUpper and step value to fStep.
+void NUI_SetFloatSliderBounds(float fLower, float fUpper, float fStep);
+
 // ---< NUI_SetProgress >---
-// Dynamically binds the form's resizable property to sBind.
+// Statically sets the current control's progress property
+// to fValue.
+void NUI_SetProgress(float fValue);
+
 // ---< NUI_BindProgress >---
-// Dynamically binds the form's resizable property to sBind.
-// ---< NUI_SetScrollbars >---
-// Dynamically binds the form's resizable property to sBind.
-
-
-
+// Dynamically binds the current control's progress property
+// to sBind.
+void NUI_BindProgress(string sBind);
 
 // ---< NUI_SetValue >---
-// Statically sets the current control's value property to jValue.  jValue
-// must be a define json element.
+// Statically sets the current control's value property to jValue.
 void NUI_SetValue(json jValue);
 
 // ---< NUI_BindValue >---
 // Dynamically binds the current control's value property to sBind.
 void NUI_BindValue(string sBind);
+
+// ---< NUI_SetImage >---
+// Statically sets the current control's image property
+// to sResref.
+void NUI_SetImage(string sResref);
+
+// ---< NUI_BindImage >---
+// Dynamically binds the current control's xxxxxx property
+// to sBind.
+void NUI_BindImage(string sBind);
+
+// ---< NUI_SetRectangle >---
+// Statically sets the current control's rect property
+// to jRect.
+void NUI_SetRectangle(json jRect);
+
+// ---< NUI_SetScrollbars >---
+// Statically sets the current control's scrollbars property
+// to nScrollbars.
+void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO);
+
+// ---< xxxxxx >---
+// Statically sets the current control's xxxxxx property
+// to xxxxxx.
+
+// ---< xxxxxx >---
+// Dynamically binds the current control's xxxxxx property
+// to sBind.
+
+// -----------------------------------------------------------------------------
+//                        Event and Data Management
+// -----------------------------------------------------------------------------
+
+// ---< NUI_SetCustomProperty >---
+// Sets custom data onto the current control.  This data will
+// be returned during any event that is triggered by the
+// associated control and can be accessed from the event data
+// struct.
+void NUI_SetCustomProperty(string sProperty, json jValue);
+
+// ---< NUI_GetCustomProperty >---
+// Retrieves custom proeprty sProperty from user data jUserData.
+json NUI_GetCustomProperty(json jUserData, string sProperty);
+
+// ---< NUI_CountCustomProperties >---
+// Counts the number of properties contined in jUserData.
+// Combined with NUI_GetCustomPropertyByIndex(), can loop jUserData.
+int NUI_CountCustomProperties(json jUserData);
+
+// ---< NUI_GetCustomPropertyByIndex >---
+// Returns the custom proeprty from jUserData at index nIndex.
+json NUI_GetCustomPropertyByIndex(json jUserData, int nIndex);
+
+// ---< NUI_SetBindScript >---
+// Sets the script that this control will use when the initial
+// bind function is called.  All children of the current control
+// (such as controls within control groups) will also use this
+// bind script unless specifically excluded.
+void NUI_SetBindScript(string sScript);
+
+// ---< NUI_SetEventScript >---
+// Sets the script that this control will use when an event
+// is triggered by the current control.  All children of the
+// current control (such as controls within control groups) 
+// will also use this event script unless specifically excluded.
+void NUI_SetEventScript(string sScript);
+
+// ---< NUI_SetBindFunction >---
+// Sets the function that this control will use when the initial
+// bind function is called.  All children of the current control
+// (such as controls within control groups) will also use this
+// bind function unless specifically excluded.
+void NUI_SetBindFunction(string sFunction);
+
+// ---< NUI_SetEventFunction >---
+// Sets the function that this control will use when an event
+// is triggered by the current control.  All children of the
+// current control (such as controls within control groups) 
+// will also use this event function unless specifically excluded.
+void NUI_SetEventFunction(string sFunction);
+
+// ---< NUI_SetFormScript >---
+// Convenience function to set both the bind and event script
+// to sScript.
+void NUI_SetFormScript(string sScript);
+
+// ---< NUI_SetFormFunction >---
+// Convenience function to set both the bind and event function
+// to sFunction.
+void NUI_SetFormFunction(string sFunction);
+
+// ---< NUI_SetBindValue >---
+// Sets the bind value for sBind to jValue only for window
+// nToken if displayed for oPC.
+void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue);
+
+// ---< NUI_DelayBindValue >---
+// Sets the bind value for sBind to jValue only for window
+// nToken if displayed for oPC.  Adds a short delay to the bind
+// for situations where the bind value is destroyed by NUI.
+void NUI_DelayBindValue(object oPC, int nToken, string sBind, json jValue);
+
+// ---< NUI_SetBindWatch >---
+// Starts or stops a bind value watch for sBind on window
+// nToken for player oPC.
+void NUI_SetBindWatch(object oPC, int nToken, string sBind, int bWatch = TRUE);
+
+// ---< NUI_GetBindValue >---
+// Returns the json value bound to sBind for oPC's window nToken.
+json NUI_GetBindValue(object oPC, int nToken, string sBind);
+
+// ---< NUI_GetBindData >---
+// ** ADVANCED USAGE **
+// Returns a bind table of all controls that have bind values associated
+// with them.  This is primarily used during the form opening
+// sequence to set intial bind values.
+struct NUIBindData NUI_GetBindData();
+
+// ---< NUI_GetBindArrayData >---
+// ** ADVANCED USAGE **
+// Returns a struct of specified bind data from jBinds at index n.
+// Should only be used with data returned from NUI_GetBindData().
+struct NUIBindArrayData NUI_GetBindArrayData(json jBinds, int n);
+
+// ---< NUI_GetEventData >---
+// Returns events data for the current NUI event.  Event data includes
+// custom user data set on the control that triggered the event.
+struct NUIEventData NUI_GetEventData(int bIncludeChildren = TRUE);
+
+// ---< NUI_GetEventArrayData >---
+// Returns a struct of specific bind data for jBinds at index n.
+// Should only be used with data returned from NUI_GetEventData.
+struct NUIEventArrayData NUI_GetEventArrayData(json jBinds, int n);
 
 // -----------------------------------------------------------------------------
 //                             Private Functions
@@ -649,7 +1001,7 @@ void NUI_DeleteBindData(object oPC);
 string NUI_GetStandardBind(object oPC, string sValue);
 void NUI_CreateListbox();
 void NUI_CreateGroup();
-json NUI_CreateCellTemplate(string sElement, float fDimension = 1.0);
+json NUI_CreateCellTemplate(string sElement, float fDimension = -1.0);
 
 string NUI_GetKey(string sPair)
 {
@@ -846,8 +1198,8 @@ void NUI_NormalizeRunningPath(string sElement)
             nCount = (bMatch ? 3 : 5) + bLayer;
         }
 
-        string sSource = NUI_GetRunningPathSource();
-        string sPath = CopyListItem(sSource, sPath, 0, nCount);
+        string sPath, sSource = NUI_GetRunningPathSource();
+        sPath = CopyListItem(sSource, sPath, 0, nCount);
 
         NUI_SetRunningPathSource(sPath);
     }
@@ -873,11 +1225,11 @@ string NUI_GetRunningPath(int bDropIndex = FALSE)
 
 void NUI_IncrementRunningPath()
 {
-    string sSource = NUI_GetRunningPathSource();
+    string sPath, sSource = NUI_GetRunningPathSource();
     int nIndex = CountList(sSource) - 1;
     int nStep = StringToInt(GetListItem(sSource, nIndex)) + 1;
 
-    string sPath = DeleteListItem(sSource, nIndex);
+    sPath = DeleteListItem(sSource, nIndex);
     sPath = AddListItem(sPath, IntToString(nStep));
 
     NUI_SetRunningPathSource(sPath);
@@ -1039,6 +1391,10 @@ void NUI_HandleUniquePropertyRequirements(string sProperty, json jValue)
         NUI_ApplyPatchToRoot(jControl, "replace");
 }
 
+json NUI_GetTemplateControl(string sID)
+{
+    return GetLocalJson(GetModule(), NUI_ELEMENT_TEMPLATE + sID);
+}
 
 json NUI_SetObjectProperty(json jObject, string sProperty, json jValue)
 {
@@ -1068,150 +1424,6 @@ json NUI_BindVariable(string sVariableName)
     return JsonObjectSet(JsonObject(), NUI_PROPERTY_BIND, j);
 }
 
-json NUI_DefinePoint(float x, float y)
-{
-    json j = JsonObject();
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y));
-    return j;
-}
-
-json NUI_DefineRGBColor(int r, int g, int b, int a = 255)
-{
-    json j = JsonObject();
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_R, JsonInt(r));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_G, JsonInt(g));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_B, JsonInt(b));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_A, JsonInt(a));
-    return j;
-}
-
-json NUI_DefineRandomRGBColor()
-{
-    return NUI_DefineRGBColor(Random(256), Random(256), Random(256));
-}
-
-json NUI_DefineHSVColor(float h, float s, float v)
-{
-    struct HSV hsv;
-    hsv.h = h;
-    hsv.s = s;
-    hsv.v = v;
-
-    struct RGB rgb = HSVToRGB(hsv);
-    return NUI_DefineRGBColor(rgb.r, rgb.g, rgb.b);
-}
-
-json NUI_DefineHexColor(int nColor)
-{
-    struct RGB rgb = HexToRGB(nColor);
-    return NUI_DefineRGBColor(rgb.r, rgb.g, rgb.b);
-}
-
-json NUI_DefineRectangle(float x, float y, float w, float h)
-{
-    json j = JsonObject();
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_W, JsonFloat(w));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_H, JsonFloat(h));
-    return j;
-}
-
-json NUI_DefineCircle(float x, float y, float r)
-{
-    r = fclamp(r, 0.0, fmin(x, y));
-    float s = 2 * r;
-
-    json j = JsonObject();
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x - r));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y - r));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_W, JsonFloat(s));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_H, JsonFloat(s));
-    return j;
-}
-
-json NUI_GetLinePoints(float x1, float y1, float x2, float y2)
-{
-    json j = JsonArray();
-         j = JsonArrayInsert(j, JsonFloat(x1));
-         j = JsonArrayInsert(j, JsonFloat(y1));
-         j = JsonArrayInsert(j, JsonFloat(x2));
-         j = JsonArrayInsert(j, JsonFloat(y2));
-
-    return j;
-}
-
-json NUI_AddLinePoint(json jPoints, float x, float y)
-{
-    jPoints = JsonArrayInsert(jPoints, JsonFloat(x));
-    jPoints = JsonArrayInsert(jPoints, JsonFloat(y));
-
-    return jPoints;
-}
-
-json NUI_GetRectanglePoints(float x, float y, float w, float h)
-{
-    json j = JsonArray();
-         j = JsonArrayInsert(j, JsonFloat(x));
-         j = JsonArrayInsert(j, JsonFloat(y));
-         j = JsonArrayInsert(j, JsonFloat(x + w));
-         j = JsonArrayInsert(j, JsonFloat(y));
-         j = JsonArrayInsert(j, JsonFloat(x + w));
-         j = JsonArrayInsert(j, JsonFloat(y + h));
-         j = JsonArrayInsert(j, JsonFloat(x));
-         j = JsonArrayInsert(j, JsonFloat(y + h));
-         j = JsonArrayInsert(j, JsonFloat(x));
-         j = JsonArrayInsert(j, JsonFloat(y));
-
-    return j;
-}
-
-json NUI_GetTrianglePoints(float x, float y, float h, float b)
-{
-    json j= JsonArray();
-    j = JsonArrayInsert(j, JsonFloat(x));
-    j = JsonArrayInsert(j, JsonFloat(y));
-    j = JsonArrayInsert(j, JsonFloat(x - (b / 2.0)));
-    j = JsonArrayInsert(j, JsonFloat(y + h));
-    j = JsonArrayInsert(j, JsonFloat(x + (b / 2.0)));
-    j = JsonArrayInsert(j, JsonFloat(y + h));
-    j = JsonArrayInsert(j, JsonFloat(x));
-    j = JsonArrayInsert(j, JsonFloat(y));
-
-    return j;
-}
-
-json NUI_GetDefinedRectanglePoints(json jRectangle)
-{
-    float x = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_X));
-    float y = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_Y));
-    float w = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_W));
-    float h = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_H));
-
-    return NUI_GetRectanglePoints(x, y, w, h);
-}
-
-void NUI_SetValue(json jValue)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, jValue);
-}
-
-void NUI_BindValue(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
-}
-
-/*
-string NUI_GetFormID()
-{
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT, 0);
-    json jID = JsonObjectGet(jRoot, NUI_PROPERTY_ID);
-
-    return JsonGetString(jID);
-}
-*/
-
 void NUI_SetCustomControlProperty(string sNode, string sProperty, json jValue)
 {
     json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
@@ -1226,76 +1438,9 @@ void NUI_SetCustomControlProperty(string sNode, string sProperty, json jValue)
     NUI_ApplyPatchToRoot(jData, "add", sPath);
 }
 
-void NUI_SetCustomProperty(string sProperty, json jValue)
-{
-    NUI_SetCustomControlProperty(NUI_PROPERTY_USERDATA, sProperty, jValue);
-}
-
-json NUI_GetCustomProperty(json jUserData, string sProperty)
-{
-    return JsonObjectGet(jUserData, sProperty);
-}
-
-int NUI_CountCustomProperties(json jUserData)
-{
-    return JsonGetLength(jUserData);
-}
-
-json NUI_GetCustomPropertyByIndex(json jUserData, int nIndex)
-{
-    json jKeys = JsonObjectKeys(jUserData);
-    string sProperty = JsonGetString(JsonArrayGet(jKeys, nIndex));
-
-    return NUI_GetCustomProperty(jUserData, sProperty);
-}
-
 void NUI_SetHandler(string sNode, string sProperty, string sScript)
 {
     NUI_SetCustomControlProperty(sNode, sProperty, JsonString(sScript));
-}
-
-void NUI_SetBindScript(string sScript)
-{
-    NUI_SetHandler(NUI_PROPERTY_BINDDATA, "script", sScript);
-}
-
-void NUI_SetBuildScript(string sScript)
-{
-    NUI_SetHandler(NUI_PROPERTY_BUILDDATA, "script", sScript);
-}
-
-void NUI_SetEventScript(string sScript)
-{
-    NUI_SetHandler(NUI_PROPERTY_EVENTDATA, "script", sScript);
-}
-
-void NUI_SetBindFunction(string sFunction)
-{
-    NUI_SetHandler(NUI_PROPERTY_BINDDATA, "function", sFunction);
-}
-
-void NUI_SetEventFunction(string sFunction)
-{
-    NUI_SetHandler(NUI_PROPERTY_EVENTDATA, "function", sFunction);
-}
-
-void NUI_SetBuildFunction(string sFunction)
-{
-    NUI_SetHandler(NUI_PROPERTY_BUILDDATA, "function", sFunction);
-}
-
-void NUI_SetFormScript(string sScript)
-{
-    NUI_SetBuildScript(sScript);
-    NUI_SetBindScript(sScript);
-    NUI_SetEventScript(sScript);
-}
-
-void NUI_SetFormFunction(string sFunction)
-{
-    NUI_SetBuildFunction(sFunction);
-    NUI_SetBindFunction(sFunction);
-    NUI_SetEventFunction(sFunction);
 }
 
 void NUI_RunHandler(string sType, string sFormID, string sControlID, object oTarget)
@@ -1351,910 +1496,12 @@ void NUI_RunEventHandler()
     NUI_ClearCurrentOperation();
 }
 
-void NUI_SetTitle(string sTitle)
-{
-    json j = JsonString(sTitle);
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TITLE, j);
-}
-
-void NUI_BindTitle(string sBind)
-{
-    json j = NUI_BindVariable(sBind);
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TITLE, j);
-}
-
-void NUI_SetGeometry(float x, float y, float w, float h)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_GEOMETRY, NUI_DefineRectangle(x, y, w, h));
-}
-
-void NUI_SetDefinedGeometry(json jGeometry)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_GEOMETRY, jGeometry);
-}
-
-void NUI_BindGeometry(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_GEOMETRY, NUI_BindVariable(sBind));
-}
-
-void NUI_SetResizable(int bResizable = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RESIZABLE, JsonBool(bResizable));
-}
-
-// ---< NUI_BindResizable >---
-// Dynamically binds the form's resizable property to sBind.
-void NUI_BindResizable(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RESIZABLE, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetCollapsible >---
-// Statically sets the form's collapsible property to bCollapsible.  bCollapsible is a TRUE/FALSE value.
-void NUI_SetCollapsible(int bCollapsible = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLLAPSIBLE, JsonBool(bCollapsible));
-}
-
-// ---< NUI_BindCollapsible >---
-// Dynamically binds the form's collapsible property to sBind.
-void NUI_BindCollapsible(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLLAPSIBLE, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetModal >---
-// Statically sets the form's modal property to bModal.  bModal is a TRUE/FALSE value.
-void NUI_SetModal(int bModal = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MODAL, JsonBool(!bModal));
-}
-
-// ---< NUI_BindModal >---
-// Dynamically binds the form's modal property to sBind.
-void NUI_BindModal(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MODAL, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetTransparent >---
-// Statically sets the form's transparent property to bTransparent.  bTransparent is a TRUE/FALSE value.
-void NUI_SetTransparent(int bTransparent = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TRANSPARENT, JsonBool(bTransparent));
-}
-
-// ---< NUI_BindTransparent >---
-// Dynamically binds the form's transparent property to sBind.
-void NUI_BindTransparent(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TRANSPARENT, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetBorderVisible >---
-// Statically sets the form's border visibility property to bVisible.  bVisible is a TRUE/FALSE value.
-void NUI_SetBorderVisible(int bVisible = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_BORDER, JsonBool(bVisible));
-}
-
-// ---< NUI_BindBorderVisible >---
-// Dynamically binds the form's border visibilty property to sBind.
-void NUI_BindBorderVisible(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_BORDER, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetVersion >---
-// Statically sets the form's version to nVersion.  This property is required.  The form will not be displayed if
-// this property is not set.  The default value is 1.
-void NUI_SetVersion(int nVersion = 1)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VERSION, JsonInt(nVersion));
-}
-
-// ---< NUI_SetGeometry >---
-// Sets the form's or control group's orientation to sOrientation.  The default value is NUI_ORIENTATION_COLUMNS.
-void NUI_SetOrientation(string sOrientation = NUI_ORIENTATION_ROWS)
-{
-    if (NUI_GetCurrentControlType() == NUI_ELEMENT_OPTIONGROUP)
-    {
-        int nOrientation = StringToInt(sOrientation);
-        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DIRECTION, JsonInt(nOrientation));
-        return;
-    }
-
-    if (NUI_GetCellStructureIsEmpty() == TRUE)
-    {
-        if (NUI_GetLayoutOrientation() == sOrientation)
-            return;
-        else
-        {
-            NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ORIENTATION, JsonString(sOrientation));
-
-            string sPath, sLayout;
-            if (NUI_GetBuildLayer() == 0)
-                sPath = "/root/type";
-            else if (NUI_GetBuildMode() == NUI_ELEMENT_GROUP)
-                sPath = "/children/0/type";
-            
-            if (sOrientation == NUI_ORIENTATION_ROWS)
-                sLayout = NUI_ELEMENT_COLUMN;
-            else
-                sLayout = NUI_ELEMENT_ROW;
-
-            NUI_ApplyPatchToRoot(JsonString(sLayout), "add", sPath);
-        }
-    }
-    else
-        Error("Attempted to set orientation after controls have been added; new orientation not set");
-}
-
-void NUI_SetWidth(float fWidth)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_WIDTH, JsonFloat(fWidth));
-}
-
-void NUI_SetHeight(float fHeight)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HEIGHT, JsonFloat(fHeight));
-}
-
-void NUI_SetSquare(float fSide)
-{
-    NUI_SetHeight(fSide);
-    NUI_SetWidth(fSide);
-}
-
-void NUI_SetAspectRatio(float fRatio)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ASPECT, JsonFloat(fRatio));
-}
-
-void NUI_SetImageAspect(int nAspect)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEASPECT, JsonInt(nAspect));
-}
-
-void NUI_SetImageHorizontalAlignment(int nHAlign)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEHALIGN, JsonInt(nHAlign));
-}
-
-void NUI_SetImageVerticalAlignment(int nVAlign)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEVALIGN, JsonInt(nVAlign));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetMargin(float fMargin)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MARGIN, JsonFloat(fMargin));
-}
-
-// ---< NUI_SetPadding >---
-// Statically sets the control's padding to fPadding.
-void NUI_SetPadding(float fPadding)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_PADDING, JsonFloat(fPadding));
-}
-
-// ---< NUI_SetVersion >---
-// Statically sets the control's ID to sID.  If a control's ID is not set, the form
-// will not send events for the control.
-void NUI_SetID(string sID)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ID, JsonString(sID));
-}
-
-// ---< NUI_SetLabel >---
-// Statically sets the control's label to sLabel.  This function can be used to set the label
-// on label controls and static textboxes.
-void NUI_SetLabel(string sLabel)
-{
-    string sType = NUI_GetCurrentControlType();
-
-    if (sType == NUI_ELEMENT_LABEL || sType == NUI_ELEMENT_TEXTBOX_STATIC)
-        NUI_SetValue(JsonString(sLabel));
-    else
-        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, JsonString(sLabel));
-}
-
-// ---< NUI_SetLabel >---
-// Dynamically binds the control's label property to sBind.
-void NUI_BindLabel(string sBind)
-{
-    string sType = NUI_GetCurrentControlType();
-
-    if (sType == NUI_ELEMENT_LABEL || sType == NUI_ELEMENT_TEXTBOX_STATIC)
-        NUI_BindValue(sBind);
-    else
-        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, NUI_BindVariable(sBind));
-}
-
-void NUI_SetEnabled(int bEnabled = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENABLED, JsonBool(bEnabled));
-}
-
-void NUI_BindEnabled(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENABLED, NUI_BindVariable(sBind));
-}
-
-void NUI_SetVisible(int bVisible = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, JsonBool(bVisible));
-}
-
-void NUI_BindVisible(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, NUI_BindVariable(sBind));
-}
-
-void NUI_SetTooltip(string sTooltip)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, JsonString(sTooltip));
-}
-
-void NUI_BindTooltip(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetRGBForegroundColor(int r, int g, int b, int a = 255)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, NUI_DefineRGBColor(r, g, b, a));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetDefinedForegroundColor(json jColor)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, jColor);
-}
-
-void NUI_BindForegroundColor(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetRGBColor(int r, int g, int b, int a = 255)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_DefineRGBColor(r, g, b, a));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetDefinedColor(json jColor)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, jColor);
-}
-
-void NUI_BindColor(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetHorizontalAlignment(int nAlignment)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HALIGN, JsonInt(nAlignment));
-}
-
-void NUI_BindHorizontalAlignment(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HALIGN, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetVerticalAlignment(int nAlignment)
-{
-/*
-    NUI_VALIGN_MIDDLE
-    NUI_VALIGN_TOP
-    NUI_VALIGN_BOTTOM
-*/
-
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALIGN, JsonInt(nAlignment));
-}
-
-void NUI_BindVerticalAlignment(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALIGN, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetResref(string sResref)
-{
-    // Need special handling
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, JsonString(sResref));
-}
-
-void NUI_BindImage(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGE, NUI_BindVariable(sBind));
-}
-
-void NUI_BindResref(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetStatic(int bStatic = TRUE)
-{
-    if (NUI_GetBuildMode() == NUI_ELEMENT_LISTBOX)
-        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_STATIC, JsonBool(bStatic));
-    else
-        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TYPE, JsonString(NUI_ELEMENT_TEXTBOX_STATIC));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetPlaceholder(string sPlaceholder = "")
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, JsonString(sPlaceholder));
-}
-
-void NUI_BindPlaceholder(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetMaxLength(int nLength = 50)
-{
-    nLength = clamp(nLength, 1, 65535); // from niv's notes
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MAX, JsonInt(nLength));
-}
-
-void NUI_SetMultiline(int bMultiline = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MULTILINE, JsonBool(bMultiline));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetRowCount(int nRowCount)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWCOUNT, JsonInt(nRowCount));
-}
-
-void NUI_BindRowCount(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWCOUNT, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetRowHeight(float fRowHeight)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWHEIGHT, JsonFloat(fRowHeight));
-}
-
-void NUI_BindRowHeight(string sBind)
-{   // Possible?
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWHEIGHT, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetChecked(int bChecked = TRUE)
-{
-    NUI_SetValue(JsonBool(bChecked));
-}
-
-void NUI_BindChecked(string sBind)
-{
-    NUI_SetValue(NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetDrawColor(json jColor)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLOR, jColor);
-}
-
-void NUI_BindDrawColor(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLOR, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetScissor(int bScissor)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLISTSCISSOR, JsonBool(bScissor));
-}
-
-void NUI_SetLineThickness(float fThickness)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LINETHICKNESS, JsonFloat(fThickness));
-}
-
-void NUI_BindLineThickness(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LINETHICKNESS, NUI_BindVariable(sBind));
-}
-
-void NUI_SetFill(int bFill = TRUE)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FILL, JsonBool(bFill));
-}
-
-void NUI_BindFill(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FILL, NUI_BindVariable(sBind));
-}
-
-void NUI_SetCenter(float x, float y)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_C, NUI_DefinePoint(x, y));
-}
-
-void NUI_SetDefinedCenter(json jCenter)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_C, jCenter);
-}
-
-void NUI_BindCenter(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_C, NUI_BindVariable(sBind));
-}
-
-void NUI_SetRadius(float r)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RADIUS, JsonFloat(r));
-}
-
-void NUI_BindRadius(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RADIUS, NUI_BindVariable(sBind));
-}
-
-void NUI_SetAMin(float fMultiplier)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMIN, JsonFloat(PI * fMultiplier));
-}
-
-void NUI_BindAMin(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMIN, NUI_BindVariable(sBind));
-}
-
-void NUI_SetAMax(float fMultiplier)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMAX, JsonFloat(PI * fMultiplier));
-}
-
-void NUI_BindAMax(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMAX, NUI_BindVariable(sBind));
-}
-
-void NUI_SetText(string sText)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TEXT, JsonString(sText));
-}
-
-void NUI_BindText(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TEXT, NUI_BindVariable(sBind));
-}
-
-void NUI_SetPoints(json jPoints)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_POINTS, jPoints);
-}
-
-void NUI_BindPoints(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_POINTS, NUI_BindVariable(sBind));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetIntSliderBounds(int nLower, int nUpper, int nStep)
-{
-    json jLower = JsonInt(nLower);
-    json jUpper = JsonInt(nUpper);
-    json jStep = JsonInt(nStep);
-
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MIN, jLower);
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MAX, jUpper);
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_STEP, jStep);
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetFloatSliderBounds(float fLower, float fUpper, float fStep)
-{
-    json jLower = JsonFloat(fLower);
-    json jUpper = JsonFloat(fUpper);
-    json jStep = JsonFloat(fStep);
-
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MIN, jLower);
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MAX, jUpper);
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_STEP, jStep);
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetProgress(float fValue)
-{   
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, JsonFloat(fValue));
-}
-
-void NUI_BindProgress(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
-}
-
-void NUI_SetRectangle(json jRect)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RECT, jRect);
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO)
-{
-/*
-    NUI_SCROLLBARS_NONE
-    NUI_SCROLLBARS_X
-    NUI_SCROLLBARS_Y
-    NUI_SCROLLBARS_BOTH
-    NUI_SCROLLBARS_AUTO
-*/
-
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_SCROLLBARS, JsonInt(nScrollbars));
-}
-
-// ---< NUI_SetMargin >---
-// Statically sets the control's margin to fMargin.
-void NUI_SetElements(json jElements)
-{
-    // TODO
-}
-
-void NUI_BindElements(string sBind)
-{
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ELEMENTS, NUI_BindVariable(sBind));
-}
-
-void NUI_AddChartSeries(int nType, string sLegend, json jColor, json jData)
-{
-    json j = JsonObject();
-         j = JsonObjectSet(j, NUI_PROPERTY_TYPE, JsonInt(nType));
-         j = JsonObjectSet(j, NUI_PROPERTY_LEGEND, JsonString(sLegend));
-         j = JsonObjectSet(j, NUI_PROPERTY_COLOR, jColor);
-         j = JsonObjectSet(j, NUI_PROPERTY_DATA, jData);
-
-    NUI_AddRunningPath(NUI_PROPERTY_VALUE, FALSE);
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    json jSeries = JsonPointer(jRoot, NUI_GetRunningPath());
-         jSeries = JsonArrayInsert(jSeries, j);
-
-    NUI_ApplyPatchToRoot(jSeries, "replace");
-    NUI_DropRunningPath(1);
-}
-
-void NUI_AddRadioButton(string sButton)
-{
-    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    json jElements = JsonPointer(jRoot, NUI_GetRunningPath());
-
-    jElements = JsonArrayInsert(jElements, JsonString(" " + sButton));
-
-    NUI_ApplyPatchToRoot(jElements, "replace");
-    NUI_DropRunningPath(1);
-}
-
-void NUI_AddRadioButtonList(string sButtons)
-{
-    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    json jElements = JsonPointer(jRoot, NUI_GetRunningPath());
-
-    int n, nCount = CountList(sButtons);
-    for (n = 0; n < nCount; n++)
-    {
-        string sButton = GetListItem(sButtons, n);
-        json jButton = JsonString(" " + sButton);
-        
-        jElements = JsonArrayInsert(jElements, jButton);
-    }
-
-    NUI_ApplyPatchToRoot(jElements, "replace");
-    NUI_DropRunningPath(1);
-}
-
-void NUI_AddComboboxEntryList(string sEntries, int nStart = -1)
-{
-    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
-    string sPath = NUI_GetRunningPath();
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    json jElements = JsonPointer(jRoot, sPath);
-    int nElements = NUI_GetLengthAtRunningPath(sPath);
-    int n, nCount = CountList(sEntries);
-
-    for (n = 0; n < nCount; n++)
-    {
-        string sEntry = GetListItem(sEntries, n);
-        int nValue = nStart == -1 ? nElements + n : nStart;
-
-        json jEntry = JsonArray();
-             jEntry = JsonArrayInsert(jEntry, JsonString(sEntry));
-             jEntry = JsonArrayInsert(jEntry, JsonInt(nValue));
-
-        jElements = JsonArrayInsert(jElements, jEntry);
-    }
-
-    NUI_ApplyPatchToRoot(jElements, "replace");
-    NUI_DropRunningPath(1);
-}
-
-void NUI_AddComboboxEntry(string sEntry, int nValue = -1)
-{
-    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
-    string sPath = NUI_GetRunningPath();
-
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    json jElements = JsonPointer(jRoot, sPath);
-
-    if (nValue < 0)
-        nValue = NUI_GetLengthAtRunningPath(sPath);
-
-    json jEntry = JsonArray();
-         jEntry = JsonArrayInsert(jEntry, JsonString(sEntry));
-         jEntry = JsonArrayInsert(jEntry, JsonInt(nValue));
-
-    jElements = JsonArrayInsert(jElements, jEntry);
-
-    NUI_ApplyPatchToRoot(jElements, "replace");
-    NUI_DropRunningPath(1);
-}
-
-void NUI_BindForm(object oPC, int nToken)
-{
-    string sFormID = NuiGetWindowId(oPC, nToken);
-    sqlquery sqlBinds = NUI_GetBindTable(sFormID);
-    json jBinds = JsonArray();
-
-    while (SqlStep(sqlBinds))
-    {
-        json jBind = JsonObject();
-             jBind = JsonObjectSet(jBind, NUI_BIND_TYPE, JsonString(SqlGetString(sqlBinds, 0)));
-             jBind = JsonObjectSet(jBind, NUI_BIND_PROPERTY, JsonString(SqlGetString(sqlBinds, 2)));
-             jBind = JsonObjectSet(jBind, NUI_BIND_VARIABLE, JsonString(SqlGetString(sqlBinds, 3)));
-             jBind = JsonObjectSet(jBind, NUI_BIND_USERDATA, SqlGetJson(sqlBinds, 4));
-
-        jBinds = JsonArrayInsert(jBinds, jBind);
-    }
-
-    NUI_SetBindData(oPC, nToken, sFormID, jBinds);
-
-    NUI_SetCurrentOperation(NUI_OPERATION_BIND);
-    if (NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC) == FALSE)
-        return;
-
-    NUI_ClearCurrentOperation();
-}
-
-int NUI_DisplayForm(object oPC, string sFormID)
-{
-    json j = NUI_GetFormJSON(sFormID);
-
-    string sFormScript;
-
-    if (j != JsonNull())
-    {
-        // if there are any custom controls, populate the required data ...
-        NUI_PopulateBuildJSON(oPC, sFormID);
-
-        int nToken = NuiCreate(oPC, j, sFormID);
-        NUI_BindForm(oPC, nToken);
-        return nToken;
-    }
-    else
-        CriticalError("JSON data for form '" + sFormID + "' not found");
-
-    return -1;
-}
-
-void NUI_DestroyForm(object oPC, int nToken)
-{
-    NuiDestroy(oPC, nToken);
-}
-
-void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
-{
-    NuiSetBind(oPC, nToken, sBind, jValue);
-}
-
-void NUI_DelayBindValue(object oPC, int nToken, string sBind, json jValue)
-{
-    DelayCommand(0.001, NUI_SetBindValue(oPC, nToken, sBind, jValue));
-}
-
-void NUI_SetBindWatch(object oPC, int nToken, string sBind, int bWatch = TRUE)
-{
-    NuiSetBindWatch(oPC, nToken, sBind, bWatch);
-}
-
-json NUI_GetBindValue(object oPC, int nToken, string sBind)
-{
-    return NuiGetBind(oPC, nToken, sBind);
-}
-
-void NUI_AddSpacer(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_SPACER, sID);
-}
-
-void NUI_AddLabel(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_LABEL, sID);
-}
-
-void NUI_AddTextbox(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_TEXTBOX, sID);
-}
-
-void NUI_AddCommandButton(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_COMMANDBUTTON, sID);
-}
-
-void NUI_AddImageButton(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_IMAGEBUTTON, sID);
-}
-
-void NUI_AddToggleButton(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_TOGGLEBUTTON, sID);
-}
-
-void NUI_AddCheckbox(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_CHECKBOX, sID);
-}
-
-void NUI_AddImage(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_IMAGE, sID);
-}
-
-void NUI_AddCombobox(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_COMBOBOX, sID);
-}
-
-void NUI_AddFloatSlider(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_FLOATSLIDER, sID);
-}
-
-void NUI_AddIntSlider(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_INTSLIDER, sID);
-}
-
-void NUI_AddProgressBar(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_PROGRESSBAR, sID);
-}
-
-void NUI_AddListbox()
-{
-    NUI_CreateListbox();
-}
-
-void NUI_AddColorPicker(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_COLORPICKER, sID);
-}
-
-void NUI_AddOptionGroup(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_OPTIONGROUP, sID);
-}
-
-void NUI_AddChart(string sID = "")
-{
-    NUI_CreateControl(NUI_ELEMENT_CHART, sID);
-}
-
-void NUI_AddControlGroup()
-{
-    NUI_CreateGroup();
-}
-
 void NUI_DropBuildLayer()
 {
     json j = NUI_GetBuildVariable(NUI_BUILD_ROOT);
 
     NUI_DecrementBuildLayer();
     NUI_ApplyPatchToRoot(j, "replace");
-}
-
-void NUI_CloseControlGroup()
-{
-    NUI_DropBuildLayer();
-}
-
-void NUI_CloseListbox()
-{
-    NUI_DropBuildLayer();
-}
-
-void NUI_CloseCanvas()
-{
-    NUI_DropBuildLayer();
-}
-  
-void NUI_CreateForm(string sID, string sVersion = "")
-{
-    json jRoot = JsonObject();
-         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_CHILDREN, JsonArray());
-         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_TYPE, JsonString(NUI_ELEMENT_ROW));
-         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_ENABLED, jTRUE);
-         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_VISIBLE, jTRUE);
-
-    json j = JsonObject();
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ID, JsonString(sID));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_VERSION, JsonInt(1));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_TITLE, JsonNull());
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ROOT, jRoot);
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_GEOMETRY, JsonNull());
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_RESIZABLE, JsonBool(FALSE));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_COLLAPSIBLE, JsonBool(FALSE));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_MODAL, JsonBool(TRUE));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_TRANSPARENT, JsonBool(FALSE));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_BORDER, JsonBool(TRUE));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ORIENTATION, JsonString(NUI_ORIENTATION_COLUMNS));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_UUID, JsonString(GetRandomUUID()));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_USERDATA, JsonObject());
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_BINDDATA, JsonObject());
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_BUILDDATA, JsonObject());
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_EVENTDATA, JsonObject());
-
-    NUI_ResetBuildLayer();
-    NUI_ClearBuildVariables();
-    NUI_SetBuildVariable(NUI_BUILD_ROOT, j);
-
-    if (sID != "")
-    {
-        if (GetStringLeft(sID, 1) == "_")
-            Notice(" > Defining tab " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
-        else
-            Notice("Defining form " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
-    }
-}
-
-void NUI_SaveForm()
-{
-    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    string sID = JsonGetString(JsonObjectGet(jRoot, NUI_PROPERTY_ID));
-
-    NUI_SaveFormJSON(sID, jRoot);
-    NUI_SetFormfile(sID, GetLocalString(GetModule(), NUI_CURRENT_FORMFILE));
 }
 
 void NUI_AddBuildLayer(string sControl)
@@ -2273,50 +1520,6 @@ void NUI_AddBuildLayer(string sControl)
         NUI_IncrementRunningPath();
     }
 }
-
-void NUI_CreateTemplateControl(string sID)
-{
-    if (NUI_GetBuildLayer() > 0)
-        return;
-
-    NUI_IncrementBuildLayer();
-    NUI_SetBuildMode(NUI_ELEMENT_TEMPLATE);
-    NUI_ResetRunningPath();
-
-    SetLocalString(GetModule(), NUI_ELEMENT_TEMPLATE, sID);
-}
-
-void NUI_SaveTemplateControl()
-{
-    json j = NUI_GetBuildVariable(NUI_BUILD_ROOT);
-    string sID = GetLocalString(GetModule(), NUI_ELEMENT_TEMPLATE);
-
-    DeleteLocalString(GetModule(), NUI_ELEMENT_TEMPLATE);
-    SetLocalJson(GetModule(), NUI_ELEMENT_TEMPLATE + sID, j);
-
-    NUI_DecrementBuildLayer();
-}
-
-json NUI_GetTemplateControl(string sID)
-{
-    return GetLocalJson(GetModule(), NUI_ELEMENT_TEMPLATE + sID);
-}
-
-void NUI_AddTemplateControl(string sID)
-{
-    NUI_CreateControl(NUI_ELEMENT_TEMPLATE, sID);
-}
-
-void NUI_CreateGroup()
-{
-    NUI_AddBuildLayer(NUI_ELEMENT_GROUP);
-}
-
-void NUI_CreateListbox()
-{
-    NUI_AddBuildLayer(NUI_ELEMENT_LISTBOX);
-}
-
 
 string NUI_GetCellDepthPath(int nDepth)
 {
@@ -2386,17 +1589,43 @@ void NUI_IncrementCellsAtDepth(int nDepth, float fDimension = -1.0)
     NUI_ApplyPatchToRoot(jTemplate);
 }
 
-void NUI_AddColumn(float fWidth = -1.0)
+void NUI_CreateGroup()
 {
-    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_COLUMNS, fWidth);
-    NUI_ResetControlWrap();
+    NUI_AddBuildLayer(NUI_ELEMENT_GROUP);
 }
 
-void NUI_AddRow(float fHeight = -1.0)
+void NUI_CreateListbox()
 {
-    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_ROWS, fHeight);
-    NUI_ResetControlWrap();
+    NUI_AddBuildLayer(NUI_ELEMENT_LISTBOX);
 }
+
+void NUI_BindForm(object oPC, int nToken)
+{
+    string sFormID = NuiGetWindowId(oPC, nToken);
+    sqlquery sqlBinds = NUI_GetBindTable(sFormID);
+    json jBinds = JsonArray();
+
+    while (SqlStep(sqlBinds))
+    {
+        json jBind = JsonObject();
+             jBind = JsonObjectSet(jBind, NUI_BIND_TYPE, JsonString(SqlGetString(sqlBinds, 0)));
+             jBind = JsonObjectSet(jBind, NUI_BIND_PROPERTY, JsonString(SqlGetString(sqlBinds, 2)));
+             jBind = JsonObjectSet(jBind, NUI_BIND_VARIABLE, JsonString(SqlGetString(sqlBinds, 3)));
+             jBind = JsonObjectSet(jBind, NUI_BIND_USERDATA, SqlGetJson(sqlBinds, 4));
+
+        jBinds = JsonArrayInsert(jBinds, jBind);
+    }
+
+    NUI_SetBindData(oPC, nToken, sFormID, jBinds);
+
+    NUI_SetCurrentOperation(NUI_OPERATION_BIND);
+    if (NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC) == FALSE)
+        return;
+
+    NUI_ClearCurrentOperation();
+}
+
+
 
 json NUI_CreateCanvasTemplate()
 {
@@ -2420,112 +1649,6 @@ void NUI_BuildCanvas(json jCanvas)
 
     NUI_IncrementRunningPath();
     NUI_ApplyPatchToRoot(jCanvas);
-}
-
-void NUI_DrawLine(json jPoints)
-{
-    json jCanvas = NUI_CreateCanvasTemplate();
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_POINTS, jPoints);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_POLYLINE));
-
-    NUI_BuildCanvas(jCanvas);
-}
-
-void NUI_DrawTriangle(float x, float y, float h, float b)
-{
-    NUI_DrawLine(NUI_GetTrianglePoints(x, y, h, b));
-}
-
-void NUI_DrawRectangle(float x, float y, float w, float h)
-{
-    NUI_DrawLine(NUI_GetRectanglePoints(x, y, w, h));
-}
-
-void NUI_DrawDefinedRectangle(json jRect)
-{
-    NUI_DrawLine(NUI_GetDefinedRectanglePoints(jRect));
-}
-
-void NUI_DrawCircle(float x, float y, float r)
-{
-    json jRect = NUI_DefineCircle(x, y, r);
-
-    json jCanvas = NUI_CreateCanvasTemplate();
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_RECT, jRect);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_CIRCLE));
-
-    NUI_BuildCanvas(jCanvas);
-}
-
-void NUI_DrawDefinedCircle(json jCircle)
-{
-    json jCanvas = NUI_CreateCanvasTemplate();
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_RECT, jCircle);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_CIRCLE));
-
-    NUI_BuildCanvas(jCanvas);
-}
-
-void NUI_DrawText(json jRect, string sText)
-{
-    json jCanvas = NUI_CreateCanvasTemplate();
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_RECT, jRect);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TEXT, JsonString(sText));
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_FILL, JsonNull());
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_TEXT));
-
-    NUI_BuildCanvas(jCanvas);
-}
-
-void NUI_DrawCurve(json jA, json jB, json jCtrl0, json jCtrl1)
-{
-    json jCanvas = NUI_CreateCanvasTemplate();
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_A, jA);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_B, jB);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_CTRL0, jCtrl0);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_CTRL1, jCtrl1);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_FILL, jFALSE);
-         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_CURVE));
-
-    NUI_BuildCanvas(jCanvas);
-}
-
-void NUI_DrawArc(json jC, float fRadius, float fAMin, float fAMax)
-{
-    json j = NUI_CreateCanvasTemplate();
-         j = JsonObjectSet(j, NUI_PROPERTY_C, jC);
-         j = JsonObjectSet(j, NUI_PROPERTY_RADIUS, JsonFloat(fRadius));
-         j = JsonObjectSet(j, NUI_PROPERTY_AMIN, JsonFloat(fAMin));
-         j = JsonObjectSet(j, NUI_PROPERTY_AMAX, JsonFloat(fAMax));
-         j = JsonObjectSet(j, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_ARC));
-
-    NUI_BuildCanvas(j);
-}
-
-void NUI_DrawImage(string sResref, json jRect, int nAspect, int nHAlign, int nVAlign)
-{
-    json j = NUI_CreateCanvasTemplate();
-         j = JsonObjectSet(j, NUI_PROPERTY_COLOR, JsonNull());
-         j = JsonObjectSet(j, NUI_PROPERTY_FILL, JsonNull());
-         j = JsonObjectSet(j, NUI_PROPERTY_LINETHICKNESS, JsonNull());
-         j = JsonObjectSet(j, NUI_PROPERTY_IMAGE, JsonString(sResref));
-         j = JsonObjectSet(j, NUI_PROPERTY_RECT, jRect);
-         j = JsonObjectSet(j, NUI_PROPERTY_IMAGEASPECT, JsonInt(nAspect));
-         j = JsonObjectSet(j, NUI_PROPERTY_IMAGEHALIGN, JsonInt(nHAlign));
-         j = JsonObjectSet(j, NUI_PROPERTY_IMAGEVALIGN, JsonInt(nVAlign));
-         j = JsonObjectSet(j, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_IMAGE));
-
-    NUI_BuildCanvas(j);
-}
-
-void NUI_AddCanvas()
-{
-    if (NUI_GetBuildMode() == NUI_ELEMENT_GROUP && NUI_GetRunningPathIndex() == -1)
-        NUI_ResetRunningPath(TRUE);
-
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLIST, JsonArray());
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLISTSCISSOR, jFALSE);
-    NUI_AddBuildLayer(NUI_ELEMENT_CANVAS);
 }
 
 json NUI_CreateCellTemplate(string sElement, float fDimension = -1.0)
@@ -2677,6 +1800,1204 @@ object NUI_GetBindObject(object oPC, string sObject)
     return OBJECT_INVALID;
 }
 
+json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchBase = FALSE, string sFolders = "")
+{
+    json jResrefs = JsonArray();
+
+    string sResref;
+    int n = 1;
+
+    while ((sResref = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders)) != "")
+        jResrefs = JsonArrayInsert(jResrefs, JsonString(sResref));
+
+    return JsonGetLength(jResrefs) == 0 ? JsonNull() : jResrefs;
+}
+
+void NUI_DefineFormsByFormfile()
+{
+    int f, fCount = CountList(NUI_FORMFILE_PREFIX);
+    for (f = 0; f < fCount; f++)
+    {
+        string sPrefix = GetListItem(NUI_FORMFILE_PREFIX, f);
+        json jFormfiles = NUI_GetResrefArray(sPrefix);
+        if (jFormfiles == JsonNull())
+            return;
+
+        NUI_SetCurrentOperation(NUI_OPERATION_DEFINE);
+
+        int n, nCount = JsonGetLength(jFormfiles);
+        for (n = 0; n < nCount; n++)
+        {
+            string sFormfile = JsonGetString(JsonArrayGet(jFormfiles, n));
+            SetLocalString(GetModule(), NUI_CURRENT_FORMFILE, sFormfile);
+            NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_DEFINITION_FUNCTION);
+        }
+
+        NUI_ClearCurrentOperation();
+    }
+}
+
+// -----------------------------------------------------------------------------
+//                              Public Functions
+// -----------------------------------------------------------------------------
+
+void NUI_Initialize()
+{
+    SetDebugLevel(DEBUG_LEVEL_NOTICE);
+    SetDebugLogging(DEBUG_LOG_ALL);
+
+    NUI_SetEventHandler();
+    NUI_InitializeDatabase();
+    //NUI_DefineCustomControlsByFile();
+    NUI_DefineFormsByFormfile();
+}
+
+void NUI_CreateForm(string sID, string sVersion = "")
+{
+    json jRoot = JsonObject();
+         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_CHILDREN, JsonArray());
+         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_TYPE, JsonString(NUI_ELEMENT_ROW));
+         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_ENABLED, jTRUE);
+         jRoot = JsonObjectSet(jRoot, NUI_PROPERTY_VISIBLE, jTRUE);
+
+    json j = JsonObject();
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ID, JsonString(sID));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_VERSION, JsonInt(1));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_TITLE, JsonNull());
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ROOT, jRoot);
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_GEOMETRY, JsonNull());
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_RESIZABLE, JsonBool(FALSE));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_COLLAPSIBLE, JsonBool(FALSE));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_MODAL, JsonBool(TRUE));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_TRANSPARENT, JsonBool(FALSE));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_BORDER, JsonBool(TRUE));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ORIENTATION, JsonString(NUI_ORIENTATION_COLUMNS));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_UUID, JsonString(GetRandomUUID()));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_USERDATA, JsonObject());
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_BINDDATA, JsonObject());
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_BUILDDATA, JsonObject());
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_EVENTDATA, JsonObject());
+
+    NUI_ResetBuildLayer();
+    NUI_ClearBuildVariables();
+    NUI_SetBuildVariable(NUI_BUILD_ROOT, j);
+
+    if (sID != "")
+    {
+        if (GetStringLeft(sID, 1) == "_")
+            Notice(" > Defining tab " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
+        else
+            Notice("Defining form " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
+    }
+}
+
+void NUI_SaveForm()
+{
+    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    string sID = JsonGetString(JsonObjectGet(jRoot, NUI_PROPERTY_ID));
+
+    NUI_SaveFormJSON(sID, jRoot);
+    NUI_SetFormfile(sID, GetLocalString(GetModule(), NUI_CURRENT_FORMFILE));
+}
+
+int NUI_DisplayForm(object oPC, string sFormID)
+{
+    json j = NUI_GetFormJSON(sFormID);
+
+    string sFormScript;
+
+    if (j != JsonNull())
+    {
+        // if there are any custom controls, populate the required data ...
+        NUI_PopulateBuildJSON(oPC, sFormID);
+
+        int nToken = NuiCreate(oPC, j, sFormID);
+        NUI_BindForm(oPC, nToken);
+        return nToken;
+    }
+    else
+        CriticalError("JSON data for form '" + sFormID + "' not found");
+
+    return -1;
+}
+
+void NUI_DestroyForm(object oPC, int nToken)
+{
+    NuiDestroy(oPC, nToken);
+}
+
+json NUI_DefinePoint(float x, float y)
+{
+    json j = JsonObject();
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y));
+    return j;
+}
+
+json NUI_DefineRGBColor(int r, int g, int b, int a = 255)
+{
+    json j = JsonObject();
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_R, JsonInt(r));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_G, JsonInt(g));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_B, JsonInt(b));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_A, JsonInt(a));
+    return j;
+}
+
+json NUI_GetLinePoints(float x1, float y1, float x2, float y2)
+{
+    json j = JsonArray();
+         j = JsonArrayInsert(j, JsonFloat(x1));
+         j = JsonArrayInsert(j, JsonFloat(y1));
+         j = JsonArrayInsert(j, JsonFloat(x2));
+         j = JsonArrayInsert(j, JsonFloat(y2));
+
+    return j;
+}
+
+json NUI_AddLinePoint(json jPoints, float x, float y)
+{
+    jPoints = JsonArrayInsert(jPoints, JsonFloat(x));
+    jPoints = JsonArrayInsert(jPoints, JsonFloat(y));
+
+    return jPoints;
+}
+
+json NUI_DefineHSVColor(float h, float s, float v)
+{
+    struct HSV hsv;
+    hsv.h = h;
+    hsv.s = s;
+    hsv.v = v;
+
+    struct RGB rgb = HSVToRGB(hsv);
+    return NUI_DefineRGBColor(rgb.r, rgb.g, rgb.b);
+}
+
+json NUI_DefineHexColor(int nColor)
+{
+    struct RGB rgb = HexToRGB(nColor);
+    return NUI_DefineRGBColor(rgb.r, rgb.g, rgb.b);
+}
+
+json NUI_DefineRandomRGBColor()
+{
+    return NUI_DefineRGBColor(Random(256), Random(256), Random(256));
+}
+
+json NUI_DefineRectangle(float x, float y, float w, float h)
+{
+    json j = JsonObject();
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_W, JsonFloat(w));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_H, JsonFloat(h));
+    return j;
+}
+
+json NUI_GetRectanglePoints(float x, float y, float w, float h)
+{
+    json j = JsonArray();
+         j = JsonArrayInsert(j, JsonFloat(x));
+         j = JsonArrayInsert(j, JsonFloat(y));
+         j = JsonArrayInsert(j, JsonFloat(x + w));
+         j = JsonArrayInsert(j, JsonFloat(y));
+         j = JsonArrayInsert(j, JsonFloat(x + w));
+         j = JsonArrayInsert(j, JsonFloat(y + h));
+         j = JsonArrayInsert(j, JsonFloat(x));
+         j = JsonArrayInsert(j, JsonFloat(y + h));
+         j = JsonArrayInsert(j, JsonFloat(x));
+         j = JsonArrayInsert(j, JsonFloat(y));
+
+    return j;
+}
+
+json NUI_GetDefinedRectanglePoints(json jRectangle)
+{
+    float x = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_X));
+    float y = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_Y));
+    float w = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_W));
+    float h = JsonGetFloat(JsonObjectGet(jRectangle, NUI_PROPERTY_H));
+
+    return NUI_GetRectanglePoints(x, y, w, h);
+}
+
+json NUI_DefineCircle(float x, float y, float r)
+{
+    r = fclamp(r, 0.0, fmin(x, y));
+    float s = 2 * r;
+
+    json j = JsonObject();
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x - r));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y - r));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_W, JsonFloat(s));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_H, JsonFloat(s));
+    return j;
+}
+
+json NUI_GetTrianglePoints(float x, float y, float h, float b)
+{
+    json j= JsonArray();
+    j = JsonArrayInsert(j, JsonFloat(x));
+    j = JsonArrayInsert(j, JsonFloat(y));
+    j = JsonArrayInsert(j, JsonFloat(x - (b / 2.0)));
+    j = JsonArrayInsert(j, JsonFloat(y + h));
+    j = JsonArrayInsert(j, JsonFloat(x + (b / 2.0)));
+    j = JsonArrayInsert(j, JsonFloat(y + h));
+    j = JsonArrayInsert(j, JsonFloat(x));
+    j = JsonArrayInsert(j, JsonFloat(y));
+
+    return j;
+}
+
+void NUI_CreateTemplateControl(string sID)
+{
+    if (NUI_GetBuildLayer() > 0)
+        return;
+
+    NUI_IncrementBuildLayer();
+    NUI_SetBuildMode(NUI_ELEMENT_TEMPLATE);
+    NUI_ResetRunningPath();
+
+    SetLocalString(GetModule(), NUI_ELEMENT_TEMPLATE, sID);
+}
+
+void NUI_SaveTemplateControl()
+{
+    json j = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    string sID = GetLocalString(GetModule(), NUI_ELEMENT_TEMPLATE);
+
+    DeleteLocalString(GetModule(), NUI_ELEMENT_TEMPLATE);
+    SetLocalJson(GetModule(), NUI_ELEMENT_TEMPLATE + sID, j);
+
+    NUI_DecrementBuildLayer();
+}
+
+void NUI_AddTemplateControl(string sID)
+{
+    NUI_CreateControl(NUI_ELEMENT_TEMPLATE, sID);
+}
+
+void NUI_AddColumn(float fWidth = -1.0)
+{
+    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_COLUMNS, fWidth);
+    NUI_ResetControlWrap();
+}
+
+void NUI_AddRow(float fHeight = -1.0)
+{
+    NUI_IncrementCellsAtDepth(NUI_GetLayoutOrientation() != NUI_ORIENTATION_ROWS, fHeight);
+    NUI_ResetControlWrap();
+}
+
+void NUI_AddSpacer(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_SPACER, sID);
+}
+
+void NUI_AddLabel(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_LABEL, sID);
+}
+
+void NUI_AddTextbox(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_TEXTBOX, sID);
+}
+
+void NUI_AddCommandButton(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_COMMANDBUTTON, sID);
+}
+
+void NUI_AddImageButton(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_IMAGEBUTTON, sID);
+}
+
+void NUI_AddToggleButton(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_TOGGLEBUTTON, sID);
+}
+
+void NUI_AddCheckbox(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_CHECKBOX, sID);
+}
+
+void NUI_AddImage(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_IMAGE, sID);
+}
+
+void NUI_AddCombobox(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_COMBOBOX, sID);
+}
+
+void NUI_SetElements(json jElements)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ELEMENTS, jElements);
+}
+
+void NUI_BindElements(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ELEMENTS, NUI_BindVariable(sBind));
+}
+
+void NUI_AddComboboxEntryList(string sEntries, int nStart = -1)
+{
+    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
+    string sPath = NUI_GetRunningPath();
+    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    json jElements = JsonPointer(jRoot, sPath);
+    int nElements = NUI_GetLengthAtRunningPath(sPath);
+    int n, nCount = CountList(sEntries);
+
+    for (n = 0; n < nCount; n++)
+    {
+        string sEntry = GetListItem(sEntries, n);
+        int nValue = nStart == -1 ? nElements + n : nStart;
+
+        json jEntry = JsonArray();
+             jEntry = JsonArrayInsert(jEntry, JsonString(sEntry));
+             jEntry = JsonArrayInsert(jEntry, JsonInt(nValue));
+
+        jElements = JsonArrayInsert(jElements, jEntry);
+    }
+
+    NUI_ApplyPatchToRoot(jElements, "replace");
+    NUI_DropRunningPath(1);
+}
+
+void NUI_AddComboboxEntry(string sEntry, int nValue = -1)
+{
+    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
+    string sPath = NUI_GetRunningPath();
+
+    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    json jElements = JsonPointer(jRoot, sPath);
+
+    if (nValue < 0)
+        nValue = NUI_GetLengthAtRunningPath(sPath);
+
+    json jEntry = JsonArray();
+         jEntry = JsonArrayInsert(jEntry, JsonString(sEntry));
+         jEntry = JsonArrayInsert(jEntry, JsonInt(nValue));
+
+    jElements = JsonArrayInsert(jElements, jEntry);
+
+    NUI_ApplyPatchToRoot(jElements, "replace");
+    NUI_DropRunningPath(1);
+}
+
+void NUI_AddFloatSlider(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_FLOATSLIDER, sID);
+}
+
+void NUI_AddIntSlider(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_INTSLIDER, sID);
+}
+
+void NUI_AddProgressBar(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_PROGRESSBAR, sID);
+}
+
+void NUI_AddListbox()
+{
+    NUI_CreateListbox();
+}
+
+void NUI_CloseListbox()
+{
+    NUI_DropBuildLayer();
+}
+
+void NUI_AddColorPicker(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_COLORPICKER, sID);
+}
+
+void NUI_AddOptionGroup(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_OPTIONGROUP, sID);
+}
+
+void NUI_AddRadioButton(string sButton)
+{
+    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
+    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    json jElements = JsonPointer(jRoot, NUI_GetRunningPath());
+
+    jElements = JsonArrayInsert(jElements, JsonString(" " + sButton));
+
+    NUI_ApplyPatchToRoot(jElements, "replace");
+    NUI_DropRunningPath(1);
+}
+
+void NUI_AddRadioButtonList(string sButtons)
+{
+    NUI_AddRunningPath(NUI_PROPERTY_ELEMENTS, FALSE);
+    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    json jElements = JsonPointer(jRoot, NUI_GetRunningPath());
+
+    int n, nCount = CountList(sButtons);
+    for (n = 0; n < nCount; n++)
+    {
+        string sButton = GetListItem(sButtons, n);
+        json jButton = JsonString(" " + sButton);
+        
+        jElements = JsonArrayInsert(jElements, jButton);
+    }
+
+    NUI_ApplyPatchToRoot(jElements, "replace");
+    NUI_DropRunningPath(1);
+}
+
+void NUI_AddControlGroup()
+{
+    NUI_CreateGroup();
+}
+
+void NUI_CloseControlGroup()
+{
+    NUI_DropBuildLayer();
+}
+
+void NUI_AddChart(string sID = "")
+{
+    NUI_CreateControl(NUI_ELEMENT_CHART, sID);
+}
+
+void NUI_AddChartSeries(int nType, string sLegend, json jColor, json jData)
+{
+    json j = JsonObject();
+         j = JsonObjectSet(j, NUI_PROPERTY_TYPE, JsonInt(nType));
+         j = JsonObjectSet(j, NUI_PROPERTY_LEGEND, JsonString(sLegend));
+         j = JsonObjectSet(j, NUI_PROPERTY_COLOR, jColor);
+         j = JsonObjectSet(j, NUI_PROPERTY_DATA, jData);
+
+    NUI_AddRunningPath(NUI_PROPERTY_VALUE, FALSE);
+    json jRoot = NUI_GetBuildVariable(NUI_BUILD_ROOT);
+    json jSeries = JsonPointer(jRoot, NUI_GetRunningPath());
+         jSeries = JsonArrayInsert(jSeries, j);
+
+    NUI_ApplyPatchToRoot(jSeries, "replace");
+    NUI_DropRunningPath(1);
+}
+
+void NUI_AddCanvas()
+{
+    if (NUI_GetBuildMode() == NUI_ELEMENT_GROUP && NUI_GetRunningPathIndex() == -1)
+        NUI_ResetRunningPath(TRUE);
+
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLIST, JsonArray());
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLISTSCISSOR, jFALSE);
+    NUI_AddBuildLayer(NUI_ELEMENT_CANVAS);
+}
+
+void NUI_CloseCanvas()
+{
+    NUI_DropBuildLayer();
+}
+
+void NUI_DrawLine(json jPoints)
+{
+    json jCanvas = NUI_CreateCanvasTemplate();
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_POINTS, jPoints);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_POLYLINE));
+
+    NUI_BuildCanvas(jCanvas);
+}
+
+void NUI_DrawRectangle(float x, float y, float w, float h)
+{
+    NUI_DrawLine(NUI_GetRectanglePoints(x, y, w, h));
+}
+
+void NUI_DrawDefinedRectangle(json jRect)
+{
+    NUI_DrawLine(NUI_GetDefinedRectanglePoints(jRect));
+}
+
+void NUI_DrawCircle(float x, float y, float r)
+{
+    json jRect = NUI_DefineCircle(x, y, r);
+
+    json jCanvas = NUI_CreateCanvasTemplate();
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_RECT, jRect);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_CIRCLE));
+
+    NUI_BuildCanvas(jCanvas);
+}
+
+void NUI_DrawDefinedCircle(json jCircle)
+{
+    json jCanvas = NUI_CreateCanvasTemplate();
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_RECT, jCircle);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_CIRCLE));
+
+    NUI_BuildCanvas(jCanvas);
+}
+
+void NUI_DrawTriangle(float x, float y, float h, float b)
+{
+    NUI_DrawLine(NUI_GetTrianglePoints(x, y, h, b));
+}
+
+void NUI_DrawText(json jRect, string sText)
+{
+    json jCanvas = NUI_CreateCanvasTemplate();
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_RECT, jRect);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TEXT, JsonString(sText));
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_FILL, JsonNull());
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_TEXT));
+
+    NUI_BuildCanvas(jCanvas);
+}
+
+void NUI_DrawImage(string sResref, json jRect, int nAspect, int nHAlign, int nVAlign)
+{
+    json j = NUI_CreateCanvasTemplate();
+         j = JsonObjectSet(j, NUI_PROPERTY_COLOR, JsonNull());
+         j = JsonObjectSet(j, NUI_PROPERTY_FILL, JsonNull());
+         j = JsonObjectSet(j, NUI_PROPERTY_LINETHICKNESS, JsonNull());
+         j = JsonObjectSet(j, NUI_PROPERTY_IMAGE, JsonString(sResref));
+         j = JsonObjectSet(j, NUI_PROPERTY_RECT, jRect);
+         j = JsonObjectSet(j, NUI_PROPERTY_IMAGEASPECT, JsonInt(nAspect));
+         j = JsonObjectSet(j, NUI_PROPERTY_IMAGEHALIGN, JsonInt(nHAlign));
+         j = JsonObjectSet(j, NUI_PROPERTY_IMAGEVALIGN, JsonInt(nVAlign));
+         j = JsonObjectSet(j, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_IMAGE));
+
+    NUI_BuildCanvas(j);
+}
+
+void NUI_DrawCurve(json jA, json jB, json jCtrl0, json jCtrl1)
+{
+    json jCanvas = NUI_CreateCanvasTemplate();
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_A, jA);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_B, jB);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_CTRL0, jCtrl0);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_CTRL1, jCtrl1);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_FILL, jFALSE);
+         jCanvas = JsonObjectSet(jCanvas, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_CURVE));
+
+    NUI_BuildCanvas(jCanvas);
+}
+
+void NUI_DrawArc(json jC, float fRadius, float fAMin, float fAMax)
+{
+    json j = NUI_CreateCanvasTemplate();
+         j = JsonObjectSet(j, NUI_PROPERTY_C, jC);
+         j = JsonObjectSet(j, NUI_PROPERTY_RADIUS, JsonFloat(fRadius));
+         j = JsonObjectSet(j, NUI_PROPERTY_AMIN, JsonFloat(fAMin));
+         j = JsonObjectSet(j, NUI_PROPERTY_AMAX, JsonFloat(fAMax));
+         j = JsonObjectSet(j, NUI_PROPERTY_TYPE, JsonInt(NUI_CANVAS_ARC));
+
+    NUI_BuildCanvas(j);
+}
+
+void NUI_SetTitle(string sTitle)
+{
+    json j = JsonString(sTitle);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TITLE, j);
+}
+
+void NUI_BindTitle(string sBind)
+{
+    json j = NUI_BindVariable(sBind);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TITLE, j);
+}
+
+void NUI_SetGeometry(float x, float y, float w, float h)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_GEOMETRY, NUI_DefineRectangle(x, y, w, h));
+}
+
+void NUI_SetDefinedGeometry(json jGeometry)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_GEOMETRY, jGeometry);
+}
+
+void NUI_BindGeometry(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_GEOMETRY, NUI_BindVariable(sBind));
+}
+
+void NUI_SetResizable(int bResizable = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RESIZABLE, JsonBool(bResizable));
+}
+
+void NUI_BindResizable(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RESIZABLE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetCollapsible(int bCollapsible = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLLAPSIBLE, JsonBool(bCollapsible));
+}
+
+void NUI_BindCollapsible(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLLAPSIBLE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetModal(int bModal = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MODAL, JsonBool(!bModal));
+}
+
+void NUI_BindModal(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MODAL, NUI_BindVariable(sBind));
+}
+
+void NUI_SetTransparent(int bTransparent = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TRANSPARENT, JsonBool(bTransparent));
+}
+
+void NUI_BindTransparent(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TRANSPARENT, NUI_BindVariable(sBind));
+}
+
+void NUI_SetBorderVisible(int bVisible = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_BORDER, JsonBool(bVisible));
+}
+
+void NUI_BindBorderVisible(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_BORDER, NUI_BindVariable(sBind));
+}
+
+void NUI_SetVersion(int nVersion = 1)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VERSION, JsonInt(nVersion));
+}
+
+void NUI_SetOrientation(string sOrientation = NUI_ORIENTATION_ROWS)
+{
+    if (NUI_GetCurrentControlType() == NUI_ELEMENT_OPTIONGROUP)
+    {
+        int nOrientation = StringToInt(sOrientation);
+        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DIRECTION, JsonInt(nOrientation));
+        return;
+    }
+
+    if (NUI_GetCellStructureIsEmpty() == TRUE)
+    {
+        if (NUI_GetLayoutOrientation() == sOrientation)
+            return;
+        else
+        {
+            NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ORIENTATION, JsonString(sOrientation));
+
+            string sPath, sLayout;
+            if (NUI_GetBuildLayer() == 0)
+                sPath = "/root/type";
+            else if (NUI_GetBuildMode() == NUI_ELEMENT_GROUP)
+                sPath = "/children/0/type";
+            
+            if (sOrientation == NUI_ORIENTATION_ROWS)
+                sLayout = NUI_ELEMENT_COLUMN;
+            else
+                sLayout = NUI_ELEMENT_ROW;
+
+            NUI_ApplyPatchToRoot(JsonString(sLayout), "add", sPath);
+        }
+    }
+    else
+        Error("Attempted to set orientation after controls have been added; new orientation not set");
+}
+
+void NUI_SetWidth(float fWidth)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_WIDTH, JsonFloat(fWidth));
+}
+
+void NUI_SetHeight(float fHeight)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HEIGHT, JsonFloat(fHeight));
+}
+
+void NUI_SetSquare(float fSide)
+{
+    NUI_SetHeight(fSide);
+    NUI_SetWidth(fSide);
+}
+
+void NUI_SetAspectRatio(float fRatio)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ASPECT, JsonFloat(fRatio));
+}
+
+void NUI_SetImageAspect(int nAspect)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEASPECT, JsonInt(nAspect));
+}
+
+void NUI_SetImageHorizontalAlignment(int nHAlign)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEHALIGN, JsonInt(nHAlign));
+}
+
+void NUI_SetImageVerticalAlignment(int nVAlign)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEVALIGN, JsonInt(nVAlign));
+}
+
+void NUI_SetMargin(float fMargin)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MARGIN, JsonFloat(fMargin));
+}
+
+void NUI_SetPadding(float fPadding)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_PADDING, JsonFloat(fPadding));
+}
+
+void NUI_SetID(string sID)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ID, JsonString(sID));
+}
+
+void NUI_SetLabel(string sLabel)
+{
+    string sType = NUI_GetCurrentControlType();
+
+    if (sType == NUI_ELEMENT_LABEL || sType == NUI_ELEMENT_TEXTBOX_STATIC)
+        NUI_SetValue(JsonString(sLabel));
+    else
+        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, JsonString(sLabel));
+}
+
+void NUI_BindLabel(string sBind)
+{
+    string sType = NUI_GetCurrentControlType();
+
+    if (sType == NUI_ELEMENT_LABEL || sType == NUI_ELEMENT_TEXTBOX_STATIC)
+        NUI_BindValue(sBind);
+    else
+        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, NUI_BindVariable(sBind));
+}
+
+void NUI_SetEnabled(int bEnabled = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENABLED, JsonBool(bEnabled));
+}
+
+void NUI_BindEnabled(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENABLED, NUI_BindVariable(sBind));
+}
+
+void NUI_SetVisible(int bVisible = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, JsonBool(bVisible));
+}
+
+void NUI_BindVisible(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetTooltip(string sTooltip)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, JsonString(sTooltip));
+}
+
+void NUI_BindTooltip(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, NUI_BindVariable(sBind));
+}
+
+void NUI_SetRGBForegroundColor(int r, int g, int b, int a = 255)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, NUI_DefineRGBColor(r, g, b, a));
+}
+
+void NUI_SetDefinedForegroundColor(json jColor)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, jColor);
+}
+
+void NUI_BindForegroundColor(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, NUI_BindVariable(sBind));
+}
+
+/*
+// TODO Are these two necessary?  Maybe delete and use NUI_SetDrawColor instead?
+void NUI_SetDefinedColor(json jColor)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLOR, jColor);
+}
+*/
+
+// TODO why do these set the value property instead of the color proeprty?  I'm sure I did this
+// for a reason, but don't see it in the NUI definitions.  Check and remove?
+void NUI_SetDefinedColor(json jColor)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, jColor);
+}
+
+void NUI_SetRGBColor(int r, int g, int b, int a = 255)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_DefineRGBColor(r, g, b, a));
+}
+
+void NUI_BindColor(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetHorizontalAlignment(int nAlignment)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HALIGN, JsonInt(nAlignment));
+}
+
+void NUI_BindHorizontalAlignment(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_HALIGN, NUI_BindVariable(sBind));
+}
+
+void NUI_SetVerticalAlignment(int nAlignment)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALIGN, JsonInt(nAlignment));
+}
+
+void NUI_BindVerticalAlignment(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALIGN, NUI_BindVariable(sBind));
+}
+
+void NUI_SetResref(string sResref)
+{
+    // TODO Need special handling
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, JsonString(sResref));
+}
+
+void NUI_BindResref(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetStatic(int bStatic = TRUE)
+{
+    if (NUI_GetBuildMode() == NUI_ELEMENT_LISTBOX)
+        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_STATIC, JsonBool(bStatic));
+    else
+        NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TYPE, JsonString(NUI_ELEMENT_TEXTBOX_STATIC));
+}
+
+void NUI_SetPlaceholder(string sPlaceholder = "")
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, JsonString(sPlaceholder));
+}
+
+void NUI_BindPlaceholder(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LABEL, NUI_BindVariable(sBind));
+}
+
+void NUI_SetMaxLength(int nLength = 50)
+{
+    nLength = clamp(nLength, 1, 65535); // from niv's notes
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MAX, JsonInt(nLength));
+}
+
+void NUI_SetMultiline(int bMultiline = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MULTILINE, JsonBool(bMultiline));
+}
+
+void NUI_SetRowCount(int nRowCount)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWCOUNT, JsonInt(nRowCount));
+}
+
+void NUI_BindRowCount(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWCOUNT, NUI_BindVariable(sBind));
+}
+
+void NUI_SetRowHeight(float fRowHeight)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWHEIGHT, JsonFloat(fRowHeight));
+}
+
+void NUI_BindRowHeight(string sBind)
+{ 
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ROWHEIGHT, NUI_BindVariable(sBind));
+}
+
+void NUI_SetChecked(int bChecked = TRUE)
+{
+    NUI_SetValue(JsonBool(bChecked));
+}
+
+void NUI_BindChecked(string sBind)
+{
+    NUI_SetValue(NUI_BindVariable(sBind));
+}
+
+void NUI_SetDrawColor(json jColor)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLOR, jColor);
+}
+
+void NUI_BindDrawColor(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLOR, NUI_BindVariable(sBind));
+}
+
+void NUI_SetScissor(int bScissor)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DRAWLISTSCISSOR, JsonBool(bScissor));
+}
+
+void NUI_SetLineThickness(float fThickness)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LINETHICKNESS, JsonFloat(fThickness));
+}
+
+void NUI_BindLineThickness(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LINETHICKNESS, NUI_BindVariable(sBind));
+}
+
+void NUI_SetFill(int bFill = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FILL, JsonBool(bFill));
+}
+
+void NUI_BindFill(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FILL, NUI_BindVariable(sBind));
+}
+
+void NUI_SetCenter(float x, float y)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_C, NUI_DefinePoint(x, y));
+}
+
+void NUI_SetDefinedCenter(json jCenter)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_C, jCenter);
+}
+
+void NUI_BindCenter(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_C, NUI_BindVariable(sBind));
+}
+
+void NUI_SetRadius(float r)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RADIUS, JsonFloat(r));
+}
+
+void NUI_BindRadius(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RADIUS, NUI_BindVariable(sBind));
+}
+
+void NUI_SetAMin(float fMultiplier)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMIN, JsonFloat(PI * fMultiplier));
+}
+
+void NUI_BindAMin(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMIN, NUI_BindVariable(sBind));
+}
+
+void NUI_SetAMax(float fMultiplier)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMAX, JsonFloat(PI * fMultiplier));
+}
+
+void NUI_BindAMax(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_AMAX, NUI_BindVariable(sBind));
+}
+
+void NUI_SetText(string sText)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TEXT, JsonString(sText));
+}
+
+void NUI_BindText(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TEXT, NUI_BindVariable(sBind));
+}
+
+void NUI_SetPoints(json jPoints)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_POINTS, jPoints);
+}
+
+void NUI_BindPoints(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_POINTS, NUI_BindVariable(sBind));
+}
+
+void NUI_SetIntSliderBounds(int nLower, int nUpper, int nStep)
+{
+    json jLower = JsonInt(nLower);
+    json jUpper = JsonInt(nUpper);
+    json jStep = JsonInt(nStep);
+
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MIN, jLower);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MAX, jUpper);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_STEP, jStep);
+}
+
+void NUI_SetFloatSliderBounds(float fLower, float fUpper, float fStep)
+{
+    json jLower = JsonFloat(fLower);
+    json jUpper = JsonFloat(fUpper);
+    json jStep = JsonFloat(fStep);
+
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MIN, jLower);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_MAX, jUpper);
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_STEP, jStep);
+}
+
+void NUI_SetProgress(float fValue)
+{   
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, JsonFloat(fValue));
+}
+
+void NUI_BindProgress(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetValue(json jValue)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, jValue);
+}
+
+void NUI_BindValue(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VALUE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetImage(string sResref)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGE, JsonString(sResref));
+}
+
+void NUI_BindImage(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetRectangle(json jRect)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_RECT, jRect);
+}
+
+void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_SCROLLBARS, JsonInt(nScrollbars));
+}
+
+void NUI_SetCustomProperty(string sProperty, json jValue)
+{
+    NUI_SetCustomControlProperty(NUI_PROPERTY_USERDATA, sProperty, jValue);
+}
+
+json NUI_GetCustomProperty(json jUserData, string sProperty)
+{
+    return JsonObjectGet(jUserData, sProperty);
+}
+
+int NUI_CountCustomProperties(json jUserData)
+{
+    return JsonGetLength(jUserData);
+}
+
+json NUI_GetCustomPropertyByIndex(json jUserData, int nIndex)
+{
+    json jKeys = JsonObjectKeys(jUserData);
+    string sProperty = JsonGetString(JsonArrayGet(jKeys, nIndex));
+
+    return NUI_GetCustomProperty(jUserData, sProperty);
+}
+
+void NUI_SetBindScript(string sScript)
+{
+    NUI_SetHandler(NUI_PROPERTY_BINDDATA, "script", sScript);
+}
+
+void NUI_SetBuildScript(string sScript)
+{
+    NUI_SetHandler(NUI_PROPERTY_BUILDDATA, "script", sScript);
+}
+
+void NUI_SetEventScript(string sScript)
+{
+    NUI_SetHandler(NUI_PROPERTY_EVENTDATA, "script", sScript);
+}
+
+void NUI_SetBindFunction(string sFunction)
+{
+    NUI_SetHandler(NUI_PROPERTY_BINDDATA, "function", sFunction);
+}
+
+void NUI_SetEventFunction(string sFunction)
+{
+    NUI_SetHandler(NUI_PROPERTY_EVENTDATA, "function", sFunction);
+}
+
+void NUI_SetBuildFunction(string sFunction)
+{
+    NUI_SetHandler(NUI_PROPERTY_BUILDDATA, "function", sFunction);
+}
+
+void NUI_SetFormScript(string sScript)
+{
+    NUI_SetBuildScript(sScript);
+    NUI_SetBindScript(sScript);
+    NUI_SetEventScript(sScript);
+}
+
+void NUI_SetFormFunction(string sFunction)
+{
+    NUI_SetBuildFunction(sFunction);
+    NUI_SetBindFunction(sFunction);
+    NUI_SetEventFunction(sFunction);
+}
+
+void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
+{
+    NuiSetBind(oPC, nToken, sBind, jValue);
+}
+
+void NUI_DelayBindValue(object oPC, int nToken, string sBind, json jValue)
+{
+    DelayCommand(0.001, NUI_SetBindValue(oPC, nToken, sBind, jValue));
+}
+
+void NUI_SetBindWatch(object oPC, int nToken, string sBind, int bWatch = TRUE)
+{
+    NuiSetBindWatch(oPC, nToken, sBind, bWatch);
+}
+
+json NUI_GetBindValue(object oPC, int nToken, string sBind)
+{
+    return NuiGetBind(oPC, nToken, sBind);
+}
+
+
 void NUI_SetBindData(object oPC, int nToken, string sFormID, json jBinds)
 {
     json j = JsonObject();
@@ -2722,12 +3043,8 @@ struct NUIBindArrayData NUI_GetBindArrayData(json jBinds, int n)
 json NUI_CreateEventArrayData(string sFormID, string sControlID, int bIncludeChildren)
 {
     return JsonNull();
-
 }
 
-// ---< NUI_GetBindData >---
-// Used in event scripts, retrieves all available data for the current event
-// operation.
 struct NUIEventData NUI_GetEventData(int bIncludeChildren = TRUE)
 {
     struct NUIEventData ed;
@@ -2757,6 +3074,9 @@ struct NUIEventArrayData NUI_GetEventArrayData(json jBinds, int n)
 
     return ead;
 }
+
+// All below is experimental for custom control implementation.  DO NOT USE
+// ANY FUNCTION BELOW THIS WARNING XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void NUI_AbortFileFunction(string sMessage)
 {
@@ -2801,43 +3121,6 @@ void NUI_DropSeries(object oPC, string sFormID, string sControlID, string sTag)
 
 }
 
-json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchBase = FALSE, string sFolders = "")
-{
-    json jResrefs = JsonArray();
-
-    string sResref;
-    int n = 1;
-
-    while ((sResref = ResManFindPrefix(sPrefix, nResType, n++, bSearchBase, sFolders)) != "")
-        jResrefs = JsonArrayInsert(jResrefs, JsonString(sResref));
-
-    return JsonGetLength(jResrefs) == 0 ? JsonNull() : jResrefs;
-}
-
-void NUI_DefineFormsByFormfile()
-{
-    int f, fCount = CountList(NUI_FORMFILE_PREFIX);
-    for (f = 0; f < fCount; f++)
-    {
-        string sPrefix = GetListItem(NUI_FORMFILE_PREFIX, f);
-        json jFormfiles = NUI_GetResrefArray(sPrefix);
-        if (jFormfiles == JsonNull())
-            return;
-
-        NUI_SetCurrentOperation(NUI_OPERATION_DEFINE);
-
-        int n, nCount = JsonGetLength(jFormfiles);
-        for (n = 0; n < nCount; n++)
-        {
-            string sFormfile = JsonGetString(JsonArrayGet(jFormfiles, n));
-            SetLocalString(GetModule(), NUI_CURRENT_FORMFILE, sFormfile);
-            NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_DEFINITION_FUNCTION);
-        }
-
-        NUI_ClearCurrentOperation();
-    }
-}
-
 void NUI_DefineCustomControlsByFile()
 {
     json jControlFiles = NUI_GetResrefArray(NUI_CONTROLFILE_PREFIX);
@@ -2855,17 +3138,6 @@ void NUI_DefineCustomControlsByFile()
     }
 
     NUI_ClearCurrentOperation();
-}
-
-void NUI_Initialize()
-{
-    SetDebugLevel(DEBUG_LEVEL_NOTICE);
-    SetDebugLogging(DEBUG_LOG_ALL);
-
-    NUI_SetEventHandler();
-    NUI_InitializeDatabase();
-    NUI_DefineCustomControlsByFile();
-    NUI_DefineFormsByFormfile();
 }
 
 void NUI_AddCustomControl(string sControl, string sID)
