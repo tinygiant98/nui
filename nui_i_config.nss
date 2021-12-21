@@ -13,7 +13,7 @@
 // TRUE.  Normally, however, this should remain FALSE as there is no method for avoiding
 // form reloading on module load and all saving old data could do is potentially interfere
 // with new versions of formfiles.
-const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
 
 // If the above value is set to true, provide the name of the campaign database to be used
 // for holding form data here.

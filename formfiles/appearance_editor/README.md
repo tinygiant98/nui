@@ -26,6 +26,38 @@ For other installation methods, such as nasher, copy the base files into whateve
 
 For version updates, import `appedit_base.erf`.  This file will not contain configuration or language files and will prevent overwriting established configurations during version updates.
 
+> *** NOTE *** This form is heavy on instruction count and will cause TMI if your module does not have an increased TMI limit.  If you're playing single-player, go into the game options and set the instruction limit to its maximum value.  If you're running NWNX, use the `NWNX_SetInstructionLimit()` function in the UTIL plugin to increase the instruction limit.
+
+This NUI form integrates with several module-level events, so integration is somewhat detailed.  The NUI system itself should handle setting up the NUI event handling and inititalization functions.  However, for this form, you must also integrate player targeting and management for equipping, acquiring, unequipping and unacquiring items.
+
+If your module does not integrate player targeting capability, you must add it by including this in your `OnModuleLoad` event script:
+
+```c
+    SetEventScript(GetModule(), EVENT_SCRIPT_MODULE_ON_PLAYER_TARGET, "<targeting_script>");
+```
+In this case, replace `<targeting_script>` with the name of whatever script you plan on using.  That script must contain the following at a minimum:
+
+```c
+#include "nui_i_main"
+
+void main()
+{
+    NUI_RunTargetingEventHandler();
+}
+```
+
+If your module already has a script to handle player targeting, you must add the following line to that script:
+
+```c
+    NUI_RunTargetingEventHandler();
+```
+
+Since this particular form integrates several module-level events, your module must call the module event handler for each of the events.  Your module's event handlers for the `OnEquipItem`, `OnUnequipItem`, `OnAcquireItem` and `OnUnaquireItem` must contain a reference to the NUI system's module event handler and must pass the PC object.  The PC object for each event will be obtained differently.  For example, for the `OnEquipItem` event, the PC object is obtained by running `GetPCItemLastEquippedBy()`.  Once the PC object has been obtained, call the module handler with this line (where `oPC` is the obtained PC object):
+
+```c
+    NUI_RunModuleEventHandler(oPC);
+```
+
 ## Language Option
 
 The `appedit_full.erf` file will contain all language files for this form.  To select the language you want to use, after importing, open `nuio_appedit.nss`, read the `Language Configuation` block, and set the include directive appropriately.  No compilation is required.

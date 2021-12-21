@@ -1053,7 +1053,7 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
-    if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION"))
+    if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION") || TRUE)
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
         if (sError != "" && FindSubString(sError, "Chunk(1)") == -1)
@@ -1496,6 +1496,35 @@ void NUI_RunEventHandler()
     NUI_ClearCurrentOperation();
 }
 
+void NUI_RunNUIEventHandler()
+{
+    NUI_RunEventHandler();
+}
+
+void NUI_RunModuleEventFunction(object oPC, string sFunction)
+{
+    int n, nToken;
+
+    do 
+    {
+        if ((nToken = NuiGetNthWindow(oPC, n++)) > 0)
+        {
+            string sFormID = NuiGetWindowId(oPC, nToken);
+            NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), sFunction, oPC);
+        }
+    } while (nToken != 0);
+}
+
+void NUI_RunModuleEventHandler(object oPC = OBJECT_SELF)
+{
+    NUI_RunModuleEventFunction(oPC, "HandleModuleEvents");
+}
+
+void NUI_RunTargetingEventHandler()
+{
+    NUI_RunModuleEventFunction(GetLastPlayerToSelectTarget(), "HandlePlayerTargeting");
+}
+
 void NUI_DropBuildLayer()
 {
     json j = NUI_GetBuildVariable(NUI_BUILD_ROOT);
@@ -1903,13 +1932,10 @@ void NUI_SaveForm()
 int NUI_DisplayForm(object oPC, string sFormID)
 {
     json j = NUI_GetFormJSON(sFormID);
-
-    string sFormScript;
-
     if (j != JsonNull())
     {
         // if there are any custom controls, populate the required data ...
-        NUI_PopulateBuildJSON(oPC, sFormID);
+        //NUI_PopulateBuildJSON(oPC, sFormID);
 
         int nToken = NuiCreate(oPC, j, sFormID);
         NUI_BindForm(oPC, nToken);

@@ -38,7 +38,7 @@ Additionally, you must integrate the NUI system into your module's NUI event han
 If you already have an NUI event handler, you must `#include "nui_i_main"` and add this line to it somewhere:
 
 ```c
-    NUI_RunEventHandler();
+    NUI_RunNUIEventHandler();
 ```
 
 That's it!  The basic system should now run.
