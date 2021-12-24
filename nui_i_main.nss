@@ -1525,6 +1525,11 @@ void NUI_RunTargetingEventHandler()
     NUI_RunModuleEventFunction(GetLastPlayerToSelectTarget(), "HandlePlayerTargeting");
 }
 
+void NUI_RunGUIEventHandler()
+{
+    NUI_RunModuleEventFunction(GetLastGuiEventPlayer(), "HandleGUIEvents");
+}
+
 void NUI_DropBuildLayer()
 {
     json j = NUI_GetBuildVariable(NUI_BUILD_ROOT);
@@ -1653,8 +1658,6 @@ void NUI_BindForm(object oPC, int nToken)
 
     NUI_ClearCurrentOperation();
 }
-
-
 
 json NUI_CreateCanvasTemplate()
 {
@@ -1864,6 +1867,79 @@ void NUI_DefineFormsByFormfile()
 
         NUI_ClearCurrentOperation();
     }
+}
+
+void NUI_CreateFormProfile(string sFormID, string sProfileName)
+{
+    SetLocalString(GetModule(), "NUI_PROFILE", sFormID + ":" + sProfileName);
+    SetLocalJson(GetModule(), "NUI_PROFILE", JsonObject());
+}
+
+void NUI_SetProfileProperty(string sProperty, json jValue)
+{
+    json jProfile = GetLocalJson(GetModule(), "NUI_PROFILE");
+    if (jProfile == JsonNull())
+        jProfile = JsonObject();
+
+    if (sProperty == "" || jValue == JsonNull())
+        return;
+
+    jProfile = JsonObjectSet(jProfile, sProperty, jValue);
+    SetLocalJson(GetModule(), "NUI_PROFILE", jProfile);
+}
+
+void NUI_SaveFormProfile()
+{
+    string sProfile = GetLocalString(GetModule(), "NUI_PROFILE");
+    string sFormID = NUI_GetKey(sProfile);
+    string sProfileName = NUI_GetValue(sProfile);
+    json jProfile = GetLocalJson(GetModule(), "NUI_PROFILE");
+
+    sQuery = "INSERT INTO " + NUI_PROFILES + " (form, name, profile) " +
+             "VALUES (@form, @name, @profile) " +
+             "ON CONFLICT (form, name) DO UPDATE " +
+                "SET profile = @profile;";
+    sql = NUI_PrepareQuery(sQuery);
+    SqlBindString(sql, "@form", sFormID);
+    SqlBindString(sql, "@name", sProfileName);
+    SqlBindJson(sql, "@profile", jProfile);
+
+    SqlStep(sql);
+
+    DeleteLocalJson(GetModule(), "NUI_PROFILE");
+    DeleteLocalJson(GetModule(), "NUI_PROFILE");
+}
+
+json NUI_GetFormProfile(string sFormID, string sProfileName)
+{
+    if (sFormID == "" || sProfileName == "")
+        return JsonNull();
+
+    sQuery = "SELECT profile " + 
+            "FROM " + NUI_PROFILES + " " +
+            "WHERE form = @form " +
+                "AND name = @name;";
+    sql = NUI_PrepareQuery(sQuery);
+    SqlBindString(sql, "@form", sFormID);
+    SqlBindString(sql, "@name", sProfileName);
+
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
+}
+
+void NUI_InheritFormProfile(string sFormID, string sProfileName)
+{
+    json jProfile = NUI_GetFormProfile(sFormID, sProfileName);
+    if (jProfile == JsonNull())
+        return;
+
+    SetLocalJson(GetModule(), "NUI_PROFILE", jProfile);
+}
+
+void NUI_SetFormProfile(string sFormID, string sProfileName, json jProfile)
+{
+    SetLocalString(GetModule(), "NUI_PROFILE", sFormID + ":" + sProfileName);
+    SetLocalJson(GetModule(), "NUI_PROFILE", jProfile);
+    NUI_SaveFormProfile();
 }
 
 // -----------------------------------------------------------------------------

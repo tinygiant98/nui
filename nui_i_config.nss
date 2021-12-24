@@ -21,6 +21,7 @@ const string NUI_CAMPAIGN_DATABASE = "nui_form_data";
 
 // This is the table name for the sqlite table that holds all form definition data
 const string NUI_FORMS = "nui_forms";
+const string NUI_PROFILES = "nui_profiles";
 
 // The following two tables hold data pertaining to custom controls.  If you are not building
 // or using custom controls, do not modify these values.

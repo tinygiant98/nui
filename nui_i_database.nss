@@ -31,6 +31,14 @@ void NUI_InitializeDatabase()
     sql = NUI_PrepareQuery(sQuery);
     SqlStep(sql);
 
+    sQuery = "CREATE TABLE IF NOT EXISTS " + NUI_PROFILES + " (" +
+            "form TEXT NOT NULL, " +
+            "name TEXT NOT NULL, " +
+            "profile TEXT NOT NULL, " +
+            "UNIQUE (form, name));";
+    sql = NUI_PrepareQuery(sQuery);
+    SqlStep(sql);
+
     sQuery = "CREATE TABLE IF NOT EXISTS " + NUI_DATA + " (" +
             "pc TEXT NOT NULL, " +
             "form TEXT NOT NULL, " +
