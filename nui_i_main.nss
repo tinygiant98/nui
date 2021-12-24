@@ -74,8 +74,9 @@ void NUI_SaveForm();
 
 // ---< NUI_DisplayForm >---
 // Displays form sFormID for player oPC.  Runs auto-bind functions for all
-// bound controls.
-int NUI_DisplayForm(object oPC, string sFormID);
+// bound controls.  sProfileName is the name of the profile to open the form
+// with.
+int NUI_DisplayForm(object oPC, string sFormID, string sProfileName = "default");
 
 // ---< NUI_DestroyForm >---
 // Destroys the form identified by nToken for oPC, if it's currently open.
@@ -1050,8 +1051,12 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
         return FALSE;
     }
 
+    if (sArguments != "")
+        sArguments = "\"" + sArguments + "\"";
+
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
+    Notice(sChunk);
 
     if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION") || TRUE)
     {
@@ -1633,7 +1638,7 @@ void NUI_CreateListbox()
     NUI_AddBuildLayer(NUI_ELEMENT_LISTBOX);
 }
 
-void NUI_BindForm(object oPC, int nToken)
+void NUI_BindForm(object oPC, int nToken, string sProfileName)
 {
     string sFormID = NuiGetWindowId(oPC, nToken);
     sqlquery sqlBinds = NUI_GetBindTable(sFormID);
@@ -1653,7 +1658,7 @@ void NUI_BindForm(object oPC, int nToken)
     NUI_SetBindData(oPC, nToken, sFormID, jBinds);
 
     NUI_SetCurrentOperation(NUI_OPERATION_BIND);
-    if (NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC) == FALSE)
+    if (NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC, sProfileName) == FALSE)
         return;
 
     NUI_ClearCurrentOperation();
@@ -2005,7 +2010,7 @@ void NUI_SaveForm()
     NUI_SetFormfile(sID, GetLocalString(GetModule(), NUI_CURRENT_FORMFILE));
 }
 
-int NUI_DisplayForm(object oPC, string sFormID)
+int NUI_DisplayForm(object oPC, string sFormID, string sProfileName = "default")
 {
     json j = NUI_GetFormJSON(sFormID);
     if (j != JsonNull())
@@ -2014,7 +2019,7 @@ int NUI_DisplayForm(object oPC, string sFormID)
         //NUI_PopulateBuildJSON(oPC, sFormID);
 
         int nToken = NuiCreate(oPC, j, sFormID);
-        NUI_BindForm(oPC, nToken);
+        NUI_BindForm(oPC, nToken, sProfileName);
         return nToken;
     }
     else
