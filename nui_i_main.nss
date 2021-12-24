@@ -1874,8 +1874,11 @@ void NUI_DefineFormsByFormfile()
     }
 }
 
-void NUI_CreateFormProfile(string sFormID, string sProfileName)
+void NUI_CreateFormProfile(string sFormID, string sProfileName = "")
 {
+    if (sProfileName == "")
+        sProfileName = "default";
+
     SetLocalString(GetModule(), "NUI_PROFILE", sFormID + ":" + sProfileName);
     SetLocalJson(GetModule(), "NUI_PROFILE", JsonObject());
 }
