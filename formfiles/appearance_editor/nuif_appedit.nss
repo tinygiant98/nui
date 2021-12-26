@@ -16,7 +16,7 @@
 #include "util_i_csvlists"
 #include "util_i_debug"
 
-const string VERSION = "1.1.1";
+const string VERSION = "1.1.2";
 const string PROPERTIES = "APPEARANCE_EDITOR_PROPERTIES";
 const string FORM_ID = "appearance_editor";
 
@@ -131,6 +131,18 @@ void DeleteProperties(object oTarget = OBJECT_SELF)
     DeleteLocalJson(oTarget, PROPERTIES);
 }
 
+void RepairFormLayout()
+{
+    Notice("Repairing form layout");
+
+    int nToken = GetFormToken();
+
+    json jG = NuiGetBind(OBJECT_SELF, nToken, "formGeometry");
+    float h = JsonGetFloat(JsonObjectGet(jG, "h"));
+    h += FloatToInt(h) % 2 == 0 ? 1.0 : -1.0;
+    DelayCommand(1.0, NuiSetBind(OBJECT_SELF, nToken, "formGeometry", JsonObjectSet(jG, "h", JsonFloat(h))));
+}
+
 int  GetFormMode() { return JsonGetInt(GetProperty("formMode")); }
 void SetFormMode(int nMode)
 {
@@ -155,6 +167,8 @@ void SetFormMode(int nMode)
     NuiSetGroupLayout(OBJECT_SELF, nToken, "left_column", jLeft);
     NuiSetGroupLayout(OBJECT_SELF, nToken, "right_column", jRight);
     
+    RepairFormLayout();
+    /*
     // TODO this weird solution to an odd problem of control sizing on layout CHANGES
     // remove when a better solution is devised by niv?
     // This just up/downsizes the form by 1 pixel to force a control size refresh
@@ -163,6 +177,7 @@ void SetFormMode(int nMode)
     h += FloatToInt(h) % 2 == 0 ? 1.0 : -1.0;
     NuiSetBind(OBJECT_SELF, nToken, "geometry", JsonObjectSet(jG, "h", JsonFloat(h)));
     // end weird solution
+    */
 
     SetProperty("formMode", JsonInt(nMode));
 }
@@ -389,6 +404,44 @@ void SetColorSelected(string sColor)
 
     SetProperty("colorSelected", JsonString(sColor));
     NuiSetBind(OBJECT_SELF, GetFormToken(), "color_matrix_value:" + sColor, jTRUE);
+}
+
+json GetFormProfile() { return GetProperty("formProfile"); }
+void SetFormProfile(string sProfileName) 
+{
+    SetProperty("formProfile", NUI_GetFormProfile(FORM_ID, sProfileName));
+}
+
+json GetFormProfileProperty(string sProperty)
+{
+    return JsonObjectGet(GetFormProfile(), sProperty);
+}
+
+void CreateDefaultProfile()
+{
+    NUI_CreateFormProfile(FORM_ID, "default");
+    {
+        json jGeometry = NUI_DefineRectangle(100.0, 100.0, 650.0, 610.0);
+
+        NUI_SetProfileProperty("formGeometry", jGeometry);
+        NUI_SetProfileProperty("enableData", jTRUE);
+        NUI_SetProfileProperty("enableTargeting", jTRUE);
+        NUI_SetProfileProperty("enableSelf", jTRUE);
+        NUI_SetProfileProperty("enableOptions", jFALSE);
+
+        NUI_SetProfileProperty("showData", jFALSE);
+        NUI_SetProfileProperty("showTargeting", jTRUE);
+        NUI_SetProfileProperty("showSelf", jFALSE);
+        NUI_SetProfileProperty("showOptions", jFALSE);
+        NUI_SetProfileProperty("showObjectTitle", jTRUE);
+        NUI_SetProfileProperty("showObjectDescription", jFALSE);
+        NUI_SetProfileProperty("showMessageCenter", jFALSE);
+
+        NUI_SetProfileProperty("validObjectTypes", JsonInt(OBJECT_TYPE_ITEM));
+        NUI_SetProfileProperty("validObjectLocation", JsonInt(STATUS_INVENTORY | STATUS_EQUIPPED | STATUS_LOOSE));
+        NUI_SetProfileProperty("targetObjectVariable", JsonString("NUI_TARGET_OBJECT"));
+        NUI_SetProfileProperty("targetObjectString", JsonString(ObjectToString(OBJECT_SELF)));      
+    } NUI_SaveFormProfile();
 }
 
 int  GetTargetObjectSlot() { return JsonGetInt(GetProperty("targetObjectSlot")); }
@@ -799,7 +852,11 @@ void HandlePlayerTargeting()
 
 void SetPlayerTargeting()
 {
-    EnterTargetingMode(OBJECT_SELF, OBJECT_TYPE_CREATURE | OBJECT_TYPE_ITEM);
+    int nObjectTypes = JsonGetInt(GetFormProfileProperty("validObjectTypes"));
+    if (nObjectTypes == 0)
+        nObjectTypes = OBJECT_TYPE_CREATURE | OBJECT_TYPE_ITEM;
+
+    EnterTargetingMode(OBJECT_SELF, nObjectTypes);
 }
 
 int GetHasRequiredArmorFeat(object oTarget, string sModel)
@@ -2031,62 +2088,46 @@ string Get2DAListByCriteria(string s2DA, string sReturnColumn,
     //      want to return the value from column "itemclass" in "baseitems.2da", but only if the column "modeltype" in
     //      the same 2da file is "1", use the following:  Get2DAListByCriteria("baseitems", "itemclass", "modeltype", "1");
 
-    // Since there's no non-NWNX/third-party method to determine how many rows are in any given 2da file, set
-    //  nTolerance to the number of blank lines (in a row) you're willing to search before you call it a day.
-    //  For example, if this is set to 15, if Get2DAListByCriteria returns 15 blank lines in a row, the function will
-    //  stop attempting to read additional rows and return whatever has already been found.
-    int n, nCount, nTolerance = 15;
-    
     if (bReturnAllResults == TRUE)
     {
-        do {
+        int n, nCount = Get2DARowCount(s2DA);
+        for (n = 0; n < nCount; n++)
+        {
             string sResult = Get2DAString(s2DA, sReturnColumn, n++);
             if (sResult != "")
-            {
                 sReturn = AddListItem(sReturn, GetStringLowerCase(sResult));
-                nCount = 0;
-            }
-            else
-                nCount++;
-        } while (nCount <= nTolerance);
+        }
 
         return sReturn;
     }
 
     if (bReturnIndices == TRUE)
     {
-        n = 0; nCount = 0;
+        int n, nCount = Get2DARowCount(s2DA);
         string sResult;
 
-        do {
+        for (n = 0; n < nCount; n++)
+        {
             if (sReturnColumn == TWODA_INDEX)
             {
                 sResult = GetStringLowerCase(Get2DAString(s2DA, sCriteriaColumn, n++));
                 if (HasListItem(sCriteria, sResult) == TRUE)
                     sReturn = AddListItem(sReturn, IntToString(n - 1), TRUE);
-
-                if (sResult == "") nCount ++;
-                else               nCount = 0;
             }
             else
             {
                 sResult = Get2DAString(s2DA, sReturnColumn, n++);
                 if (sResult != "")
-                {
                     sReturn = AddListItem(sReturn, IntToString(n - 1), TRUE);
-                    nCount = 0;
-                }
-                else
-                    nCount++;
-            }                
-        } while (nCount <= nTolerance);
+            }
+        }
 
         return sReturn;
     }
 
     if (bReturnByIndex == TRUE)
     {
-        nCount = CountList(sCriteria);
+        int n, nCount = CountList(sCriteria);
         for (n = 0; n < nCount; n++)
         {
             int nIndex = StringToInt(GetListItem(sCriteria, n));
@@ -2098,15 +2139,13 @@ string Get2DAListByCriteria(string s2DA, string sReturnColumn,
 
     if (bUseCriteria == TRUE)
     {
-        n = 0;
-        nCount = 0;
-
-        do {
+        int n, nCount = Get2DARowCount(s2DA);
+        for (n = 0; n < nCount; n++)
+        {
             string sTargetColumn = bUseCriteria == TRUE ? sCriteriaColumn : sReturnColumn;
             string sResult = Get2DAString(s2DA, sTargetColumn, n);
 
-            if (sResult == "") nCount++;
-            else
+            if (sResult != "")
             {
                 if (bUseCriteria == TRUE)
                 {
@@ -2120,12 +2159,8 @@ string Get2DAListByCriteria(string s2DA, string sReturnColumn,
                 }
                 else
                     sReturn = AddListItem(sReturn, GetStringLowerCase(sResult));
-
-                nCount = 0;
             }
-
-            n++;
-        } while (nCount <= nTolerance);
+        }
     }
 
     return sReturn;
@@ -2139,7 +2174,6 @@ void PopulateSimpleModelData(int nType = BASE_CONTENT)
     {
         string sType = GetListItem(sTypes, t);
         string sClasses = Get2DAListByCriteria("baseitems", "itemclass", "modeltype", sType);
-        //string sIcons = Get2DAListByCriteria("baseitems", "defaulticon", "modeltype", sType);
         
         int n, nClasses = CountList(sClasses);
         for (n = 0; n < nClasses; n++)
@@ -2147,18 +2181,6 @@ void PopulateSimpleModelData(int nType = BASE_CONTENT)
             string sClass = GetListItem(sClasses, n);
             string sPrefix = sClass + "_";
 
-            //string sIcon = GetListItem(sIcons, n);
-            
-            //int nResType;
-            //if (sIcon == "i" + sClass) nResType = RESTYPE_MDL;
-           // else if (GetSubString(sIcon, 1, GetStringLength(sClass)) == sClass && 
-            //    GetStringLength(sIcon) == (GetStringLength(sClass) + 5))
-            //{
-            //    sPrefix = "i" + sClass;
-            //    nResType = RESTYPE_TGA;
-            //}
-
-            //json jResrefs = NUI_GetResrefArray(sPrefix, nResType, nType);
             json jResrefs = NUI_GetResrefArray(sPrefix, RESTYPE_MDL, nType);
             if (jResrefs == JsonNull())
             {
@@ -2747,7 +2769,8 @@ void CreateAppearanceTabs()
 
 void NUI_HandleFormDefinition()
 {
-    InitializeDatabase(); 
+    InitializeDatabase();
+    CreateDefaultProfile();
 
     float fHeight = 32.0;
     string sFormID = FORM_ID;
@@ -2764,7 +2787,7 @@ void NUI_HandleFormDefinition()
 
     NUI_CreateForm(sFormID, VERSION);
         NUI_SetResizable(TRUE);
-        NUI_BindGeometry("geometry");
+        NUI_BindGeometry("formGeometry");
         NUI_SetTitle(TITLE);
         NUI_SetCollapsible(FALSE);
         NUI_SetCustomProperty("toc", jTRUE);
@@ -2775,6 +2798,8 @@ void NUI_HandleFormDefinition()
                 NUI_SetWidth(75.0);
                 NUI_SetHeight(75.0);
                 NUI_SetTooltip("Open Model Data Loading Form");
+                NUI_BindVisible("showData");
+                NUI_BindEnabled("enableData");
                 NUI_AddCanvas();
                 {
                     NUI_DrawLine(JsonNull());
@@ -2796,27 +2821,31 @@ void NUI_HandleFormDefinition()
                         NUI_BindValue("block_title");
                         NUI_SetRGBForegroundColor(8, 227, 243);
                         NUI_SetWidth(500.0);
+                        NUI_BindVisible("showObjectTitle");
                 
                 NUI_AddRow(fSpacing);
                     NUI_AddTemplateControl("cb_label");
                         NUI_BindValue("block_tl_label");
                         NUI_SetWidth(50.0);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                        NUI_BindVisible("showObjectDescription");
                     NUI_AddTemplateControl("cb_label");
                         NUI_BindValue("block_tl_value");
                         NUI_SetRGBForegroundColor(45, 151, 185);
                         NUI_SetWidth(140.0);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
-
+                        NUI_BindVisible("showObjectDescription");
                     NUI_AddTemplateControl("cb_label");
                         NUI_BindValue("block_tr_label");
                         NUI_SetWidth(100.0);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                        NUI_BindVisible("showObjectDescription");
                     NUI_AddTemplateControl("cb_label");
                         NUI_SetWidth(180.0);
                         NUI_BindValue("block_tr_value");
                         NUI_SetRGBForegroundColor(45, 151, 185);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
+                        NUI_BindVisible("showObjectDescription");
 
                     NUI_AddSpacer();
 
@@ -2825,21 +2854,24 @@ void NUI_HandleFormDefinition()
                         NUI_BindValue("block_bl_label");
                         NUI_SetWidth(50.0);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                        NUI_BindVisible("showObjectDescription");
                     NUI_AddTemplateControl("cb_label");
                         NUI_BindValue("block_bl_value");
                         NUI_SetRGBForegroundColor(45, 151, 185);
                         NUI_SetWidth(140.0);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
-
+                        NUI_BindVisible("showObjectDescription");
                     NUI_AddTemplateControl("cb_label");
                         NUI_BindValue("block_br_label");
                         NUI_SetWidth(100.0);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                        NUI_BindVisible("showObjectDescription");
                     NUI_AddTemplateControl("cb_label");
                         NUI_SetWidth(180.0);
                         NUI_BindValue("block_br_value");
                         NUI_SetRGBForegroundColor(45, 151, 185);
                         NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
+                        NUI_BindVisible("showObjectDescription");
 
                     NUI_AddSpacer();
             } NUI_CloseControlGroup();
@@ -2849,19 +2881,26 @@ void NUI_HandleFormDefinition()
                 NUI_SetHeight(75.0);
                 NUI_SetLabel("gui_mp_examineu");
                 NUI_SetTooltip("Select Target Object");
+                NUI_BindEnabled("enableTargeting");
+                NUI_BindVisible("showTargeting");
 
         NUI_AddRow(25.0);
             NUI_AddCommandButton();
                 NUI_SetWidth(75.0);
                 NUI_SetLabel("Options");
+                NUI_BindEnabled("enableOptions");
+                NUI_BindVisible("showOptions");
 
             NUI_AddLabel();
                 NUI_BindValue("message_center_value");
                 NUI_BindForegroundColor("message_center_color");
+                NUI_BindVisible("showMessageCenter");
 
             NUI_AddCommandButton("cb_self");
                 NUI_SetWidth(75.0);
                 NUI_SetLabel("Self");
+                NUI_BindEnabled("enableSelf");
+                NUI_BindVisible("showSelf");
 
         NUI_AddRow();
             NUI_AddControlGroup();
@@ -3015,9 +3054,7 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
 
     json jReturn = JsonNull();
 
-    if (sBind == "geometry")
-        jReturn = NUI_DefineRectangle(100.0, 100.0, 650.0, 610.0);
-    else if (sBind == "geometry_handler")
+    if (sBind == "geometry_handler")
         jReturn = NUI_DefineRectangle(0.0, 0.0, 350.0, 580.0);
     else if (sBind == "handler_type_value")
         jReturn = JsonInt(0);
@@ -3034,7 +3071,12 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
             jReturn = JsonBool(GetColorCategorySelected() == NUI_GetValue(sBind));
     }
 
-    NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
+    // Set profile defaults
+    if (jReturn == JsonNull() && bSetDefaults == TRUE)
+        jReturn = GetFormProfileProperty(sBind);
+
+    if (jReturn != JsonNull())
+        NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
 }
 
 void HandleModuleEvents()
@@ -3096,12 +3138,26 @@ void HandleModuleEvents()
     }
 }
 
-void NUI_HandleFormBinds()
+void NUI_HandleFormBinds(string sProfileName)
 {
-    struct NUIBindData bd = NUI_GetBindData();
+    SetFormProfile(sProfileName);
 
-    // Set default values here...
-    SetTargetObject(OBJECT_SELF);
+    object oTarget;
+    json jTargetObject = GetFormProfileProperty("targetObjectVariable");
+    if (jTargetObject != JsonNull())
+        oTarget = GetLocalObject(OBJECT_SELF, JsonGetString(jTargetObject));
+    else
+    {
+        jTargetObject = GetFormProfileProperty("targetObjectString");
+        if (jTargetObject != JsonNull())
+            oTarget = StringToObject(JsonGetString(jTargetObject));
+        else
+            oTarget = OBJECT_SELF;
+    }
+
+    SetTargetObject(oTarget);
+
+    struct NUIBindData bd = NUI_GetBindData();
 
     int n;
     for (n = 0; n < bd.nCount; n++)
