@@ -111,7 +111,7 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
         NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
 }
 
-void NUI_HandleFormBinds()
+void NUI_HandleFormBinds(string sProfileName)
 {
     object oPC = OBJECT_SELF;
     struct NUIBindData bd = NUI_GetBindData();

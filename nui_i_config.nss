@@ -74,6 +74,25 @@ string NUI_EncodePC(object oPC)
     return GetName(oPC);
 }
 
+// This system has some basic debugging functionality.  In order to make this system work
+// under multiple modules without collision, the following function is provided to
+// allow you to call whatever debugging system you'd like to call.  If you use
+// squattingmonk's debug utility, no changes need to be made.
+//
+// NUI_DEBUG_SEVERITY_NONE     = 0;
+// NUI_DEBUG_SEVERITY_CRITICAL = 1;
+// NUI_DEBUG_SEVERITY_ERROR    = 2;
+// NUI_DEBUG_SEVERITY_WARNING  = 3;
+// NUI_DEBUG_SEVERITY_NOTICE   = 4;
+// NUI_DEBUG_SEVERITY_DEBUG    = 5;
+
+#include "util_i_debug"
+
+void NUI_Debug(string sMessage, int nSeverity = 4)
+{
+    Debug(sMessage, nSeverity);
+}
+
 // ---------------------------------------------------------------------------------------
 //                                FORMFILE CONFIGURATION
 // ---------------------------------------------------------------------------------------

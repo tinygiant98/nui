@@ -47,10 +47,6 @@ string DATABASE_TABLE_ARMOR = "nuif_appedit_armor";
 // must make by modifying the following variables.  This is VERY ADVANCED USAGE, so if you
 // don't know what to do here, just leave them all at "".  Running the appearance generation
 // code during the module startup process may take more than a minute, so please be patient.
-// If model data is being saved to the campaign database (see database settings above), this
-// value can be set to FALSE *AFTER* the first time the form is defined in your module and
-// all model data is saved.
-int LOAD_MODEL_DATA = FALSE;
 
 // This system sources the gender identifiers from the GENDER column in gender.2da.  If you're
 // not using all the genders contains in gender.2da, set this value to a comma-delimited list
@@ -76,3 +72,26 @@ string MODEL_PHENOTYPE = "0,2";
 // are using.  These values need to match the naming scheme for model parts (handl, shinr, etc.).
 // Typically, this will be left as a blank string.
 string MODEL_PARTS = "";
+
+// ---------------------------------------------------------------------------------------
+//                                MATRIX FILTERING
+// ---------------------------------------------------------------------------------------
+
+// Many of the matrices that display various models, colors and shapes can be filtered to
+// prevent certain players or profiles from selecting specific models, shapes or colors.
+// This function will be called each time a matrix is built for the player viewing the form.
+// If there are any profile options set that limit the array contents, those options will be
+// applied *before* this function is called.
+// The following data is included in each call:
+//
+//  Profile Name - the name of the profile the form was opened with
+//  Matrix Type - the type of matrix being received
+//  Matrix - a json matrix of models
+
+json FilterAppearanceEditorMatrix(json j)
+{
+
+    NUI_Debug("FilterAppearanceEditorMatrix - " + JsonDump(j), NUI_DEBUG_SEVERITY_NOTICE);
+
+    return j;
+}

@@ -10,9 +10,10 @@
 //                          DO NOT MAKE ANY CHANGES BELOW THIS LINE
 // ---------------------------------------------------------------------------------------
 
+#include "nui_i_config"
+#include "nui_i_main"
 #include "nuio_appedit"
 
-#include "nui_i_main"
 #include "util_i_csvlists"
 #include "util_i_debug"
 
@@ -50,7 +51,6 @@ json GetCompositeModelData(string sField, string sClass, string sPosition = "");
 json GetSimpleModelData(string sClass = "");
 json GetLayeredModelData(string sClass = "");
 json GetArmorAndAppearanceModelData(int nGender, int nRace, int nPhenotype, string sPart);
-//void HandlePartCategoryToggles();
 void HandleModelMatrixToggles();
 void HandleItemLayerToggles();
 void HandlePartCategoryToggles();
@@ -79,6 +79,7 @@ void EnablePerPartCheckbox(int bEnabled = TRUE);
 int GetIndicatorStatus(string sControl);
 void SetPerPartColorVariable(object oItem, int nColorID, int nChannel = -1, string sPartCategoryOverride = "");
 void EnablePerPartIndicator(string sControl, int bEnabled = TRUE);
+json GetFormProfileProperty(string sProperty);
 
 int IncrementLocalInt(string sVarName, int nStep = 1)
 {
@@ -133,8 +134,6 @@ void DeleteProperties(object oTarget = OBJECT_SELF)
 
 void RepairFormLayout()
 {
-    Notice("Repairing form layout");
-
     int nToken = GetFormToken();
 
     json jG = NuiGetBind(OBJECT_SELF, nToken, "formGeometry");
@@ -147,20 +146,20 @@ int  GetFormMode() { return JsonGetInt(GetProperty("formMode")); }
 void SetFormMode(int nMode)
 {
     json jLeft, jRight;
-    if (nMode == MODE_APPEARANCE)
+    string sFormIDs, sMode;
+    if (nMode == MODE_APPEARANCE || nMode == MODE_ARMOR)
     {
-        jLeft = NUI_GetFormRoot("_appedit_tab_appearance_left");
-        jRight = NUI_GetFormRoot("_appedit_tab_appearance_right");
+        jLeft = NUI_GetFormRoot("_appearance_editor_tab_appearance_left");
+        jRight = NUI_GetFormRoot("_appearance_editor_tab_appearance_right");
+        sFormIDs = "_appearance_editor_tab_appearance_left,_appearance_editor_tab_appearance_right";
+        sMode = "Creature";
     }
-    else if (nMode == MODE_ARMOR)
-    {
-        jLeft = NUI_GetFormRoot("_appedit_tab_appearance_left");
-        jRight = NUI_GetFormRoot("_appedit_tab_appearance_right");
-    }    
     else if (nMode == MODE_ITEMS)
     {
-        jLeft = NUI_GetFormRoot("_appedit_tab_items_left");
-        jRight = NUI_GetFormRoot("_appedit_tab_items_right");
+        jLeft = NUI_GetFormRoot("_appearance_editor_tab_items_left");
+        jRight = NUI_GetFormRoot("_appearance_editor_tab_items_right");
+        sFormIDs = "_appearance_editor_tab_items_left,_appearance_editor_tab_items_right";
+        sMode = "Armor";
     }
 
     int nToken = GetFormToken();
@@ -168,18 +167,44 @@ void SetFormMode(int nMode)
     NuiSetGroupLayout(OBJECT_SELF, nToken, "right_column", jRight);
     
     RepairFormLayout();
-    /*
-    // TODO this weird solution to an odd problem of control sizing on layout CHANGES
-    // remove when a better solution is devised by niv?
-    // This just up/downsizes the form by 1 pixel to force a control size refresh
-    json jG = NuiGetBind(OBJECT_SELF, nToken, "geometry");
-    float h = JsonGetFloat(JsonObjectGet(jG, "h"));
-    h += FloatToInt(h) % 2 == 0 ? 1.0 : -1.0;
-    NuiSetBind(OBJECT_SELF, nToken, "geometry", JsonObjectSet(jG, "h", JsonFloat(h)));
-    // end weird solution
-    */
-
     SetProperty("formMode", JsonInt(nMode));
+
+    // Set all the binds associated with this form mode
+    json jProperty, jBinds = NUI_GetJSONBindTable(sFormIDs);
+    int n, nCount = JsonGetLength(jBinds);
+    for (n = 0; n < nCount; n++)
+    {
+        string sBind = JsonGetString(JsonArrayGet(jBinds, n));
+        if (nMode == MODE_APPEARANCE || nMode == MODE_ARMOR)
+        {
+            string sAction = NUI_GetKey(sBind);
+            string sComponent = NUI_GetValue(sBind);
+
+            if (sComponent != "")
+            {
+                string sProperty = sAction + sMode + sComponent;
+                string sDefault = sAction + "Default";
+                json jProperty = GetFormProfileProperty(sProperty);
+                json jDefault = GetFormProfileProperty(sDefault);
+
+                if (jProperty == JsonNull())
+                {
+                    if (jDefault == JsonNull())
+                        jProperty = jTRUE;
+                    else
+                        jProperty = jDefault;
+                }
+
+                NuiSetBind(OBJECT_SELF, nToken, sBind, jProperty);
+            }
+        }
+        else if (nMode == MODE_ITEMS)
+        {
+            json jProperty = GetFormProfileProperty(sBind);
+            if (jProperty != JsonNull())
+                NuiSetBind(OBJECT_SELF, nToken, sBind, jProperty);
+        }
+    }
 }
 
 int  GetIsAppearanceSelected() { return GetFormMode() == MODE_APPEARANCE; }
@@ -204,7 +229,7 @@ string GetGroupOptions(string sFormID)
         sIndexes = AddListItem(sIndexes, NUI_GetValue(sBind), TRUE);
         UpdateBinds(sBind);
     }
-
+    
     return sIndexes;
 }
 
@@ -227,12 +252,12 @@ void LoadPartCategoryOptions()
         sCategory = "equipment";
     else
     {
-        Error("LoadPartCategoryOptions() called for category other than appearance or equipment");
+        NUI_Debug("LoadPartCategoryOptions() called for category other than appearance or equipment", NUI_DEBUG_SEVERITY_ERROR);
         return;
     }
 
     int nToken = GetFormToken();
-    string sFormID = "_appedit_tab_part_" + sCategory;
+    string sFormID = "_appearance_editor_tab_part_" + sCategory;
     json j = NUI_GetFormRoot(sFormID);
 
     NuiSetGroupLayout(OBJECT_SELF, nToken, "part_category_tab", j);
@@ -282,7 +307,7 @@ string GetCategoriesFromDatabase()
     else if (GetIsEquipmentSelected() == TRUE)
         sCategory = "equipment";
 
-    string sFormID = "_appedit_tab_color_" + sCategory;
+    string sFormID = "_appearance_editor_tab_color_" + sCategory;
 
     sQuery = "SELECT json_extract(value, '$.id') " +
              "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
@@ -314,7 +339,7 @@ void LoadColorCategoryOptions()
         sCategory = "equipment";
 
     int nToken = GetFormToken();
-    json j = NUI_GetFormRoot("_appedit_tab_color_" + sCategory);
+    json j = NUI_GetFormRoot("_appearance_editor_tab_color_" + sCategory);
     
     NuiSetGroupLayout(OBJECT_SELF, nToken, "color_category_tab", j);
     SetProperty("colorCategoryOptions", JsonString(GetCategoriesFromDatabase()));
@@ -422,25 +447,54 @@ void CreateDefaultProfile()
     NUI_CreateFormProfile(FORM_ID, "default");
     {
         json jGeometry = NUI_DefineRectangle(100.0, 100.0, 650.0, 610.0);
+        json jSelectorColor = NUI_DefineRGBColor(0,0,0);
 
         NUI_SetProfileProperty("formGeometry", jGeometry);
+        NUI_SetProfileProperty("showDefault", jTRUE);
+        NUI_SetProfileProperty("enableDefault", jTRUE);
+
         NUI_SetProfileProperty("enableData", jTRUE);
         NUI_SetProfileProperty("enableTargeting", jTRUE);
         NUI_SetProfileProperty("enableSelf", jTRUE);
-        NUI_SetProfileProperty("enableOptions", jFALSE);
+        NUI_SetProfileProperty("enableOptions", jTRUE);
+        NUI_SetProfileProperty("enableArmorModelMatrix", jTRUE);
+        NUI_SetProfileProperty("enableArmorPartsMatrix", jTRUE);
+        NUI_SetProfileProperty("enableArmorColorMatrix", jTRUE);
+        NUI_SetProfileProperty("enableArmorColorPalette", jTRUE);
+        NUI_SetProfileProperty("enableCreatureModelMatrix", jTRUE);
+        NUI_SetProfileProperty("enableCreaturePartsMatrix", jTRUE);
+        NUI_SetProfileProperty("enableCreatureColorMatrix", jFALSE);
+        NUI_SetProfileProperty("enableCreatureColorPalette", jFALSE);
+        NUI_SetProfileProperty("enableItemModelMatrix", jTRUE);
+        NUI_SetProfileProperty("enableItemColorMatrix", jTRUE);
+        NUI_SetProfileProperty("enableItemPartToggles", jTRUE);
+        NUI_SetProfileProperty("enablePerPartColoring", jTRUE);
 
-        NUI_SetProfileProperty("showData", jFALSE);
+        NUI_SetProfileProperty("showData", jTRUE);
         NUI_SetProfileProperty("showTargeting", jTRUE);
-        NUI_SetProfileProperty("showSelf", jFALSE);
-        NUI_SetProfileProperty("showOptions", jFALSE);
+        NUI_SetProfileProperty("showSelf", jTRUE);
+        NUI_SetProfileProperty("showOptions", jTRUE);
         NUI_SetProfileProperty("showObjectTitle", jTRUE);
-        NUI_SetProfileProperty("showObjectDescription", jFALSE);
-        NUI_SetProfileProperty("showMessageCenter", jFALSE);
+        NUI_SetProfileProperty("showObjectDescription", jTRUE);
+        NUI_SetProfileProperty("showMessageCenter", jTRUE);
+        NUI_SetProfileProperty("showArmorModelMatrix", jTRUE);
+        NUI_SetProfileProperty("showArmorPartsMatrix", jTRUE);
+        NUI_SetProfileProperty("showArmorColorMatrix", jTRUE);
+        NUI_SetProfileProperty("showArmorColorPalette", jTRUE);
+        NUI_SetProfileProperty("showCreatureModelMatrix", jTRUE);
+        NUI_SetProfileProperty("showCreaturePartsMatrix", jTRUE);
+        NUI_SetProfileProperty("showCreatureColorMatrix", jTRUE);
+        NUI_SetProfileProperty("showCreatureColorPalette", jTRUE);
+        NUI_SetProfileProperty("showItemModelMatrix", jTRUE);
+        NUI_SetProfileProperty("showItemColorMatrix", jTRUE);
+        NUI_SetProfileProperty("showItemPartToggles", jTRUE);
+        NUI_SetProfileProperty("showPerPartColoring", jTRUE);
 
-        NUI_SetProfileProperty("validObjectTypes", JsonInt(OBJECT_TYPE_ITEM));
-        NUI_SetProfileProperty("validObjectLocation", JsonInt(STATUS_INVENTORY | STATUS_EQUIPPED | STATUS_LOOSE));
-        NUI_SetProfileProperty("targetObjectVariable", JsonString("NUI_TARGET_OBJECT"));
-        NUI_SetProfileProperty("targetObjectString", JsonString(ObjectToString(OBJECT_SELF)));      
+        NUI_SetProfileProperty("validObjectTypes", JsonInt(OBJECT_TYPE_ITEM | OBJECT_TYPE_CREATURE));
+        NUI_SetProfileProperty("validItemLocations", JsonInt(STATUS_INVENTORY | STATUS_EQUIPPED | STATUS_LOOSE));
+        NUI_SetProfileProperty("validItemTypes", JsonInt(-1));
+        NUI_SetProfileProperty("targetObjectVariable", JsonNull());
+        NUI_SetProfileProperty("targetObjectString", JsonNull());      
     } NUI_SaveFormProfile();
 }
 
@@ -520,8 +574,6 @@ void SetTargetObject(object oTarget, int bDisplayMessage = TRUE)
     HighlightTarget(FALSE);
     HighlightTarget(FALSE, GetTargetObjectOwner());
     SetProperty("targetObject", JsonString(ObjectToString(oTarget)));
-
-    //DeleteModuleEventsBlocked();
 
     // This delay command was necessary because objects that moved from
     // equipped slots to inventory were still being shows as equipped
@@ -1036,6 +1088,15 @@ void LoadParts(string sModel = "", string sPartCategory = "")
         if (GetTargetObjectStatus() == STATUS_EQUIPPED)
             jPartIDs = FilterArmorPartIDs(jPartIDs);
 
+        // TODO put external filtering capability here.
+        jPartIDs = FilterAppearanceEditorMatrix(jPartIDs);
+        // Also send profile, form mode, part category selected, etc.
+        //           ^ profile name
+        //                    ^ form mode constant
+        //                               ^ nwn constant?
+        // Also matrix reason (i.e. part models, item colors, item shapes, etc.)
+
+
         BuildModelMatrix(jPartIDs);
     
         if (bAppearance == TRUE)
@@ -1068,7 +1129,7 @@ void LoadItemShapes()
     SetLinkGroupEnabled(nModelType == 2);
 
     string sIndexes, sPosition = GetListItem(sItemLayers, nLayer);
-    json jMatrix, jBlank = NUI_GetFormRoot("_appedit_tab_blank");
+    json jMatrix, jBlank = NUI_GetFormRoot("_appearance_editor_tab_blank");
 
     if (nModelType == 0)
         jShapeIDs = GetSimpleModelData(sClass);
@@ -1207,7 +1268,7 @@ void ToggleFormMode(string sType, int bForce = FALSE)
 
 void form_open()
 {
-    int nLoader = NuiFindWindow(OBJECT_SELF, "appearance_editor_loader");
+    int nLoader = NuiFindWindow(OBJECT_SELF, "appedit_loader");
     int nEditor = NuiFindWindow(OBJECT_SELF, "appearance_editor");
 
     string sTables = DATABASE_TABLE_SIMPLE + "," + DATABASE_TABLE_COMPOSITE + "," + DATABASE_TABLE_ARMOR;
@@ -1292,7 +1353,7 @@ object ResetObjectPerPartColoring(object oItem, string sColorCategories, int nPa
 
 void open_loader_click()
 {
-    string sFormID = "appearance_editor_loader";
+    string sFormID = "appedit_loader";
     int nToken = GetFormToken();
 
     NUI_DisplayForm(OBJECT_SELF, sFormID);
@@ -1442,8 +1503,16 @@ void SetPerPartCheckboxValue(int bChecked = TRUE)
 
 void EnablePerPartCheckbox(int bEnabled = TRUE)
 {
-    SetPerPartCheckboxValue(!bEnabled);
-    NUI_SetBindValue(OBJECT_SELF, GetFormToken(), "per_part_checkbox_enabled", JsonBool(bEnabled));
+    if (GetFormProfileProperty("enablePerPartColoring") == jFALSE ||
+        GetFormProfileProperty("enableArmorColorMatrix") == jFALSE)
+    {
+        bEnabled = FALSE;
+        SetPerPartCheckboxValue(bEnabled);
+    }
+    else
+        SetPerPartCheckboxValue(!bEnabled);
+    
+    NUI_SetBindValue(OBJECT_SELF, GetFormToken(), "enablePerPartColoring", JsonBool(bEnabled));
 }
 
 void DisablePerPartCheckbox()
@@ -2187,8 +2256,8 @@ void PopulateSimpleModelData(int nType = BASE_CONTENT)
                 jResrefs = NUI_GetResrefArray("i" + sPrefix, RESTYPE_TGA, nType);
                 if (jResrefs == JsonNull())
                 {
-                    Notice("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
-                        (sType == "0" ? "simple" : "layered") + " model content found for model file prefix '" + sPrefix + "'");
+                    NUI_Debug("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
+                        (sType == "0" ? "simple" : "layered") + " model content found for model file prefix '" + sPrefix + "'", NUI_DEBUG_SEVERITY_NOTICE);
                     continue;
                 }
             }
@@ -2227,8 +2296,8 @@ void PopulateCompositeModelData(int nType = BASE_CONTENT)
                     jResrefs = NUI_GetResrefArray("i" + sPrefix, RESTYPE_TGA, nType);
                     if (jResrefs == JsonNull())
                     {
-                        Notice("No " + (nType == BASE_CONTENT ? "base game " : "custom ") +
-                            "composite model content found for model file prefix '" + sPrefix + "'");
+                        NUI_Debug("No " + (nType == BASE_CONTENT ? "base game " : "custom ") +
+                            "composite model content found for model file prefix '" + sPrefix + "'", NUI_DEBUG_SEVERITY_NOTICE);
                         continue;
                     }
                 }
@@ -2274,8 +2343,8 @@ void PopulateArmorAndAppearanceModelData(int nType = BASE_CONTENT)
                     json jResrefs = NUI_GetResrefArray(sPrefix, RESTYPE_MDL, nType);
                     if (jResrefs == JsonNull())
                     {
-                        Notice("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
-                            "armor/appearance model content found for model file prefix '" + sPrefix + "'");
+                        NUI_Debug("No " + (nType == BASE_CONTENT ? "custom " : "base game ") +
+                            "armor/appearance model content found for model file prefix '" + sPrefix + "'", NUI_DEBUG_SEVERITY_NOTICE);
                         continue;
                     }
 
@@ -2289,7 +2358,7 @@ void PopulateArmorAndAppearanceModelData(int nType = BASE_CONTENT)
 
 void CreateBlankLayout()
 {
-    NUI_CreateForm("_appedit_tab_blank");
+    NUI_CreateForm("_appearance_editor_tab_blank");
     {
         NUI_AddSpacer();
     } NUI_SaveForm();
@@ -2297,7 +2366,7 @@ void CreateBlankLayout()
 
 void CreateColorCategoryTabs()
 {
-    string sFormPrefix = "_appedit_tab_color_";
+    string sFormPrefix = "_appearance_editor_tab_color_";
     string sCategories = "appearance,equipment";
 
     string tb = "toggle_button";
@@ -2326,7 +2395,7 @@ void CreateColorCategoryTabs()
         if (sOptions == "")
             return;
 
-        NUI_CreateForm("_appedit_tab_color_" + sCategory);
+        NUI_CreateForm("_appearance_editor_tab_color_" + sCategory);
 
         int c, x, cCount = CountList(sOptions);
         for (c = 0; c < cCount; c++)
@@ -2386,7 +2455,8 @@ void CreateColorCategoryTabs()
             NUI_AddCheckbox("per_part_coloring");
                 NUI_SetLabel("Per Part Coloring");
                 NUI_BindValue("per_part_checkbox_value");
-                NUI_BindEnabled("per_part_checkbox_enabled");
+                NUI_BindEnabled("enablePerPartColoring");
+                NUI_BindVisible("showPerPartColoring");
             NUI_AddSpacer();
         }
     
@@ -2401,7 +2471,7 @@ void CreatePartCategoryTabs()
     for (c = 0; c < cCount; c++)
     {
         string sCategory = GetListItem(sCategories, c);
-        string sFormID = "_appedit_tab_part_" + sCategory;
+        string sFormID = "_appearance_editor_tab_part_" + sCategory;
         int bAppearance = sCategory == "appearance";
         int bEquipment = sCategory == "equipment";
 
@@ -2491,7 +2561,6 @@ void CreatePartCategoryTabs()
                     NUI_SetID("part_cat:" + sLeftPointer);
                     NUI_SetLabel(sLeftPart);
                     NUI_BindValue("part_cat_value:" + sLeftPointer);
-                    NUI_BindEnabled("part_cat_enabled:" + sLeftPointer);
 
                     if (bEquipment == TRUE)
                     {
@@ -2520,7 +2589,7 @@ void CreatePartCategoryTabs()
                         NUI_SetID("part_cat:" + sRightPointer);
                         NUI_SetLabel(sRightPart);
                         NUI_BindValue("part_cat_value:" + sRightPointer);
-                        NUI_BindEnabled("part_cat_enabled:" + sRightPointer);
+                        //NUI_BindEnabled("part_cat_enabled:" + sRightPointer);
                         if (bEquipment == TRUE)
                         {
                             NUI_AddCanvas();
@@ -2531,7 +2600,6 @@ void CreatePartCategoryTabs()
                                 NUI_BindEnabled("indicator_enabled:" + sRightPointer);
                             } NUI_CloseCanvas();
                         }
-
                 }
             }
         } NUI_SaveForm();
@@ -2540,7 +2608,7 @@ void CreatePartCategoryTabs()
 
 void CreateItemsTabs()
 {
-    string sFormID = "_appedit_tab_items_left";
+    string sFormID = "_appearance_editor_tab_items_left";
 
     NUI_CreateForm(sFormID);
     {
@@ -2556,6 +2624,8 @@ void CreateItemsTabs()
                 NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
                 NUI_SetOrientation(NUI_ORIENTATION_COLUMNS);
                 NUI_BindEnabled("link_group_enabled");
+                NUI_BindVisible("showItemPartToggles");
+                NUI_BindEnabled("enableItemPartToggles");
             {
                 NUI_AddColumn(20.0);
                 NUI_AddColumn();
@@ -2632,17 +2702,25 @@ void CreateItemsTabs()
                 NUI_SetID("previous_shape");
                 NUI_SetLabel("Previous");
                 NUI_SetWidth(100.0);
+                NUI_BindVisible("showItemModelMatrix");
+                NUI_BindEnabled("enableItemModelMatrix");
             NUI_AddLabel();
                 NUI_SetValue(JsonString("Shapes"));
+                NUI_BindVisible("showItemModelMatrix");
+                NUI_BindEnabled("enableItemModelMatrix");
             NUI_AddCommandButton();
                 NUI_SetID("next_shape");
                 NUI_SetWidth(100.0);
                 NUI_SetLabel("Next");
+                NUI_BindVisible("showItemModelMatrix");
+                NUI_BindEnabled("enableItemModelMatrix");
         NUI_AddRow();
             NUI_AddControlGroup();
                 NUI_SetID("item_shape_matrix");
                 NUI_SetWidth(340.0);
                 NUI_SetHeight(150.0);
+                NUI_BindVisible("showItemModelMatrix");
+                NUI_BindEnabled("enableItemModelMatrix");
             {
                 NUI_AddSpacer();
             } NUI_CloseControlGroup();
@@ -2654,16 +2732,24 @@ void CreateItemsTabs()
                 NUI_SetID("previous_color");
                 NUI_SetLabel("Previous");
                 NUI_SetWidth(100.0);
+                NUI_BindVisible("showItemColorMatrix");
+                NUI_BindEnabled("enableItemColorMatrix");
             NUI_AddLabel();
                 NUI_SetValue(JsonString("Colors"));
+                NUI_BindVisible("showItemColorMatrix");
+                NUI_BindEnabled("enableItemColorMatrix");
             NUI_AddCommandButton();
                 NUI_SetID("next_color");
                 NUI_SetWidth(100.0);
                 NUI_SetLabel("Next");
+                NUI_BindVisible("showItemColorMatrix");
+                NUI_BindEnabled("enableItemColorMatrix");
         NUI_AddRow();
             NUI_AddControlGroup();
                 NUI_SetID("item_color_matrix");
                 NUI_SetHeight(50.0);
+                NUI_BindVisible("showItemColorMatrix");
+                NUI_BindEnabled("enableItemColorMatrix");
             {
                 NUI_AddSpacer();
             } NUI_CloseControlGroup();
@@ -2674,7 +2760,7 @@ void CreateItemsTabs()
     float fWidth = 256.0;
     float fHeight = 400.0;
 
-    sFormID = "_appedit_tab_items_right";
+    sFormID = "_appearance_editor_tab_items_right";
     NUI_CreateForm(sFormID);
     {
         NUI_AddControlGroup();
@@ -2698,11 +2784,11 @@ void CreateItemsTabs()
     } NUI_SaveForm();
 }
 
-void CreateAppearanceTabs()
+void CreateCreatureTabs()
 {
     float fHeight = 32.0;
 
-    string sFormID = "_appedit_tab_appearance_left";
+    string sFormID = "_appearance_editor_tab_appearance_left";
     NUI_CreateForm(sFormID);
     {
         NUI_AddRow();
@@ -2710,6 +2796,8 @@ void CreateAppearanceTabs()
                 NUI_SetID("color_category_tab");
                 NUI_SetHeight(176.0);
                 NUI_SetWidth(340.0);
+                NUI_BindVisible("show:ColorMatrix");
+                NUI_BindEnabled("enable:ColorMatrix");
             {
                 NUI_AddSpacer();
             } NUI_CloseControlGroup();
@@ -2718,12 +2806,14 @@ void CreateAppearanceTabs()
             NUI_AddControlGroup();
                 NUI_SetID("part_category_tab");
                 NUI_SetWidth(340.0);
+                NUI_BindVisible("show:PartsMatrix");
+                NUI_BindEnabled("enable:PartsMatrix");
             {
                 NUI_AddSpacer();
             } NUI_CloseControlGroup();
     } NUI_SaveForm();
 
-    sFormID = "_appedit_tab_appearance_right";
+    sFormID = "_appearance_editor_tab_appearance_right";
     NUI_CreateForm(sFormID);
     {
         NUI_AddRow();
@@ -2734,6 +2824,8 @@ void CreateAppearanceTabs()
                 NUI_SetImageVerticalAlignment(NUI_VALIGN_TOP);
                 NUI_SetImageHorizontalAlignment(NUI_HALIGN_LEFT);
                 NUI_SetImageAspect(NUI_ASPECT_EXACTSCALED);
+                NUI_BindVisible("show:ColorPalette");
+                NUI_BindEnabled("enable:ColorPalette");
                 NUI_AddCanvas();
                 {
                     NUI_DrawLine(JsonNull());
@@ -2746,6 +2838,8 @@ void CreateAppearanceTabs()
         NUI_AddRow();
             NUI_AddControlGroup();
                 NUI_SetID("model_matrix");
+                NUI_BindVisible("show:ModelMatrix");
+                NUI_BindEnabled("enable:ModelMatrix");
             {
                 NUI_AddSpacer();
             } NUI_CloseControlGroup();
@@ -2754,6 +2848,8 @@ void CreateAppearanceTabs()
             NUI_AddCommandButton("button_previous");
                 NUI_SetHeight(fHeight);
                 NUI_SetWidth(128.0);
+                NUI_BindVisible("show:ModelMatrix");
+                NUI_BindEnabled("enable:ModelMatrix");
                 NUI_SetLabel(PREVIOUS_LABEL != "" ? PREVIOUS_LABEL :
                                 ADJECTIVE_FOLLOWS == TRUE ? MODEL + " " + PREVIOUS : 
                                 PREVIOUS + " " + MODEL);
@@ -2761,6 +2857,8 @@ void CreateAppearanceTabs()
             NUI_AddCommandButton("button_next");
                 NUI_SetHeight(fHeight);
                 NUI_SetWidth(128.0);
+                NUI_BindVisible("show:ModelMatrix");
+                NUI_BindEnabled("enable:ModelMatrix");
                 NUI_SetLabel(NEXT_LABEL != "" ? NEXT_LABEL : 
                                 ADJECTIVE_FOLLOWS == TRUE ? MODEL + " " + NEXT :
                                 NEXT + " " + MODEL);
@@ -2791,6 +2889,7 @@ void NUI_HandleFormDefinition()
         NUI_SetTitle(TITLE);
         NUI_SetCollapsible(FALSE);
         NUI_SetCustomProperty("toc", jTRUE);
+        NUI_SetCustomProperty("skipAutoBind", jTRUE);
     {
         NUI_AddRow();
             NUI_AddCommandButton("open_loader");
@@ -2814,8 +2913,6 @@ void NUI_HandleFormDefinition()
                 NUI_SetBorderVisible(FALSE);
                 NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
             {
-                string sLabel;
-
                 NUI_AddRow(fSpacing);
                     NUI_AddTemplateControl("cb_label");
                         NUI_BindValue("block_title");
@@ -2921,13 +3018,13 @@ void NUI_HandleFormDefinition()
             } NUI_CloseControlGroup();
     } NUI_SaveForm();
 
-    CreateAppearanceTabs(); 
+    CreateCreatureTabs(); 
     CreateColorCategoryTabs();
     CreatePartCategoryTabs();
     CreateItemsTabs();
     CreateBlankLayout();
 
-    sFormID = "appearance_editor_loader";
+    sFormID = "appedit_loader";
     NUI_CreateTemplateControl("handler_button");
     {
         NUI_AddCommandButton();
@@ -3047,10 +3144,33 @@ void NUI_HandleFormDefinition()
     } NUI_SaveForm();
 }
 
+json UpdateTabBinds(string sBind)
+{
+    json jResult;
+    int nMode = GetFormMode();
+
+    if (nMode == MODE_APPEARANCE || nMode == MODE_ARMOR)
+    {
+        string sMode = NUI_GetKey(sBind);
+        string sComponent = NUI_GetValue(sBind);
+
+        if (sMode != "show" && sMode != "enable")
+            return JsonNull();
+
+        string sTab = (nMode == MODE_APPEARANCE ? "Creature" : "Armor");
+        string sProperty = sMode + sTab + sComponent;
+        jResult = GetFormProfileProperty(sProperty);
+    }
+    else if (nMode == MODE_ITEMS)
+        jResult = GetFormProfileProperty(sBind);
+
+    return jResult;
+}
+
 void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
 {
-    if (nToken == -1)
-        nToken = GetFormToken();
+    if (nToken == -1) nToken = GetFormToken();
+    string sFormID = NuiGetWindowId(OBJECT_SELF, nToken);
 
     json jReturn = JsonNull();
 
@@ -3063,17 +3183,13 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
     else
     {
         string sKey = NUI_GetKey(sBind);
-        if (sKey == "part_cat_enabled")
-            jReturn = jTRUE;
-        else if (sKey == "part_cat_value" || sKey == "model_matrix_value")
+        if (sKey == "part_cat_value" || sKey == "model_matrix_value")
             jReturn = JsonBool(GetPartCategorySelected() == NUI_GetValue(sBind));
         else if (sKey == "color_cat_value")
             jReturn = JsonBool(GetColorCategorySelected() == NUI_GetValue(sBind));
+        else if (sKey == "show" || sKey == "enable")
+            jReturn = UpdateTabBinds(sBind);
     }
-
-    // Set profile defaults
-    if (jReturn == JsonNull() && bSetDefaults == TRUE)
-        jReturn = GetFormProfileProperty(sBind);
 
     if (jReturn != JsonNull())
         NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
@@ -3155,15 +3271,37 @@ void NUI_HandleFormBinds(string sProfileName)
             oTarget = OBJECT_SELF;
     }
 
+    if (oTarget == GetModule())
+        oTarget = OBJECT_SELF;
+
     SetTargetObject(oTarget);
 
-    struct NUIBindData bd = NUI_GetBindData();
+    int nToken = GetFormToken();
+    string sFormID = NuiGetWindowId(OBJECT_SELF, nToken);
 
-    int n;
-    for (n = 0; n < bd.nCount; n++)
+    if (sFormID == FORM_ID)
     {
-        struct NUIBindArrayData bad = NUI_GetBindArrayData(bd.jBinds, n);
-        UpdateBinds(bad.sBind, bd.nToken, TRUE);
+        json jBinds = NUI_GetJSONBindTable(sFormID);
+        int n, nCount = JsonGetLength(jBinds);
+        for (n = 0; n < nCount; n++)
+        {
+            string sProperty = JsonGetString(JsonArrayGet(jBinds, n));
+            json jProperty = GetFormProfileProperty(sProperty);
+            if (jProperty != JsonNull())
+                NuiSetBind(OBJECT_SELF, nToken, sProperty, GetFormProfileProperty(sProperty));
+        }
+    }
+    else
+    {
+        object oPC = OBJECT_SELF;
+        struct NUIBindData bd = NUI_GetBindData();
+        int n;
+
+        for (n = 0; n < bd.nCount; n++)
+        {
+            struct NUIBindArrayData bad = NUI_GetBindArrayData(bd.jBinds, n);
+            UpdateBinds(bad.sBind, bd.nToken, TRUE);
+        }
     }
 }
 
@@ -3171,7 +3309,7 @@ void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
 
-    if (ed.sFormID == "appearance_editor_loader")
+    if (ed.sFormID == "appedit_loader")
     {
         if (ed.sEvent == "click")
         {

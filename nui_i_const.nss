@@ -23,6 +23,13 @@ string NUI_PATH_DRAWLIST = "draw_list,-1";
 json jTRUE = JsonBool(TRUE);
 json jFALSE = JsonBool(FALSE);
 
+const int NUI_DEBUG_SEVERITY_NONE     = 0;
+const int NUI_DEBUG_SEVERITY_CRITICAL = 1;
+const int NUI_DEBUG_SEVERITY_ERROR    = 2;
+const int NUI_DEBUG_SEVERITY_WARNING  = 3;
+const int NUI_DEBUG_SEVERITY_NOTICE   = 4;
+const int NUI_DEBUG_SEVERITY_DEBUG    = 5;
+
 // Variable names
 const string NUI_BUILD_ROOT = "NUI_BUILD_ROOT";
 const string NUI_BUILD_CONTROL = "NUI_BUILD_CONTROL";

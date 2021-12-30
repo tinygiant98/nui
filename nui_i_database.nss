@@ -72,6 +72,20 @@ sqlquery NUI_GetTOCForms()
     return sql;
 }
 
+int NUI_GetSkipAutoBind(string sFormID)
+{
+    sQuery = "SELECT 1 " +
+             "FROM " + NUI_FORMS + ", json_each(" + NUI_FORMS + ".json, '$') " +
+             "WHERE type = 'object' " +
+                "AND json_extract(" + NUI_FORMS + ".json, '$.user_data.skipAutoBind') = @skip " +
+                "AND form = @form;";
+    sql = NUI_PrepareQuery(sQuery);
+    SqlBindString(sql, "@form", sFormID);
+    SqlBindInt(sql, "@skip", 1);
+
+    return SqlStep(sql);
+}
+
 json NUI_GetJSONValueByPath(string sFormID, string sControlID, string sPath)
 {
     // Only works for returning arrays and objects, not individual values?
@@ -196,18 +210,21 @@ json NUI_GetBuildData(string sFormID, string sControlID)
 }
 
 sqlquery NUI_GetBindTable(string sFormID, string sControlID = "")
+//json NUI_GetBindTable(string sFormID, string sControlID = "")
 {
     string sChild = "SELECT json_tree.* " +
             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$.bind') != 'NULL' " +
-                "AND form = @form";
+                "AND form LIKE '%" + sFormID + "%'";
+                //"AND form = @form";
 
     string sParent = "SELECT json_tree.* " +
             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 (sControlID != "" ? "AND json_extract(value, '$.id') = @control " : "") +
-                "AND form = @form";
+                "AND form LIKE '%" + sFormID + "%'";
+                //"AND form = @form";
 
     sQuery = "SELECT IFNULL(json_extract(parent.value, '$.type'), '_form_'), " +
                 "IFNULL(json_extract(parent.value, '$.bind_data'), '_nobind_'), " +
@@ -218,11 +235,39 @@ sqlquery NUI_GetBindTable(string sFormID, string sControlID = "")
                 "ON child.parent = parent.id;";
 
     sql = NUI_PrepareQuery(sQuery);
-    SqlBindString(sql, "@form", sFormID);
     if (sControlID != "")
         SqlBindString(sql, "@control", sControlID);
-
+    
     return sql;
+}
+
+json NUI_GetJSONBindTable(string sFormIDs)
+{
+    string sInClause;
+    int n, nCount = CountList(sFormIDs);
+    for (n = 0; n < nCount; n++)
+        sInClause = AddListItem(sInClause, "'" + GetListItem(sFormIDs, n) + "'");
+
+    string sChild = "SELECT json_tree.* " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
+            "WHERE type = 'object' " +
+                "AND json_extract(value, '$.bind') != 'NULL' " +
+                "AND form IN (" + sInClause + ")";
+
+    string sParent = "SELECT json_tree.* " +
+            "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
+            "WHERE type = 'object' " +
+                "AND form IN (" + sInClause + ")";
+
+    sQuery = "SELECT json_group_array(json_extract(child.value, '$.bind')) " +
+            "FROM (" + sParent +") parent " +
+            "INNER JOIN (" + sChild + ") child " +
+                "ON child.parent = parent.id;";
+
+    sql = NUI_PrepareQuery(sQuery);
+
+    SqlStep(sql);
+    return JsonArrayTransform(SqlGetJson(sql, 0), JSON_ARRAY_UNIQUE);
 }
 
 sqlquery NUI_GetCustomControlTable(string sFormID)

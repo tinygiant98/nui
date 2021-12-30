@@ -7,10 +7,11 @@
 // datatypes or other advanced nwscript features.  See the README.md document for
 // additional details and example usage.
 
-#include "util_i_debug"
+//#include "util_i_debug"
+#include "util_i_color"
 #include "util_i_csvlists"
-#include "nui_i_config"
 #include "nui_i_const"
+#include "nui_i_config"
 #include "nui_i_database"
 
 // -----------------------------------------------------------------------------
@@ -895,7 +896,7 @@ void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO);
 void NUI_SetCustomProperty(string sProperty, json jValue);
 
 // ---< NUI_GetCustomProperty >---
-// Retrieves custom proeprty sProperty from user data jUserData.
+// Retrieves custom property sProperty from user data jUserData.
 json NUI_GetCustomProperty(json jUserData, string sProperty);
 
 // ---< NUI_CountCustomProperties >---
@@ -1044,28 +1045,19 @@ void NUI_ClearCurrentOperation()
 int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJECT_SELF, string sArguments = "")
 {
     if (sFile == "" || sFunction == "")
-    {
-        //Error("Unable to execute file function; sFile or sFunction is null." +
-        //    "\n  > sFile - '" + sFile + "'" +
-        //    "\n  > sFunction - '" + sFunction + "'");
         return FALSE;
-    }
 
     if (sArguments != "")
         sArguments = "\"" + sArguments + "\"";
 
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
-    Notice(sChunk);
 
     if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION") || TRUE)
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
         if (sError != "" && FindSubString(sError, "Chunk(1)") == -1)
-        {
-            Notice("sChunk - " + sChunk);
-            Error(sError);
-        }
+            NUI_Debug(sError, NUI_DEBUG_SEVERITY_ERROR);
 
         return sError == "";
     }
@@ -1213,8 +1205,8 @@ void NUI_NormalizeRunningPath(string sElement)
     else if (sMode == NUI_ELEMENT_TEMPLATE)
         NUI_SetRunningPathSource("");
     else
-        Error("NUI Build error in NUI_NormalizeRunningPath; could not " +
-            "handle normalization for sElement = " + sElement);
+        NUI_Debug("NUI Build error in NUI_NormalizeRunningPath; could not " +
+            "handle normalization for sElement = " + sElement, NUI_DEBUG_SEVERITY_ERROR);
 }
 
 string NUI_GetRunningPath(int bDropIndex = FALSE)
@@ -1466,13 +1458,12 @@ void NUI_RunHandler(string sType, string sFormID, string sControlID, object oTar
 
             if (NUI_ExecuteFileFunction(sFormfile, sFunction, oTarget) == FALSE)
             {
-                if (FALSE)
-                    Error("Handler not found for " + sType + ":" +
-                        "\n  sFormID -> " + sFormID +
-                        "\n  sControlID -> " + sControlID +
-                        "\n  sFormfile -> " + sFormfile +
-                        "\n  sFunction -> " + sFunction +
-                        "\n  oTarget -> " + GetName(oTarget));
+                NUI_Debug("Handler not found for " + sType + ":" +
+                    "\n  sFormID -> " + sFormID +
+                    "\n  sControlID -> " + sControlID +
+                    "\n  sFormfile -> " + sFormfile +
+                    "\n  sFunction -> " + sFunction +
+                    "\n  oTarget -> " + GetName(oTarget), NUI_DEBUG_SEVERITY_ERROR);
             }
         }
     }
@@ -1641,26 +1632,35 @@ void NUI_CreateListbox()
 void NUI_BindForm(object oPC, int nToken, string sProfileName)
 {
     string sFormID = NuiGetWindowId(oPC, nToken);
-    sqlquery sqlBinds = NUI_GetBindTable(sFormID);
-    json jBinds = JsonArray();
 
-    while (SqlStep(sqlBinds))
+    if (NUI_GetSkipAutoBind(sFormID) == FALSE)
     {
-        json jBind = JsonObject();
-             jBind = JsonObjectSet(jBind, NUI_BIND_TYPE, JsonString(SqlGetString(sqlBinds, 0)));
-             jBind = JsonObjectSet(jBind, NUI_BIND_PROPERTY, JsonString(SqlGetString(sqlBinds, 2)));
-             jBind = JsonObjectSet(jBind, NUI_BIND_VARIABLE, JsonString(SqlGetString(sqlBinds, 3)));
-             jBind = JsonObjectSet(jBind, NUI_BIND_USERDATA, SqlGetJson(sqlBinds, 4));
+        // If you're skipping autobind, you better know what you're doing as there won't be any
+        // bind data available to you during the form bind process.
 
-        jBinds = JsonArrayInsert(jBinds, jBind);
+        sqlquery sqlBinds = NUI_GetBindTable(sFormID);   
+
+        //json jBinds = NUI_GetJSONBindTable(sFormID);
+        //jBinds = JsonArrayTransform(jBinds, JSON_ARRAY_UNIQUE);
+
+        json jBinds = JsonArray();
+
+        while (SqlStep(sqlBinds))
+        {
+            json jBind = JsonObject();
+                 jBind = JsonObjectSet(jBind, NUI_BIND_TYPE, JsonString(SqlGetString(sqlBinds, 0)));
+                 jBind = JsonObjectSet(jBind, NUI_BIND_PROPERTY, JsonString(SqlGetString(sqlBinds, 2)));
+                 jBind = JsonObjectSet(jBind, NUI_BIND_VARIABLE, JsonString(SqlGetString(sqlBinds, 3)));
+                 jBind = JsonObjectSet(jBind, NUI_BIND_USERDATA, SqlGetJson(sqlBinds, 4));
+
+            jBinds = JsonArrayInsert(jBinds, jBind);
+        }
+
+        NUI_SetBindData(oPC, nToken, sFormID, jBinds);
     }
 
-    NUI_SetBindData(oPC, nToken, sFormID, jBinds);
-
     NUI_SetCurrentOperation(NUI_OPERATION_BIND);
-    if (NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC, sProfileName) == FALSE)
-        return;
-
+    NUI_ExecuteFileFunction(NUI_GetFormfile(sFormID), NUI_FORMFILE_BINDS_FUNCTION, oPC, sProfileName);
     NUI_ClearCurrentOperation();
 }
 
@@ -1998,9 +1998,9 @@ void NUI_CreateForm(string sID, string sVersion = "")
     if (sID != "")
     {
         if (GetStringLeft(sID, 1) == "_")
-            Notice(" > Defining tab " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
+            NUI_Debug(" > Defining tab " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"), NUI_DEBUG_SEVERITY_NOTICE);
         else
-            Notice("Defining form " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"));
+            NUI_Debug("Defining form " + sID + (sVersion == "" ? "" : " (Version " + sVersion + ")"), NUI_DEBUG_SEVERITY_NOTICE);
     }
 }
 
@@ -2026,7 +2026,7 @@ int NUI_DisplayForm(object oPC, string sFormID, string sProfileName = "default")
         return nToken;
     }
     else
-        CriticalError("JSON data for form '" + sFormID + "' not found");
+        NUI_Debug("JSON data for form '" + sFormID + "' not found", NUI_DEBUG_SEVERITY_CRITICAL);
 
     return -1;
 }
@@ -2624,7 +2624,7 @@ void NUI_SetOrientation(string sOrientation = NUI_ORIENTATION_ROWS)
         }
     }
     else
-        Error("Attempted to set orientation after controls have been added; new orientation not set");
+        NUI_Debug("Attempted to set orientation after controls have been added; new orientation not set", NUI_DEBUG_SEVERITY_ERROR);
 }
 
 void NUI_SetWidth(float fWidth)
@@ -3191,7 +3191,7 @@ struct NUIEventArrayData NUI_GetEventArrayData(json jBinds, int n)
 void NUI_AbortFileFunction(string sMessage)
 {
     SetLocalInt(GetModule(), "FILE_FUNCTION_ABORTED", TRUE);
-    Notice(sMessage);
+    NUI_Debug(sMessage, NUI_DEBUG_SEVERITY_NOTICE);
 }
 
 void NUI_ClearFileFunctionAborted()
