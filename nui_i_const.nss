@@ -71,6 +71,9 @@ const string NUI_ELEMENT_TEMPLATE = "template";
 // Properties
 const string NUI_PROPERTY_ELEMENTS = "elements";
 const string NUI_PROPERTY_TOOLTIP = "tooltip";
+const string NUI_PROPERTY_DISABLED_TOOLTIP = "disabled_tooltip";
+const string NUI_PROPERTY_STRREF = "strref";
+const string NUI_PROPERTY_ENCOURAGED = "encouraged";
 const string NUI_PROPERTY_VISIBLE = "visible";
 const string NUI_PROPERTY_ENABLED = "enabled";
 const string NUI_PROPERTY_PADDING = "padding";
@@ -129,6 +132,8 @@ const string NUI_PROPERTY_IMAGEASPECT = "image_aspect";
 const string NUI_PROPERTY_IMAGEHALIGN = "image_halign";
 const string NUI_PROPERTY_IMAGEVALIGN = "image_valign";
 const string NUI_PROPERTY_BUILDABLE = "buildable";
+const string NUI_PROPERTY_RENDER_POSITION = "order";
+const string NUI_PROPERTY_RENDER_CONDITION = "render";
 
 const string NUI_PROPERTY_USERDATA = "user_data";
 const string NUI_PROPERTY_BINDDATA = "bind_data";
@@ -152,6 +157,19 @@ const int NUI_CANVAS_CIRCLE = 2;
 const int NUI_CANVAS_ARC = 3;
 const int NUI_CANVAS_TEXT = 4;
 const int NUI_CANVAS_IMAGE = 5;
+const int NUI_CANVAS_LINE = 6;
+
+const int NUI_POSITION_BELOW = -1;
+const int NUI_POSITION_ABOVE = 1;
+
+const int NUI_CONDITION_ALWAYS = 0;
+const int NUI_CONDITION_MOUSE_OFF = 1;
+const int NUI_CONDITION_MOUSE_HOVER = 2;
+const int NUI_CONDITION_MOUSE_LEFT = 3;
+const int NUI_CONDITION_MOUSE_RIGHT = 4;
+const int NUI_CONDITION_MOUSE_MIDDLE = 5;
+
+const int NUI_CANVAS
 
 const int NUI_CHART_LINE = 0;
 const int NUI_CHART_BAR = 1;

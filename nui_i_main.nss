@@ -141,6 +141,11 @@ json NUI_DefineCircle(float x, float y, float r);
 // point x, y, height h and base b.
 json NUI_GetTrianglePoints(float x, float y, float h, float b);
 
+// ---< NUI_DefineStringByStringRef >---
+// Creates a json object which will render the associated text as
+// retrieved by strref from the module's tlk file.
+json NUI_DefineStringByStringRef(int nStringRef);
+
 // ---< NUI_CreateTemplateControl >---
 // ** ADVANCED USAGE **
 // Starts a template control definition. Only one base control
@@ -496,6 +501,11 @@ void NUI_SetHeight(float fHeight);
 // Convenience function to set both the control height and
 // width to fHeight.
 void NUI_SetSquare(float fSide);
+
+// ---< NUI_SetDimensions >---
+// Convenience function to set the control's width to fWidth
+// and height to fHeight.
+void NUI_SetDimensions(float fWidth, float fHeight);
 
 // ---< NUI_SetAspectRatio >---
 // Statically sets the controls aspect ratio to fRatio, defined
@@ -865,6 +875,26 @@ void NUI_SetImage(string sResref);
 // Dynamically binds the current control's xxxxxx property
 // to sBind.
 void NUI_BindImage(string sBind);
+
+// ---< NUI_SetEncouraged >---
+// Statically sets the current control's encouraged property
+// to bEncouraged.
+void NUI_SetEncouraged(int bEncouraged = TRUE);
+
+// ---< NUI_BindEncouraged >---
+// Dynamically binds the current control's encouraged property
+// to sBind.
+void NUI_BindEncouraged(string sBind);
+
+// ---< NUI_SetDisabledTooltip >---
+// Statically sets the current control's disabled_tooltip property
+// to string sTooltip.
+void NUI_SetDisabledTooltip(string sTooltip);
+
+// ---< NUI_BindDisabledTooltip >---
+// Dynamically binds the current control's disabled_tooltip property
+// to sBind.
+void NUI_BindDisabledTooltip(string sBind);
 
 // ---< NUI_SetRectangle >---
 // Statically sets the current control's rect property
@@ -1672,6 +1702,8 @@ json NUI_CreateCanvasTemplate()
          j = JsonObjectSet(j, NUI_PROPERTY_COLOR, NUI_DefineRGBColor(255, 255, 255));
          j = JsonObjectSet(j, NUI_PROPERTY_FILL, jFALSE);
          j = JsonObjectSet(j, NUI_PROPERTY_LINETHICKNESS, JsonFloat(0.5));
+         j = JsonObjectSet(j, NUI_PROPERTY_POSITION, JsonInt(NUI_POSITION_ABOVE));
+         j = JsonObjectSet(j, NUI_PROPERTY_CONDITION, JsonInt(NUI_CONDITION_ALWAYS));
 
     return j;
 }
@@ -2160,6 +2192,11 @@ json NUI_GetTrianglePoints(float x, float y, float h, float b)
     return j;
 }
 
+json NUI_DefineStringByStringRef(int nStringRef)
+{
+    return  JsonObjectSet(JsonObject(), NUI_PROPERTY_STRREF, JsonInt(nStringRef));
+}
+
 void NUI_CreateTemplateControl(string sID)
 {
     if (NUI_GetBuildLayer() > 0)
@@ -2643,6 +2680,12 @@ void NUI_SetSquare(float fSide)
     NUI_SetWidth(fSide);
 }
 
+void NUI_SetDimensions(float fWidth, float fHeight)
+{
+    NUI_SetWidth(fWidth);
+    NUI_SetHeight(fHeight);
+}
+
 void NUI_SetAspectRatio(float fRatio)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ASPECT, JsonFloat(fRatio));
@@ -2718,14 +2761,18 @@ void NUI_BindVisible(string sBind)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_VISIBLE, NUI_BindVariable(sBind));
 }
 
-void NUI_SetTooltip(string sTooltip)
+void NUI_SetTooltip(string sTooltip, int bDisabledTooltip = FALSE)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, JsonString(sTooltip));
+    if (bDisabledTooltip == TRUE)
+        NUI_SetDisabledTooltip(sTooltip);
 }
 
-void NUI_BindTooltip(string sBind)
+void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, NUI_BindVariable(sBind));
+    if (bDisabledTooltip == TRUE)
+        NUI_BindDisabledTooltip(sBind);
 }
 
 void NUI_SetRGBForegroundColor(int r, int g, int b, int a = 255)
@@ -2741,6 +2788,26 @@ void NUI_SetDefinedForegroundColor(json jColor)
 void NUI_BindForegroundColor(string sBind)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_FORECOLOR, NUI_BindVariable(sBind));
+}
+
+void NUI_SetDisabledTooltip(string sTooltip)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_DISABLED_TOOLTIP, JsonString(sTooltip));
+}
+
+void NUI_BindDisabledTooltip(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_TOOLTIP, NUI_BindVariable(sBind));
+}
+
+void NUI_SetEncouraged(int bEncouraged = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, JsonBool(bEncouraged));
+}
+
+void NUI_BindEncouraged(int bEncouraged = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, NUI_BindVariabled(sBind));
 }
 
 /*
@@ -2881,6 +2948,16 @@ void NUI_SetLineThickness(float fThickness)
 void NUI_BindLineThickness(string sBind)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_LINETHICKNESS, NUI_BindVariable(sBind));
+}
+
+void NUI_SetPosition(int nPosition = NUI_POSITION_ABOVE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_POSITION, JsonInt(nPosition));
+}
+
+void NUI_SetCondition(int nCondition = NUI_CONDITION_ALWAYS);
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_CONDITION, JsonInt(nCondition));
 }
 
 void NUI_SetFill(int bFill = TRUE)
