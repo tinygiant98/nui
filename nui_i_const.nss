@@ -132,8 +132,8 @@ const string NUI_PROPERTY_IMAGEASPECT = "image_aspect";
 const string NUI_PROPERTY_IMAGEHALIGN = "image_halign";
 const string NUI_PROPERTY_IMAGEVALIGN = "image_valign";
 const string NUI_PROPERTY_BUILDABLE = "buildable";
-const string NUI_PROPERTY_RENDER_POSITION = "order";
-const string NUI_PROPERTY_RENDER_CONDITION = "render";
+const string NUI_PROPERTY_POSITION = "order";
+const string NUI_PROPERTY_CONDITION = "render";
 
 const string NUI_PROPERTY_USERDATA = "user_data";
 const string NUI_PROPERTY_BINDDATA = "bind_data";
@@ -168,8 +168,6 @@ const int NUI_CONDITION_MOUSE_HOVER = 2;
 const int NUI_CONDITION_MOUSE_LEFT = 3;
 const int NUI_CONDITION_MOUSE_RIGHT = 4;
 const int NUI_CONDITION_MOUSE_MIDDLE = 5;
-
-const int NUI_CANVAS
 
 const int NUI_CHART_LINE = 0;
 const int NUI_CHART_BAR = 1;

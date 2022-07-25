@@ -136,7 +136,7 @@ json NUI_GetDefinedRectanglePoints(json jRectangle);
 json NUI_DefineCircle(float x, float y, float r);
 
 // ---< NUI_GetTrianglePoints >---
-// Creates a json array or coordinated required to draw triangles
+// Creates a json array of coordinates required to draw triangles
 // with NUI_DrawLine().  The triangle is defined by center 
 // point x, y, height h and base b.
 json NUI_GetTrianglePoints(float x, float y, float h, float b);
@@ -602,13 +602,13 @@ void NUI_BindVisible(string sBind);
 // Statically set the current control's tooltip property to
 // sTooltip.  Tooltips are not displayed on disabled or
 // invisible controls.
-void NUI_SetTooltip(string sTooltip);
+void NUI_SetTooltip(string sTooltip, int bDisabledTooltip = FALSE);
 
 // ---< NUI_BindTooltip >---
 // Dynamically binds the current control's tooltip property to
 // sBind.  Tooltips are not displayed on disabled or
 // invisible controls.
-void NUI_BindTooltip(string sBind);
+void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE);
 
 // ---< NUI_SetRGBForegroundColor >---
 // Statically sets the current control's foreground/text color
@@ -2805,9 +2805,9 @@ void NUI_SetEncouraged(int bEncouraged = TRUE)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, JsonBool(bEncouraged));
 }
 
-void NUI_BindEncouraged(int bEncouraged = TRUE)
+void NUI_BindEncouraged(string sBind)
 {
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, NUI_BindVariabled(sBind));
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, NUI_BindVariable(sBind));
 }
 
 /*
@@ -2955,7 +2955,7 @@ void NUI_SetPosition(int nPosition = NUI_POSITION_ABOVE)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_POSITION, JsonInt(nPosition));
 }
 
-void NUI_SetCondition(int nCondition = NUI_CONDITION_ALWAYS);
+void NUI_SetCondition(int nCondition = NUI_CONDITION_ALWAYS)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_CONDITION, JsonInt(nCondition));
 }
