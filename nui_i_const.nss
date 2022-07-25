@@ -169,8 +169,6 @@ const int NUI_CONDITION_MOUSE_LEFT = 3;
 const int NUI_CONDITION_MOUSE_RIGHT = 4;
 const int NUI_CONDITION_MOUSE_MIDDLE = 5;
 
-const int NUI_CANVAS
-
 const int NUI_CHART_LINE = 0;
 const int NUI_CHART_BAR = 1;
 
