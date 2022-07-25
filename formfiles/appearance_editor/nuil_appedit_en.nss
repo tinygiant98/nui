@@ -17,10 +17,10 @@ int ADJECTIVE_FOLLOWS = FALSE;
 // module will primarily be using.
 string TITLE    = "Personal Appearance Editor";
 
-string HEAD     = "Head";
-string NECK     = "Neck";
-string CHEST    = "Chest/Torso";
-string PELVIS   = "Pelvis";
+string HEAD     = "Head";		// GetStringByStrRef( 123 );
+string NECK     = "Neck";		// GetStringByStrRef( 7143 );
+string CHEST    = "Chest/Torso";	// GetStringByStrRef( 7144 );
+string PELVIS   = "Pelvis";		// GetStringByStrRef( 7145 );
 
 string RIGHT    = "Right";
 string LEFT     = "Left";
@@ -31,56 +31,57 @@ string HAND     = "Hand";
 string THIGH    = "Thigh";
 string SHIN     = "Shin";
 string FOOT     = "Foot";
-string BELT     = "Belt";
+string BELT     = "Belt";		// GetStringByStrRef( 1518 );
 string SHOULDER = "Shoulder";
-string HELMET   = "Helmet";
-string ROBE     = "Robe";
+string HELMET   = "Helmet";		// GetStringByStrRef( 182 );
+string ROBE     = "Robe";		// GetStringByStrRef( 83691 );
 
-string RIGHT_SHOULDER = "Right Shoulder";
-string LEFT_SHOULDER = "Left Shoulder";
+string RIGHT_SHOULDER = "Right Shoulder";	//  GetStringByStrRef( 7146 );
+string LEFT_SHOULDER = "Left Shoulder";		//  GetStringByStrRef( 7150 );
 
-string RIGHT_BICEP = "Right Bicep";
-string LEFT_BICEP = "Left Bicep";
+string RIGHT_BICEP = "Right Bicep";		//  GetStringByStrRef( 7147 );
+string LEFT_BICEP = "Left Bicep";		//  GetStringByStrRef( 7151 );
 
-string RIGHT_FOREARM = "Right Forearm";
-string LEFT_FOREARM = "Left Forearm";
+string RIGHT_FOREARM = "Right Forearm";		//  GetStringByStrRef( 7148 );
+string LEFT_FOREARM = "Left Forearm";		//  GetStringByStrRef( 7152 );
 
-string RIGHT_HAND = "Right Hand";
-string LEFT_HAND = "Left Hand";
+string RIGHT_HAND = "Right Hand";		//  GetStringByStrRef( 7149 );
+string LEFT_HAND = "Left Hand";			//  GetStringByStrRef( 7153 );
 
-string RIGHT_THIGH = "Right Thigh";
-string LEFT_THIGH = "Left Thigh";
+string RIGHT_THIGH = "Right Thigh";		//  GetStringByStrRef( 7474 );
+string LEFT_THIGH = "Left Thigh";		//  GetStringByStrRef( 7477 );
 
-string RIGHT_SHIN = "Right Shin";
-string LEFT_SHIN = "Left Shin";
+string RIGHT_SHIN = "Right Shin";		//  GetStringByStrRef( 7475 );
+string LEFT_SHIN = "Left Shin";			//  GetStringByStrRef( 7478 );
 
-string RIGHT_FOOT = "Right Foot";
-string LEFT_FOOT = "Left Foot";
+string RIGHT_FOOT = "Right Foot";		//  GetStringByStrRef( 7476 );
+string LEFT_FOOT = "Left Foot";			//  GetStringByStrRef( 7479 );
 
 
-string SKIN     = "Skin";
-string HAIR     = "Hair";
-string TATTOO   = "Tattoo";
-string LEATHER  = "Leather";
-string CLOTH    = "Cloth";
-string METAL    = "Metal";
-string COLOR    = "Color";
+string SKIN     = "Skin";			//  GetStringByStrRef( 13379 );
+string HAIR     = "Hair";			//  GetStringByStrRef( 67432 );
+string TATTOO   = "Tattoo";			//  GetStringByStrRef( 1591 );
+string LEATHER  = "Leather";			//  GetStringByStrRef( 185 );
 
-string APPEARANCE     = "Appearance";
+string CLOTH    = "Cloth";			//  GetStringByStrRef( 111808 );
+string METAL    = "Metal";			//  GetStringByStrRef( 6736 );
+string COLOR    = "Color";			//  GetStringByStrRef( 4821 );
+
+string APPEARANCE     = "Appearance";		//  GetStringByStrRef( 2297 );
 string EQUIPMENT      = "Equipment";
 string NO_EQUIPMENT   = "No armor found in chest slot";
 string NO_HELMET      = "No helmet found";
 string CANNOT_EQUIP   = "You cannot equip the selected model";
-string ARMOR          = "Armor";
+string ARMOR          = "Armor";		//  GetStringByStrRef( 335 );
 string OUTFITS        = "Outfits";
 
-string MODEL          = "Model";
+string MODEL          = "Model";		//  GetStringByStrRef( 7139 );
 string PREVIOUS       = "Previous";
 string NEXT           = "Next";
 
-string TOP = "Top";
-string MIDDLE = "Middle";
-string BOTTOM = "Bottom";
+string TOP = "Top";				//  GetStringByStrRef( 7140 );
+string MIDDLE = "Middle";                       //  GetStringByStrRef( 7141 );
+string BOTTOM = "Bottom";                       //  GetStringByStrRef( 7142 );
 
 // The previous and next labels can be too small for some translations. If you want to specify
 // a value for these labels, set it here.  Setting these values to empty strings will result
