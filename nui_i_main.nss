@@ -602,13 +602,13 @@ void NUI_BindVisible(string sBind);
 // Statically set the current control's tooltip property to
 // sTooltip.  Tooltips are not displayed on disabled or
 // invisible controls.
-void NUI_SetTooltip(string sTooltip);
+void NUI_SetTooltip(string sTooltip, int bDisabledTooltip = FALSE);
 
 // ---< NUI_BindTooltip >---
 // Dynamically binds the current control's tooltip property to
 // sBind.  Tooltips are not displayed on disabled or
 // invisible controls.
-void NUI_BindTooltip(string sBind);
+void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE);
 
 // ---< NUI_SetRGBForegroundColor >---
 // Statically sets the current control's foreground/text color
@@ -884,7 +884,7 @@ void NUI_SetEncouraged(int bEncouraged = TRUE);
 // ---< NUI_BindEncouraged >---
 // Dynamically binds the current control's encouraged property
 // to sBind.
-void NUI_BindEncouraged(string sBind);
+void NUI_BindEncouraged(string sBind, int bEncouraged = TRUE);
 
 // ---< NUI_SetDisabledTooltip >---
 // Statically sets the current control's disabled_tooltip property
@@ -1702,8 +1702,8 @@ json NUI_CreateCanvasTemplate()
          j = JsonObjectSet(j, NUI_PROPERTY_COLOR, NUI_DefineRGBColor(255, 255, 255));
          j = JsonObjectSet(j, NUI_PROPERTY_FILL, jFALSE);
          j = JsonObjectSet(j, NUI_PROPERTY_LINETHICKNESS, JsonFloat(0.5));
-         j = JsonObjectSet(j, NUI_PROPERTY_POSITION, JsonInt(NUI_POSITION_ABOVE));
-         j = JsonObjectSet(j, NUI_PROPERTY_CONDITION, JsonInt(NUI_CONDITION_ALWAYS));
+         j = JsonObjectSet(j, NUI_PROPERTY_RENDER_POSITION, JsonInt(NUI_POSITION_ABOVE));
+         j = JsonObjectSet(j, NUI_PROPERTY_RENDER_CONDITION, JsonInt(NUI_CONDITION_ALWAYS));
 
     return j;
 }
@@ -2805,9 +2805,9 @@ void NUI_SetEncouraged(int bEncouraged = TRUE)
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, JsonBool(bEncouraged));
 }
 
-void NUI_BindEncouraged(int bEncouraged = TRUE)
+void NUI_BindEncouraged(string sBind, int bEncouraged = TRUE)
 {
-    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, NUI_BindVariabled(sBind));
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ENCOURAGED, NUI_BindVariable(sBind));
 }
 
 /*
