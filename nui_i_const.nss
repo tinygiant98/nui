@@ -131,6 +131,7 @@ const string NUI_PROPERTY_IMAGE = "image";
 const string NUI_PROPERTY_IMAGEASPECT = "image_aspect";
 const string NUI_PROPERTY_IMAGEHALIGN = "image_halign";
 const string NUI_PROPERTY_IMAGEVALIGN = "image_valign";
+const string NUI_PROPERTY_IMAGEREGION = "image_region";
 const string NUI_PROPERTY_BUILDABLE = "buildable";
 const string NUI_PROPERTY_POSITION = "order";
 const string NUI_PROPERTY_CONDITION = "render";

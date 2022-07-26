@@ -872,9 +872,19 @@ void NUI_BindValue(string sBind);
 void NUI_SetImage(string sResref);
 
 // ---< NUI_BindImage >---
-// Dynamically binds the current control's xxxxxx property
+// Dynamically binds the current control's image property
 // to sBind.
 void NUI_BindImage(string sBind);
+
+// ---< NUI_SetImageRegion >---
+// Statically set the current control's image_region property
+// to jRegion.
+void NUI_SetImageRegion(json jRegion);
+
+// ---< NUI_BindImageRegion >---
+// Dynamically binds the current control's image_region property
+// to sBind.
+void NUI_BindImageRegion(string sBind);
 
 // ---< NUI_SetEncouraged >---
 // Statically sets the current control's encouraged property
@@ -1882,8 +1892,10 @@ json NUI_GetResrefArray(string sPrefix, int nResType = RESTYPE_NSS, int bSearchB
     return JsonGetLength(jResrefs) == 0 ? JsonNull() : jResrefs;
 }
 
-void NUI_DefineFormsByFormfile()
+void NUI_DefineFormsByFormfile(string sFormfile = "")
 {
+    Notice("NUI_DefineFormsByFormfile [sFormfile = " + sFormfile == "" ? "null" : sFormfile + "]");
+
     int f, fCount = CountList(NUI_FORMFILE_PREFIX);
     for (f = 0; f < fCount; f++)
     {
@@ -1894,10 +1906,20 @@ void NUI_DefineFormsByFormfile()
 
         NUI_SetCurrentOperation(NUI_OPERATION_DEFINE);
 
-        int n, nCount = JsonGetLength(jFormfiles);
-        for (n = 0; n < nCount; n++)
+        if (sFormfile == "")
         {
-            string sFormfile = JsonGetString(JsonArrayGet(jFormfiles, n));
+            int n, nCount = JsonGetLength(jFormfiles);
+            for (n = 0; n < nCount; n++)
+            {
+                sFormfile = JsonGetString(JsonArrayGet(jFormfiles, n));
+                Notice(" -- Setting NUI_CURRENT_FORMFILE (loop) to [" + sFormfile + "]");
+                SetLocalString(GetModule(), NUI_CURRENT_FORMFILE, sFormfile);
+                NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_DEFINITION_FUNCTION);
+            }
+        }
+        else
+        {
+            Notice(" -- Setting NUI_CURRENT_FORMFILE (specified) to [" + sFormfile + "]");
             SetLocalString(GetModule(), NUI_CURRENT_FORMFILE, sFormfile);
             NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_DEFINITION_FUNCTION);
         }
@@ -3085,6 +3107,16 @@ void NUI_SetImage(string sResref)
 void NUI_BindImage(string sBind)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetImageRegion(json jRegion)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEREGION, jRegion);
+}
+
+void NUI_BindImageRegion(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_IMAGEREGION, NUI_BindVariable(sBind));
 }
 
 void NUI_SetRectangle(json jRect)
