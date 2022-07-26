@@ -14,7 +14,7 @@
 #include "util_i_csvlists"
 
 const string VERSION = "1.0.0";
-const string IGNORE_FORM_EVENTS = "";
+const string IGNORE_FORM_EVENTS = "mouseup,mousedown";
 
 string _GetKey(string sPair)
 {
@@ -76,7 +76,6 @@ void form_open()
 void NUI_HandleFormDefinition()
 {
     string sFormID = "toc";
-    Notice("Defining form " + sFormID + " (Version " + VERSION + ")");
 
     NUI_CreateForm(sFormID);
         NUI_SetTitle("Available Forms");
@@ -139,19 +138,14 @@ void NUI_HandleFormEvents()
         if (sKey == "open")
         {
             string sFormID = _GetValue(ed.sControlID);
-            
             int n = NUI_DisplayForm(OBJECT_SELF, sFormID);
         }
         else if (sKey == "reload")
         {
             string sFormID = _GetValue(ed.sControlID);
-            string sFormfile = NUI_GetFormfile(sFormID);    
+            string sFormfile = NUI_GetFormfile(sFormID);   
 
-            Notice(" TOC: HandleFormEvents");
-            Notice("  > sFormID - " + sFormID);
-            Notice("  > sFormfile - " + sFormfile);
-
-            NUI_ExecuteFileFunction(sFormfile, "NUI_HandleFormDefinition");
+            NUI_DefineFormsByFormfile(sFormfile);
             
             int nToken = NuiFindWindow(OBJECT_SELF, sFormID);
             if (nToken > 0)
