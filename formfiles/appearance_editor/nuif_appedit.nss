@@ -463,8 +463,8 @@ void CreateDefaultProfile()
         NUI_SetProfileProperty("enableArmorColorPalette", jTRUE);
         NUI_SetProfileProperty("enableCreatureModelMatrix", jTRUE);
         NUI_SetProfileProperty("enableCreaturePartsMatrix", jTRUE);
-        NUI_SetProfileProperty("enableCreatureColorMatrix", jFALSE);
-        NUI_SetProfileProperty("enableCreatureColorPalette", jFALSE);
+        NUI_SetProfileProperty("enableCreatureColorMatrix", jTRUE);
+        NUI_SetProfileProperty("enableCreatureColorPalette", jTRUE);
         NUI_SetProfileProperty("enableItemModelMatrix", jTRUE);
         NUI_SetProfileProperty("enableItemColorMatrix", jTRUE);
         NUI_SetProfileProperty("enableItemPartToggles", jTRUE);
@@ -2456,7 +2456,7 @@ void CreateColorCategoryTabs()
                 NUI_SetLabel("Per Part Coloring");
                 NUI_BindValue("per_part_checkbox_value");
                 NUI_BindEnabled("enablePerPartColoring");
-                NUI_BindVisible("showPerPartColoring");
+                //NUI_BindVisible("showPerPartColoring");
             NUI_AddSpacer();
         }
     

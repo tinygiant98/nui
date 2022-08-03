@@ -128,6 +128,7 @@ void NUI_HandleFormBinds(string sProfileName)
 void NUI_HandleFormEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
+    NUI_Debug("Form Event (toc): " + ed.sEvent, NUI_DEBUG_SEVERITY_WARNING);
 
     if (HasListItem(IGNORE_FORM_EVENTS, ed.sEvent))
         return;

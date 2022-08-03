@@ -10,7 +10,7 @@
 //                          DO NOT MAKE ANY CHANGES BELOW THIS LINE
 // ---------------------------------------------------------------------------------------
 
-#include "nuio_xxx"
+#include "nuio_xxxx"
 #include "nui_i_main"
 #include "util_i_csvlists"
 
@@ -46,7 +46,7 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
         NUI_SetBindValue(OBJECT_SELF, nToken, sBind, jReturn);
 }
 
-void NUI_HandleFormBinds()
+void NUI_HandleFormBinds(string sProfile = "")
 {
     object oPC = OBJECT_SELF;
     struct NUIBindData bd = NUI_GetBindData();

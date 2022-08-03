@@ -1676,7 +1676,7 @@ void NUI_BindForm(object oPC, int nToken, string sProfileName)
     if (NUI_GetSkipAutoBind(sFormID) == FALSE)
     {
         // If you're skipping autobind, you better know what you're doing as there won't be any
-        // bind data available to you during the form bind process.
+        // bind data isn't available to you during the form bind process.
 
         sqlquery sqlBinds = NUI_GetBindTable(sFormID);   
 
