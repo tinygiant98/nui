@@ -11,7 +11,7 @@
 #include "util_i_color"
 #include "util_i_csvlists"
 #include "nui_i_const"
-#include "nui_i_config"
+#include "nui_c_config"
 #include "nui_i_database"
 
 // -----------------------------------------------------------------------------
@@ -450,6 +450,9 @@ void NUI_SetCollapsible(int bCollapsible = TRUE);
 // ---< NUI_BindCollapsible >---
 // Dynamically binds the form's resizable property to bCollapsible.
 void NUI_BindCollapsible(string sBind);
+
+void NUI_SetAcceptsInput(int bAcceptsInput = TRUE);
+void NUI_BindAcceptsInput(string sBind);
 
 // ---< NUI_SetModal >---
 // Dynamically binds the form's resizable property to sBind.
@@ -1093,6 +1096,14 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
+/*
+    NUI_Debug("Getting ready to execute file function" +
+        "\n  sFile -> " + sFile +
+        "\n  sFunction -> " + sFunction +
+        "\n  oTarget -> " + GetName(oTarget) +
+        "\n  sArguments -> " + sArguments, NUI_DEBUG_SEVERITY_NOTICE);
+*/
+
     if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION") || TRUE)
     {
         string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
@@ -1482,6 +1493,14 @@ void NUI_SetHandler(string sNode, string sProperty, string sScript)
 
 void NUI_RunHandler(string sType, string sFormID, string sControlID, object oTarget)
 {
+/*
+    NUI_Debug("NUI_RunHandler: " +
+        "\n  sType -> " + sType +
+        "\n  sFormID -> " + sFormID +
+        "\n  sControlID -> " + sControlID +
+        "\n  oTarget -> " + GetName(oTarget), NUI_DEBUG_SEVERITY_ERROR);
+*/
+
     if (NUI_RunScript(NUI_GetHandler(sFormID, sControlID, sType, "script"), oTarget) == FALSE)
     {
         string sFormfile = NUI_GetFormfile(sFormID);
@@ -1516,7 +1535,14 @@ void NUI_RunEventHandler()
     string sControlID = NuiGetEventElement();
     string sEventType = NuiGetEventType();
     string sFunction = (sControlID == "_window_" ? "form" : sControlID) + "_" + sEventType;
-
+/*
+    NUI_Debug("NUI_RunEventHandler:" +
+        "\n   oPC -> " + GetName(oPC) +
+        "\n   sFormID -> " + sFormID +
+        "\n   sControlID -> " + sControlID +
+        "\n   sEventType -> " + sEventType +
+        "\n   sFunction -> " + sFunction, NUI_DEBUG_SEVERITY_NOTICE);
+*/
     if (HasListItem(NUI_IGNORE_EVENTS, sEventType))
         return;
 
@@ -1672,6 +1698,9 @@ void NUI_CreateListbox()
 void NUI_BindForm(object oPC, int nToken, string sProfileName)
 {
     string sFormID = NuiGetWindowId(oPC, nToken);
+
+    // TODO 
+    Notice("Running BindForm on " + sFormID);
 
     if (NUI_GetSkipAutoBind(sFormID) == FALSE)
     {
@@ -2035,6 +2064,7 @@ void NUI_CreateForm(string sID, string sVersion = "")
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_GEOMETRY, JsonNull());
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_RESIZABLE, JsonBool(FALSE));
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_COLLAPSIBLE, JsonBool(FALSE));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_ACCEPTSINPUT, JsonBool(TRUE));
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_MODAL, JsonBool(TRUE));
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_TRANSPARENT, JsonBool(FALSE));
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_BORDER, JsonBool(TRUE));
@@ -2189,13 +2219,13 @@ json NUI_GetDefinedRectanglePoints(json jRectangle)
 json NUI_DefineCircle(float x, float y, float r)
 {
     r = fclamp(r, 0.0, fmin(x, y));
-    float s = 2 * r;
+    float d = 2 * r;
 
     json j = JsonObject();
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_X, JsonFloat(x - r));
          j = NUI_SetObjectProperty(j, NUI_PROPERTY_Y, JsonFloat(y - r));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_W, JsonFloat(s));
-         j = NUI_SetObjectProperty(j, NUI_PROPERTY_H, JsonFloat(s));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_W, JsonFloat(d));
+         j = NUI_SetObjectProperty(j, NUI_PROPERTY_H, JsonFloat(d));
     return j;
 }
 
@@ -2614,6 +2644,16 @@ void NUI_SetCollapsible(int bCollapsible = TRUE)
 void NUI_BindCollapsible(string sBind)
 {
     NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_COLLAPSIBLE, NUI_BindVariable(sBind));
+}
+
+void NUI_SetAcceptsInput(int bAcceptsInput = TRUE)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ACCEPTSINPUT, JsonBool(bAcceptsInput));
+}
+
+void NUI_BindAcceptsInput(string sBind)
+{
+    NUI_SetCurrentControlObjectProperty(NUI_PROPERTY_ACCEPTSINPUT, NUI_BindVariable(sBind));
 }
 
 void NUI_SetModal(int bModal = TRUE)

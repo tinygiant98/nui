@@ -135,6 +135,7 @@ const string NUI_PROPERTY_IMAGEREGION = "image_region";
 const string NUI_PROPERTY_BUILDABLE = "buildable";
 const string NUI_PROPERTY_POSITION = "order";
 const string NUI_PROPERTY_CONDITION = "render";
+const string NUI_PROPERTY_ACCEPTSINPUT = "accepts_input";
 
 const string NUI_PROPERTY_USERDATA = "user_data";
 const string NUI_PROPERTY_BINDDATA = "bind_data";
