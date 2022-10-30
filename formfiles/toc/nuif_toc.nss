@@ -12,6 +12,7 @@
 
 #include "nui_i_main"
 #include "util_i_csvlists"
+#include "util_i_debug"
 
 const string VERSION = "1.0.0";
 const string IGNORE_FORM_EVENTS = "mouseup,mousedown";
@@ -66,13 +67,6 @@ json CreateFormsList()
     return JsonObjectGet(NUI_GetBuildVariable(NUI_BUILD_ROOT), "root");
 }
 
-void form_open()
-{
-    json jForms = CreateFormsList();
-    int nToken = NuiFindWindow(OBJECT_SELF, "toc");
-    NuiSetGroupLayout(OBJECT_SELF, nToken, "form_list", jForms);
-}
-
 void NUI_HandleFormDefinition()
 {
     string sFormID = "toc";
@@ -112,6 +106,8 @@ void UpdateBinds(string sBind, int nToken = -1, int bSetDefaults = FALSE)
 
 void NUI_HandleFormBinds(string sProfileName)
 {
+
+
     object oPC = OBJECT_SELF;
     struct NUIBindData bd = NUI_GetBindData();
     int n;
@@ -156,6 +152,12 @@ void NUI_HandleFormEvents()
             }
         }
     }  
+    else if (ed.sEvent == "open")
+    {
+        json jForms = CreateFormsList();
+        int nToken = NuiFindWindow(OBJECT_SELF, "toc");
+        NuiSetGroupLayout(OBJECT_SELF, nToken, "form_list", jForms);
+    }
 }
 
 //void main() {}
