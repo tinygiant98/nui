@@ -7,7 +7,6 @@
 // datatypes or other advanced nwscript features.  See the README.md document for
 // additional details and example usage.
 
-//#include "util_i_debug"
 #include "util_i_color"
 #include "util_i_csvlists"
 #include "nui_i_const"
@@ -28,15 +27,6 @@ struct NUIEventData {
     int    nIndex;        // Index of control in array, if the control is in an array (listbox)
     json   jPayload;      // Event payload, if it exists
     json   jUserData;     // Custom user data set on the control during form definition
-    json   jBinds;        // NUIEventArrayData[] of bound data for this control (and children)
-    int    nCount;        // Count of NUIEventArrayData[] in jBinds
-};
-
-struct NUIEventArrayData {
-    string sControlID;    // Control ID as assigned during the form definition process
-    string sProperty;     // Control property that has a bound variable assigned
-    string sBind;         // Bound variable name
-    json   jValue;        // Current value of the bound variable
 };
 
 struct NUIBindData {
@@ -1027,11 +1017,6 @@ struct NUIBindArrayData NUI_GetBindArrayData(json jBinds, int n);
 // custom user data set on the control that triggered the event.
 struct NUIEventData NUI_GetEventData(int bIncludeChildren = TRUE);
 
-// ---< NUI_GetEventArrayData >---
-// Returns a struct of specific bind data for jBinds at index n.
-// Should only be used with data returned from NUI_GetEventData.
-struct NUIEventArrayData NUI_GetEventArrayData(json jBinds, int n);
-
 // -----------------------------------------------------------------------------
 //                             Private Functions
 // -----------------------------------------------------------------------------
@@ -1096,24 +1081,11 @@ int NUI_ExecuteFileFunction(string sFile, string sFunction, object oTarget = OBJ
     string sChunk = "#" + "include \"" + sFile + "\" " +
         "void main() {" + sFunction + "(" + sArguments + ");}";
 
-/*
-    NUI_Debug("Getting ready to execute file function" +
-        "\n  sFile -> " + sFile +
-        "\n  sFunction -> " + sFunction +
-        "\n  oTarget -> " + GetName(oTarget) +
-        "\n  sArguments -> " + sArguments, NUI_DEBUG_SEVERITY_NOTICE);
-*/
+    string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
+    if (sError != "" && FindSubString(sError, "Chunk(1)") == -1)
+        NUI_Debug(sError, NUI_DEBUG_SEVERITY_ERROR);
 
-    if (GetLocalInt(GetModule(), "DEBUG_FILE_FUNCTION") || TRUE)
-    {
-        string sError = ExecuteScriptChunk(sChunk, oTarget, FALSE);
-        if (sError != "" && FindSubString(sError, "Chunk(1)") == -1)
-            NUI_Debug(sError, NUI_DEBUG_SEVERITY_ERROR);
-
-        return sError == "";
-    }
-    else
-        return ExecuteScriptChunk(sChunk, oTarget, FALSE) == "";
+    return sError == "";
 }
 
 int NUI_GetBuildLayer()
@@ -1486,81 +1458,27 @@ void NUI_SetCustomControlProperty(string sNode, string sProperty, json jValue)
     NUI_ApplyPatchToRoot(jData, "add", sPath);
 }
 
-void NUI_SetHandler(string sNode, string sProperty, string sScript)
-{
-    NUI_SetCustomControlProperty(sNode, sProperty, JsonString(sScript));
-}
-
-void NUI_RunHandler(string sType, string sFormID, string sControlID, object oTarget)
-{
-/*
-    NUI_Debug("NUI_RunHandler: " +
-        "\n  sType -> " + sType +
-        "\n  sFormID -> " + sFormID +
-        "\n  sControlID -> " + sControlID +
-        "\n  oTarget -> " + GetName(oTarget), NUI_DEBUG_SEVERITY_ERROR);
-*/
-
-    if (NUI_RunScript(NUI_GetHandler(sFormID, sControlID, sType, "script"), oTarget) == FALSE)
-    {
-        string sFormfile = NUI_GetFormfile(sFormID);
-        string sFunction = NUI_GetHandler(sFormID, sControlID, sType, "function");
-
-        if (NUI_ExecuteFileFunction(sFormfile, sFunction, oTarget) == FALSE)
-        {
-            if (sType == NUI_PROPERTY_EVENTDATA)
-                sFunction = NUI_FORMFILE_EVENTS_FUNCTION;
-            else if (sType == NUI_PROPERTY_BINDDATA)
-                sFunction = NUI_FORMFILE_BINDS_FUNCTION;
-            else if (sType == NUI_PROPERTY_BUILDDATA)
-                sFunction = NUI_FORMFILE_BUILDS_FUNCTION;
-
-            if (NUI_ExecuteFileFunction(sFormfile, sFunction, oTarget) == FALSE)
-            {
-                NUI_Debug("Handler not found for " + sType + ":" +
-                    "\n  sFormID -> " + sFormID +
-                    "\n  sControlID -> " + sControlID +
-                    "\n  sFormfile -> " + sFormfile +
-                    "\n  sFunction -> " + sFunction +
-                    "\n  oTarget -> " + GetName(oTarget), NUI_DEBUG_SEVERITY_ERROR);
-            }
-        }
-    }
-}
-
 void NUI_RunEventHandler()
 {
     object oPC = NuiGetEventPlayer();
     string sFormID = NuiGetWindowId(oPC, NuiGetEventWindow());
     string sControlID = NuiGetEventElement();
     string sEventType = NuiGetEventType();
-    string sFunction = (sControlID == "_window_" ? "form" : sControlID) + "_" + sEventType;
-/*
-    NUI_Debug("NUI_RunEventHandler:" +
-        "\n   oPC -> " + GetName(oPC) +
-        "\n   sFormID -> " + sFormID +
-        "\n   sControlID -> " + sControlID +
-        "\n   sEventType -> " + sEventType +
-        "\n   sFunction -> " + sFunction, NUI_DEBUG_SEVERITY_NOTICE);
-*/
-    if (HasListItem(NUI_IGNORE_EVENTS, sEventType))
-        return;
 
     NUI_SetCurrentOperation(NUI_OPERATION_EVENT);
-
+    
     string sFormfile = NUI_GetFormfile(sFormID);
-    if (NUI_ExecuteFileFunction(sFormfile, sFunction, oPC) == FALSE)
+    if (NUI_ExecuteFileFunction(sFormfile, NUI_FORMFILE_EVENTS_FUNCTION, oPC) == FALSE)
     {
-        if (NUI_ExecuteFileFunction(sFormfile, sControlID, oPC) == FALSE)
-            NUI_RunHandler(NUI_PROPERTY_EVENTDATA, sFormID, sControlID, oPC);
-    }
-
+        NUI_Debug("Handler not found:" +
+            "\n  sFormID -> " + sFormID +
+            "\n  sControlID -> " + sControlID +
+            "\n  sFormfile -> " + sFormfile +
+            "\n  sFunction -> " + NUI_FORMFILE_EVENTS_FUNCTION +
+            "\n  oTarget -> " + GetName(oPC), NUI_DEBUG_SEVERITY_ERROR);
+    }    
+    
     NUI_ClearCurrentOperation();
-}
-
-void NUI_RunNUIEventHandler()
-{
-    NUI_RunEventHandler();
 }
 
 void NUI_RunModuleEventFunction(object oPC, string sFunction)
@@ -1698,20 +1616,12 @@ void NUI_CreateListbox()
 void NUI_BindForm(object oPC, int nToken, string sProfileName)
 {
     string sFormID = NuiGetWindowId(oPC, nToken);
-
-    // TODO 
-    Notice("Running BindForm on " + sFormID);
-
     if (NUI_GetSkipAutoBind(sFormID) == FALSE)
     {
-        // If you're skipping autobind, you better know what you're doing as there won't be any
+        // If you're skipping autobind, you better know what you're doing as
         // bind data isn't available to you during the form bind process.
 
         sqlquery sqlBinds = NUI_GetBindTable(sFormID);   
-
-        //json jBinds = NUI_GetJSONBindTable(sFormID);
-        //jBinds = JsonArrayTransform(jBinds, JSON_ARRAY_UNIQUE);
-
         json jBinds = JsonArray();
 
         while (SqlStep(sqlBinds))
@@ -1998,7 +1908,6 @@ void NUI_SaveFormProfile()
     SqlStep(sql);
 
     DeleteLocalJson(GetModule(), "NUI_PROFILE");
-    DeleteLocalJson(GetModule(), "NUI_PROFILE");
 }
 
 json NUI_GetFormProfile(string sFormID, string sProfileName)
@@ -2039,8 +1948,8 @@ void NUI_SetFormProfile(string sFormID, string sProfileName, json jProfile)
 
 void NUI_Initialize()
 {
-    SetDebugLevel(DEBUG_LEVEL_NOTICE);
-    SetDebugLogging(DEBUG_LOG_ALL);
+    //SetDebugLevel(DEBUG_LEVEL_NOTICE);
+    //SetDebugLogging(DEBUG_LOG_ALL);
 
     NUI_SetEventHandler();
     NUI_InitializeDatabase();
@@ -3192,50 +3101,6 @@ json NUI_GetCustomPropertyByIndex(json jUserData, int nIndex)
     return NUI_GetCustomProperty(jUserData, sProperty);
 }
 
-void NUI_SetBindScript(string sScript)
-{
-    NUI_SetHandler(NUI_PROPERTY_BINDDATA, "script", sScript);
-}
-
-void NUI_SetBuildScript(string sScript)
-{
-    NUI_SetHandler(NUI_PROPERTY_BUILDDATA, "script", sScript);
-}
-
-void NUI_SetEventScript(string sScript)
-{
-    NUI_SetHandler(NUI_PROPERTY_EVENTDATA, "script", sScript);
-}
-
-void NUI_SetBindFunction(string sFunction)
-{
-    NUI_SetHandler(NUI_PROPERTY_BINDDATA, "function", sFunction);
-}
-
-void NUI_SetEventFunction(string sFunction)
-{
-    NUI_SetHandler(NUI_PROPERTY_EVENTDATA, "function", sFunction);
-}
-
-void NUI_SetBuildFunction(string sFunction)
-{
-    NUI_SetHandler(NUI_PROPERTY_BUILDDATA, "function", sFunction);
-}
-
-void NUI_SetFormScript(string sScript)
-{
-    NUI_SetBuildScript(sScript);
-    NUI_SetBindScript(sScript);
-    NUI_SetEventScript(sScript);
-}
-
-void NUI_SetFormFunction(string sFunction)
-{
-    NUI_SetBuildFunction(sFunction);
-    NUI_SetBindFunction(sFunction);
-    NUI_SetEventFunction(sFunction);
-}
-
 void NUI_SetBindValue(object oPC, int nToken, string sBind, json jValue)
 {
     NuiSetBind(oPC, nToken, sBind, jValue);
@@ -3255,7 +3120,6 @@ json NUI_GetBindValue(object oPC, int nToken, string sBind)
 {
     return NuiGetBind(oPC, nToken, sBind);
 }
-
 
 void NUI_SetBindData(object oPC, int nToken, string sFormID, json jBinds)
 {
@@ -3291,17 +3155,12 @@ struct NUIBindArrayData NUI_GetBindArrayData(json jBinds, int n)
     struct NUIBindArrayData bad;
     json j = JsonArrayGet(jBinds, n);
 
-    bad.sType = JsonGetString(JsonObjectGet(j, NUI_BIND_TYPE));
+    bad.sType     = JsonGetString(JsonObjectGet(j, NUI_BIND_TYPE));
     bad.sProperty = JsonGetString(JsonObjectGet(j, NUI_BIND_PROPERTY));
-    bad.sBind = JsonGetString(JsonObjectGet(j, NUI_BIND_VARIABLE));
+    bad.sBind     = JsonGetString(JsonObjectGet(j, NUI_BIND_VARIABLE));
     bad.jUserData = JsonObjectGet(j, NUI_BIND_USERDATA);
 
     return bad;
-}
-
-json NUI_CreateEventArrayData(string sFormID, string sControlID, int bIncludeChildren)
-{
-    return JsonNull();
 }
 
 struct NUIEventData NUI_GetEventData(int bIncludeChildren = TRUE)
@@ -3314,24 +3173,10 @@ struct NUIEventData NUI_GetEventData(int bIncludeChildren = TRUE)
     ed.sEvent = NuiGetEventType();
     ed.sControlID = NuiGetEventElement();
     ed.nIndex = NuiGetEventArrayIndex();
-    ed.jBinds = NUI_CreateEventArrayData(ed.sFormID, ed.sControlID, bIncludeChildren);
     ed.jPayload = NuiGetEventPayload();
     ed.jUserData = NUI_GetUserData(ed.sFormID, ed.sControlID);
 
     return ed;
-}
-
-struct NUIEventArrayData NUI_GetEventArrayData(json jBinds, int n)
-{
-    struct NUIEventArrayData ead;
-    json j = JsonArrayGet(jBinds, n);
-
-    ead.sControlID = JsonGetString(JsonObjectGet(j, NUI_BIND_CONTROLID));
-    ead.sProperty = JsonGetString(JsonObjectGet(j, NUI_BIND_PROPERTY));
-    ead.sBind = JsonGetString(JsonObjectGet(j, NUI_BIND_VARIABLE));
-    ead.jValue = JsonObjectGet(j, NUI_BIND_VALUE);
-
-    return ead;
 }
 
 // All below is experimental for custom control implementation.  DO NOT USE

@@ -142,6 +142,3 @@ string NUI_CONTROLFILE_INSERTION_FUNCTION = "NUI_HandleControlInsertion";
 string NUI_CONTROLFILE_ADDSERIES_FUNCTION = "NUI_HandleAddSeries";
 
 string NUI_CONTROLFILE_DROPSERIES_FUNCTION = "NUI_HandleDropSeries";
-
-// TODO maybe not this?
-string NUI_IGNORE_EVENTS = ""; //"range,mousescroll,mousedown";

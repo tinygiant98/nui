@@ -1,6 +1,6 @@
 
 // For some reason, the toolset compiler wants to see these here (nwnsc doesn't care):
-#include "nui_i_config"
+#include "nui_c_config"
 #include "util_i_debug"
 #include "util_i_csvlists"
 
@@ -9,7 +9,7 @@ sqlquery sql;
 
 sqlquery NUI_PrepareQuery(string sQuery, int bCampaign = FALSE, string sDatabase = "")
 {
-    if (NUI_USE_CAMPAIGN_DATABASE || bCampaign == TRUE)
+    if (NUI_USE_CAMPAIGN_DATABASE || bCampaign)
     {
         if (sDatabase == "")
             sDatabase = NUI_CAMPAIGN_DATABASE;
@@ -157,48 +157,6 @@ string NUI_GetParentID(string sFormID, string sControlID)
     return SqlStep(sql) ? SqlGetString(sql, 0) : "";
 }
 
-// TODO check for script and/or function before moving to parent level
-string NUI_GetHandler(string sFormID, string sControlID, string sType, string sMode = "script")
-{
-    if (sControlID == NUI_FORM || sControlID == NUI_WINDOW)
-        sControlID = sFormID;
-
-    string sQuery = "SELECT json_extract(value, '$." + sType + ".script'), " +
-                           "json_extract(value, '$." + sType + ".function') " +
-        "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
-        "WHERE type = 'object' " +
-            "AND json_extract(value, '$.id') = @sControlID " +
-            "AND json_extract(" + NUI_FORMS + ".json, '$.id') = @sFormID;";
-
-    string sScript, sFunction;
-    int bBackstop = FALSE;
-
-    do {
-        if (sControlID == sFormID)
-            bBackstop = TRUE;
-
-        sql = NUI_PrepareQuery(sQuery);
-        SqlBindString(sql, "@sFormID", sFormID);
-        SqlBindString(sql, "@sControlID", sControlID);
-
-        if (SqlStep(sql))
-        {
-            sScript = SqlGetString(sql, 0);
-            sFunction = SqlGetString(sql, 1);
-
-            if (sMode == "script" && sScript == "" && sFunction != "")
-            {
-                Notice("Found a function, but not a script; aborting");
-                return "";
-            }
-        }
-
-        sControlID = NUI_GetParentID(sFormID, sControlID);
-    } while (sScript == "" && sFunction == "" && bBackstop == FALSE);
-
-    return sScript == "" ? sFunction == "" ? "" : sFunction : sScript;
-}
-
 json NUI_GetUserData(string sFormID, string sControlID)
 {
     return NUI_GetJSONValueByPath(sFormID, sControlID, "user_data");
@@ -209,22 +167,20 @@ json NUI_GetBuildData(string sFormID, string sControlID)
     return NUI_GetJSONValueByPath(sFormID, sControlID, "build_data");
 }
 
+// TODO oh good lord, fix this nasty sql
 sqlquery NUI_GetBindTable(string sFormID, string sControlID = "")
-//json NUI_GetBindTable(string sFormID, string sControlID = "")
 {
     string sChild = "SELECT json_tree.* " +
             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 "AND json_extract(value, '$.bind') != 'NULL' " +
                 "AND form LIKE '%" + sFormID + "%'";
-                //"AND form = @form";
 
     string sParent = "SELECT json_tree.* " +
             "FROM " + NUI_FORMS + ", json_tree(" + NUI_FORMS + ".json, '$') " +
             "WHERE type = 'object' " +
                 (sControlID != "" ? "AND json_extract(value, '$.id') = @control " : "") +
                 "AND form LIKE '%" + sFormID + "%'";
-                //"AND form = @form";
 
     sQuery = "SELECT IFNULL(json_extract(parent.value, '$.type'), '_form_'), " +
                 "IFNULL(json_extract(parent.value, '$.bind_data'), '_nobind_'), " +
@@ -267,7 +223,8 @@ json NUI_GetJSONBindTable(string sFormIDs)
     sql = NUI_PrepareQuery(sQuery);
 
     SqlStep(sql);
-    return JsonArrayTransform(SqlGetJson(sql, 0), JSON_ARRAY_UNIQUE);
+    return SqlGetJson(sql, 0);
+    //return JsonArrayTransform(SqlGetJson(sql, 0), JSON_ARRAY_UNIQUE);
 }
 
 sqlquery NUI_GetCustomControlTable(string sFormID)
@@ -323,8 +280,6 @@ void NUI_GetJSONTree(string sFormID, string sControlID, string sKey = "id")
         "\n     path - " + sPath);
     Notice(" JSON TREE end =============================================================");
 }}
-
-
 
 string NUI_GetFormfile(string sFormID)
 {
@@ -401,7 +356,6 @@ json NUI_GetJSONTreeFieldByKey(string sFormID, string sField, string sKey, strin
 
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
 }
-
 
 json NUI_GetJSONTreeFieldByID(string sFormID, string sValue, string sField)
 {
