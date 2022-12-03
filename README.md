@@ -222,7 +222,7 @@ This is an example of template control usage:
 ## Properties
 Forms and controls can have several properties assigned to modify their appearance.  Although any property can be assigned to any control, not every property will affect every control.  The following describes how various properties interact with the form and its controls.  Many properties and arguments can be bound to variables specific to individual players.  Binding functions will be discussed here, however, the concept of binding and advanced binding techniques will be discussed later.  Any property that can be bound to a variable can also be set statically, but the form will be less dynamic with static properties.
 
->Most properties, especially at the form level, have a default value.  All default values will be noted below.  No action is required, and no function need be called, if the defaul behavior is desired.
+>Most properties, especially at the form level, have a default value.  All default values will be noted below.  No action is required, and no function need be called, if the default behavior is desired.
 
 >All properties are optional unless otherwise noted with `(Required)`.  All required properties have a default value except for form geometry.
 
@@ -275,7 +275,7 @@ Forms and controls can have several properties assigned to modify their appearan
 
     `void NUI_BindBorderVisible(string sVarName)`
 
-* **Orientation**  Default: `NUI_ORIENTATION_COLUMNS`. Determines whether the general layout of the form is a set of one or more columns or a set of one or more rows.  This does not limit the number or placement of controls on the form, but does affect the placement of controls when not explicitly positioned.
+* **Orientation**  Default: `NUI_ORIENTATION_ROWS`. Determines whether the general layout of the form is a set of one or more columns or a set of one or more rows.  This does not limit the number or placement of controls on the form, but does affect the placement of controls when not explicitly positioned.
 
     `NUI_SetOrientation(string sLayout = NUI_ORIENTATION_ROWS)`
 
@@ -438,9 +438,9 @@ Formfile integration works with the NUI configuration file `nui_i_config.nss`.  
 
 * `NUI_FORMFILE_DEFINITION_FUNCTION` - (required) The function that contains the code for defining the form.  Should start with `NUI_CreateForm()` and end with `NUI_SaveForm()`.  Multiple forms can be defined in a single formfile.  Data returned for binding and event functions will contain the form id set during the definition process.
 
-* `NUI_FORMFILE_BINDS_FUNCTION` - (optional) The function that contains code for setting all the initial bind values for the form.  This code must run *after* the form is open because all binds are set by form token and pc object.  The form token is different for each form instance (even if you open and close the same form multiple times), so binds must be set (if desired) each time the form is open.  If other scripts are set for handling form binding (i.e. via `NUI_SetBindScript()`), then those scripts take priority and the system will not attempt to run the formfile's bind handler.
+* `NUI_FORMFILE_EVENTS_FUNCTION` - (optional) The function that contains the code for reacting to all events signaled by this form.  This is the default function for event handling for a specific form.  If other scripts are set for handling form events (i.e. via `NUI_SetEventScript()`), then those scripts take priority and the system will not attempt to run the formfile's event handler.
 
-* `NUI_FORMFILE_EVENTS_FUNCTION` - (optional) The function that contains the code for reacting to all events signaled by this form.  This is the defaul function for event handling for a specific form.  If other scripts are set for handling form events (i.e. via `NUI_SetEventScript()`), then those scripts take priority and the system will not attempt to run the formfile's event handler.
+* `NUI_FORMFILE_BINDS_FUNCTION` - (optional) The function that contains code for setting all the initial bind values for the form.  This code must run *after* the form is open because all binds are set by form token and pc object.  The form token is different for each form instance (even if you open and close the same form multiple times), so binds must be set (if desired) each time the form is open.  If other scripts are set for handling form binding (i.e. via `NUI_SetBindScript()`), then those scripts take priority and the system will not attempt to run the formfile's bind handler.
 
 > Any time an override script is set during form definition (`NUI_SetBindScript()`, `NUI_SetEventScript()`, etc.), those scripts take priority over any functions contained in the form's formfile and the formfile's function will not be run.  Also, override scripts set at the form level (i.e. using `NUI_SetEventScript()` before any controls are added), are form-global and apply to all controls on the form unless a local override script is set.
 
