@@ -434,13 +434,13 @@ Formfiles are a type of `.nss` include script that contain several functions whi
 
 Formfile integration works with the NUI configuration file `nui_i_config.nss`.  In this file you can set the following for formfile integration:
 
-* `NUI_FORMFILE_PREFIX` - The prefix for all formfiles.  The system will search for all formfiles (all `.nss` resrefs that start with this value) and run the specified form definition script (see below).
+* `NUI_FORMFILE_PREFIX` - The prefix for all formfiles (default: "nuif_").  The system will search for all formfiles (all `.nss` resrefs that start with this value) and run the specified form definition script (see below).
 
-* `NUI_FORMFILE_DEFINITION_FUNCTION` - (required) The function that contains the code for defining the form.  Should start with `NUI_CreateForm()` and end with `NUI_SaveForm()`.  Multiple forms can be defined in a single formfile.  Data returned for binding and event functions will contain the form id set during the definition process.
+* `NUI_FORMFILE_DEFINITION_FUNCTION` - (required, default: "NUI_HandleFormDefinition) The function that contains the code for defining the form.  Should start with `NUI_CreateForm()` and end with `NUI_SaveForm()`.  Multiple forms can be defined in a single formfile.  Data returned for binding and event functions will contain the form id set during the definition process.
 
-* `NUI_FORMFILE_BINDS_FUNCTION` - (optional) The function that contains code for setting all the initial bind values for the form.  This code must run *after* the form is open because all binds are set by form token and pc object.  The form token is different for each form instance (even if you open and close the same form multiple times), so binds must be set (if desired) each time the form is open.  If other scripts are set for handling form binding (i.e. via `NUI_SetBindScript()`), then those scripts take priority and the system will not attempt to run the formfile's bind handler.
+* `NUI_FORMFILE_BINDS_FUNCTION` - (optional, default: "NUI_HandleFormEvents") The function that contains code for setting all the initial bind values for the form.  This code must run *after* the form is open because all binds are set by form token and pc object.  The form token is different for each form instance (even if you open and close the same form multiple times), so binds must be set (if desired) each time the form is open.  If other scripts are set for handling form binding (i.e. via `NUI_SetBindScript()`), then those scripts take priority and the system will not attempt to run the formfile's bind handler.
 
-* `NUI_FORMFILE_EVENTS_FUNCTION` - (optional) The function that contains the code for reacting to all events signaled by this form.  This is the defaul function for event handling for a specific form.  If other scripts are set for handling form events (i.e. via `NUI_SetEventScript()`), then those scripts take priority and the system will not attempt to run the formfile's event handler.
+* `NUI_FORMFILE_EVENTS_FUNCTION` - (optional, default "NUI_HandleFormBinds") The function that contains the code for reacting to all events signaled by this form.  This is the defaul function for event handling for a specific form.  If other scripts are set for handling form events (i.e. via `NUI_SetEventScript()`), then those scripts take priority and the system will not attempt to run the formfile's event handler.
 
 > Any time an override script is set during form definition (`NUI_SetBindScript()`, `NUI_SetEventScript()`, etc.), those scripts take priority over any functions contained in the form's formfile and the formfile's function will not be run.  Also, override scripts set at the form level (i.e. using `NUI_SetEventScript()` before any controls are added), are form-global and apply to all controls on the form unless a local override script is set.
 
@@ -574,7 +574,7 @@ If you don't want to use the default bind handler in the formfile, there are two
 The second method is `SetBindFunction("sFunction");`.  This method allows you to continue using the formfile methdology, but specify a different function to run for a specific control, usually one that requires special or advanced handling.  The `sFunction` parameter must match a function that is included in your formfile, much like the default functions for form definition, binding and event handling.
 
 ```c
-// For SetBindFunction() calls, there must be a matching function in the form's formfile.  I missing function will not break the system, but will result in an error in your server log and a valid value will not be returned.
+// For SetBindFunction() calls, there must be a matching function in the form's formfile. A missing function will not break the system, but will result in an error in your server log and a valid value will not be returned.
 
 NUI_CreateForm("my_form_id");
     NUI_BindGeometry("my_form_geometry");
