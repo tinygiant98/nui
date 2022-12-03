@@ -540,7 +540,7 @@ The following scripts would run for the above form when it is opened/interacted 
 
 * The same concept applies to the functions `NUI_SetEventFunction()` and `NUI_SetBindFunction()`.  The only difference is that a custom function built into the formfile can be called (instead of a dedicated script) to override the global/default handlers.  In this case, if you specified `NUI_SetEventFunction("command_save_events")`, you would need to add the function `void command_save_events()` to the formfile.
 
-> The system will search for the first parent control to specify an override script, if one exists.  For example, if you specific an event script for a control group, but do not specify an event script for any controls within that group, all events for controls within that group (and the control group itself) will be handled by the script override set on the control group.
+> The system will search for the first parent control to specify an override script, if one exists.  For example, if you specify an event script for a control group, but do not specify an event script for any controls within that group, all events for controls within that group (and the control group itself) will be handled by the script override set on the control group.
 
 ## Form Handler Priority
 Only one handler will be run for any specific event, whether it's initial form binding, control building or event handling.  Although you can specific all three for any given control, only one will execute and will run in the following priority:
