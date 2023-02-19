@@ -63,7 +63,7 @@ json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
 // TODO remove upon debug completion
-const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
+const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
