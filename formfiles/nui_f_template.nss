@@ -40,7 +40,7 @@ void BindForm()
         string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
 
    
-        NUI_SetBind(OBJECT_SELF, nToken, sBind, sValue);
+        NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
     }
 }
 
