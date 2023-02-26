@@ -1,8 +1,8 @@
-NUI System Formfile: Persistent Storage
+####**NUI System Formfile: Persistent Storage**
 
-Version History:
+###Version History:
 
-0.1.1:
+##0.1.1:
 
 - Added configuration option: `PS_MAX_CONTAINER_ITEMS_DEFAULT`.
 - Added configuration option: `PS_MAX_CONTAINER_ITEMS_INVENTORY_DEFAULT`.
@@ -10,7 +10,7 @@ Version History:
 
     `PS_STORAGE_DEFAULT` and `PS_STORAGE_LIMIT` should be set to `PS_UNLIMITED` in `nui_c_config` or `-1` if set as a variable (instead of the previous 0) to allow unlimited item storage.
 
-    `PS_DISTANCE_DEFAULT` and `PS_DISTANCE` should be set to `PS_UNLMITED` in `nui_c_config` or `-1.0` if set as a variable (instead of the previous 0.0) to allow unlimited distance between the player and the container.
+    `PS_DISTANCE_DEFAULT` and `PS_DISTANCE` should be set to `PS_UNLIMITED` in `nui_c_config` or `-1.0` if set as a variable (instead of the previous 0.0) to allow unlimited distance between the player and the container.
 
     `PS_MAX_GOLD_DEFAULT` and `PS_MAX_GOLD` should be set to `PS_NONE` in `nui_c_config` or `-2` if set as a variable (instead of the previous 0) to prevent any gold storage.  Set to `PS_UNLIMITED` in `nui_c_config` or `-1` if set as a variable for unlimited gold storage.
 
@@ -26,10 +26,11 @@ Version History:
 - Added configuration constant `PS_UNLIMITED_DISTANCE (-1.0)`
 - Updated `nui_c_config` constant descriptions for added configuration constants and clarity.
 
-0.1.0:
+##0.1.0:
+
     Initial Release
 
-Usage:
+###Usage:
 
 This form can internally handle the following module events.  Additional events may be added by request:
 - OnPlaceableUsed
