@@ -63,7 +63,7 @@ json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
 // TODO remove upon debug completion
-const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
@@ -980,6 +980,11 @@ void NUI_SaveState(object oPC, string sFormID);
 /// @param sFormID Form ID to restore bind values for.
 void NUI_RestoreState(object oPC, string sFormID);
 
+/// @note Temporary prototypes to allow .35 function to work when .35 is not installed.
+/// TODO Remove when .35 is stable.
+//json RegExpMatch(string sRegExp, string sValue, int nSyntaxFlags = REGEXP_ECMASCRIPT, int nMatchFlags = REGEXP_FORMAT_DEFAULT);
+//string RegExpReplace(string sRegExp, string sValue, string sReplacement, int nSyntaxFlags = REGEXP_ECMASCRIPT, int nMatchFlags = REGEXP_FORMAT_DEFAULT);
+
 // -----------------------------------------------------------------------------
 //                             Public Functions
 //                          Administrative Helpers
@@ -1581,10 +1586,10 @@ string NUI_GetRectanglePoints(float x, float y, float w, float h)
 // TODO Needs Testing
 string NUI_GetDefinedRectanglePoints(string sRectangle)
 {
-    float x = StringToFloat(nui_GetValue(GetListItem(sRectangle, 0)));
-    float y = StringToFloat(nui_GetValue(GetListItem(sRectangle, 1)));
-    float w = StringToFloat(nui_GetValue(GetListItem(sRectangle, 2)));
-    float h = StringToFloat(nui_GetValue(GetListItem(sRectangle, 3)));
+    float x = StringToFloat(NUI_GetValue(GetListItem(sRectangle, 0)));
+    float y = StringToFloat(NUI_GetValue(GetListItem(sRectangle, 1)));
+    float w = StringToFloat(NUI_GetValue(GetListItem(sRectangle, 2)));
+    float h = StringToFloat(NUI_GetValue(GetListItem(sRectangle, 3)));
     
     return NUI_GetRectanglePoints(x, y, w, h);
 }
@@ -2287,6 +2292,8 @@ void NUI_DefineForms(string sFormfile = "")
             int f; for (f; f < CountList(sFormfiles); f++)
             {
                 sFormfile = GetListItem(sFormfiles, f);
+
+                NUI_Debug(HexColorString("Attempting to define" + sFormfile, COLOR_CYAN));
                 nui_SetFormfile(sFormfile);
                 nui_ExecuteFunction(sFormfile, NUI_DEFINE);
             }

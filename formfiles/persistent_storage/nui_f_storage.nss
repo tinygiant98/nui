@@ -4,27 +4,40 @@
 /// @brief  Persistent Storage formfile
 /// ----------------------------------------------------------------------------
 
-const string FORM_ID     = "persistent_storage";
-const string PS_DATABASE = "nui_ps_data";
-const string FORM_VERSION = "0.1.0";
+const string FORM_ID      = "persistent_storage";
+const string PS_DATABASE  = "nui_ps_data";
+const string FORM_VERSION = "0.1.1";
 
-const int PS_ACCESS_EXCLUSIVE    = 0x01;
-const int PS_ACCESS_CONTENTIOUS  = 0x02;
+const int PS_ACCESS_EXCLUSIVE    = 1;
+const int PS_ACCESS_CONTENTIOUS  = 2;
 
-const int PS_CONTAINER_PUBLIC    = 0x04;
-const int PS_CONTAINER_CHARACTER = 0x08;
-const int PS_CONTAINER_CDKEY     = 0x10;
+const int PS_CONTAINER_PUBLIC    = 1;
+const int PS_CONTAINER_CHARACTER = 2;
+const int PS_CONTAINER_CDKEY     = 3;
 
-const string PS_TITLE               = "PS_TITLE";
-const string PS_FORCE_SEARCH_BUTTON = "PS_FORCE_SEARCH_BUTTON";
-const string PS_FORCE_OBJECT_STATE  = "PS_FORCE_OBJECT_STATE";
-const string PS_STORAGE_LIMIT       = "PS_STORAGE_LIMIT";
-const string PS_DISTANCE            = "PS_DISTANCE";
-const string PS_UNIQUE_ID           = "PS_UNIQUE_ID";
-const string PS_ACCESS_TYPE         = "PS_ACCESS_TYPE";
-const string PS_CONTAINER_TYPE      = "PS_CONTAINTER_TYPE";
-const string PS_OPEN_INVENTORY      = "PS_OPEN_INVENTORY";
-const string PS_MAX_GOLD            = "PS_MAX_GOLD";
+const int PS_CONTAINER_ITEMS_NONE = 1;
+const int PS_CONTAINER_ITEMS_ANY  = 2;
+
+const int PS_UNLIMITED = -1;
+const int PS_NONE = -2;
+
+const int PS_TRUE = 1;
+const int PS_FALSE = -1;
+
+const float PS_UNLIMITED_DISTANCE = -1.0;
+
+const string PS_TITLE                         = "PS_TITLE";
+const string PS_FORCE_SEARCH_BUTTON           = "PS_FORCE_SEARCH_BUTTON";
+const string PS_FORCE_OBJECT_STATE            = "PS_FORCE_OBJECT_STATE";
+const string PS_STORAGE_LIMIT                 = "PS_STORAGE_LIMIT";
+const string PS_DISTANCE                      = "PS_DISTANCE";
+const string PS_UNIQUE_ID                     = "PS_UNIQUE_ID";
+const string PS_ACCESS_TYPE                   = "PS_ACCESS_TYPE";
+const string PS_CONTAINER_TYPE                = "PS_CONTAINTER_TYPE";
+const string PS_OPEN_INVENTORY                = "PS_OPEN_INVENTORY";
+const string PS_MAX_GOLD                      = "PS_MAX_GOLD";
+const string PS_MAX_CONTAINER_ITEMS           = "PS_MAX_CONTAINER_ITEMS";
+const string PS_MAX_CONTAINER_ITEMS_INVENTORY = "PS_MAX_CONTAINER_ITEMS_INVENTORY";
 
 const string PS_DESTROYED           = "PS_DESTROYED";
 
@@ -75,27 +88,37 @@ string ps_GetContainerID(object oPC)
 
 int ps_GetUseSearchButton(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_SEARCH_BUTTON, PS_SEARCH_BUTTON_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_SEARCH_BUTTON, PS_FORCE_SEARCH_BUTTON_DEFAULT);
 }
 
 int ps_GetSaveObjectState(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_OBJECT_STATE, PS_OBJECT_STATE_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_OBJECT_STATE, PS_FORCE_OBJECT_STATE_DEFAULT);
 }
 
 int ps_GetContainerType(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_CONTAINER_TYPE, PS_CONTAINER_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_CONTAINER_TYPE, PS_CONTAINER_TYPE_DEFAULT);
 }
 
 int ps_GetAccessType(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_ACCESS_TYPE, PS_ACCESS_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_ACCESS_TYPE, PS_ACCESS_TYPE_DEFAULT);
 }
 
 int ps_GetMaxItems(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_STORAGE_LIMIT, PS_STORAGE_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_STORAGE_LIMIT, PS_STORAGE_LIMIT_DEFAULT);
+}
+
+int ps_GetMaxContainerItems(object oPC)
+{
+    return ps_GetLocalIntOrDefault(oPC, PS_MAX_CONTAINER_ITEMS, PS_MAX_CONTAINER_ITEMS_DEFAULT);
+}
+
+int ps_GetMaxContainterItemInventory(object oPC)
+{
+    return ps_GetLocalIntOrDefault(oPC, PS_MAX_CONTAINER_ITEMS_INVENTORY, PS_MAX_CONTAINER_ITEMS_INVENTORY_DEFAULT);
 }
 
 float ps_GetMaxDistance(object oPC)
@@ -325,7 +348,7 @@ void ps_UpdateGoldBinds(object oPC, int nToken, int nTotal = -1)
 ///     the gold in the container (withdrawing all gold) for the owning character
 int ps_UpdateGold(object oPC, int nToken, int nGold)
 {
-    if (!ps_GetMaxGold(oPC)) return FALSE;
+    if (ps_GetMaxGold(oPC) <= PS_NONE) return FALSE;
 
     string sGold = (nGold == 0 ? "@nGold" : "item_stacksize + @nGold");
     string sQuery = 
@@ -350,12 +373,10 @@ int ps_UpdateGold(object oPC, int nToken, int nGold)
 
 int ps_WithdrawGold(object oPC, int nToken, int nGold)
 {
-    if (!ps_GetMaxGold(oPC)) return FALSE;
+    if (ps_GetMaxGold(oPC) <= PS_NONE) return FALSE;
 
     if (ps_GetContainerType(oPC) != PS_CONTAINER_PUBLIC)
         return ps_UpdateGold(oPC, nToken, -nGold);
-
-    //nui_BeginTransaction();
 
     string sTable = ps_GetTableName(oPC);
     sQuery =
@@ -383,8 +404,6 @@ int ps_WithdrawGold(object oPC, int nToken, int nGold)
         SqlBindInt(sql, "@gold", nGold - nRemoved);
         SqlStep(sql);
     }
-
-    //nui_CommitTransaction();
 
     ps_UpdateGoldBinds(oPC, nToken);
     return TRUE;
@@ -431,7 +450,7 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
     }
 
     int nMax = ps_GetMaxItems(oPC);
-    if (nMax > 0)
+    if (nMax >= 0)
     {
         string sColor;
         float f = nItems * 1.0 / nMax;
@@ -468,6 +487,49 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
     }
 }
 
+int ps_CountInventoryItems(object oContainer)
+{
+    int n;
+    object oItem = GetFirstItemInInventory(oContainer);
+    while (GetIsObjectValid(oItem))
+    {
+        n++;
+        oItem = GetNextItemInInventory(oContainer);
+    }
+
+    return n;
+}
+
+int ps_CountContainerItems(object oPC)
+{
+    string sQuery = "SELECT COUNT(*) FROM " + ps_GetTableName(oPC) + " " +
+        "WHERE item_data != '' AND json_extract(item_data, '$.ItemList') IS NOT NULL;";
+    sqlquery sql = ps_PrepareQuery(sQuery);
+    return SqlStep(sql) ? SqlGetInt(sql, 0) : 0;
+}
+
+int ps_DepositContainerItem(object oPC, object oItem)
+{
+    if (!GetHasInventory(oItem))
+        return TRUE;
+
+    if (ps_GetMaxContainerItems(oPC) <= PS_NONE)
+        return FALSE;
+    else
+    {
+        int nMaxItems = ps_GetMaxContainterItemInventory(oPC);
+        if (nMaxItems == PS_UNLIMITED)
+            return TRUE;
+        else
+        {
+            if (nMaxItems == PS_NONE && GetIsObjectValid(GetFirstItemInInventory(oItem)))
+                return FALSE;
+            else
+                return ps_CountContainerItems(oItem) <= nMaxItems;
+        }
+    }
+}
+
 void ps_DepositItem(object oPC, object oItem)
 {
     DeleteLocalInt(oPC, PS_TARGETING_MODE);
@@ -485,6 +547,9 @@ void ps_DepositItem(object oPC, object oItem)
         SendMessageToPC(oPC, "Your storage is full, withdraw an item first.");
         return;
     }
+
+    if (!ps_DepositContainerItem(oPC, oItem))
+        return;
 
     int nItemBaseItem = GetBaseItemType(oItem);
     string sItemName  = GetIdentified(oItem) ? GetName(oItem) : GetStringByStrRef(StringToInt(Get2DAString("baseitems", "Name", nItemBaseItem))) + " (Unidentified)";
@@ -505,8 +570,6 @@ void ps_DepositItem(object oPC, object oItem)
     SqlBindString(sql, "@item_iconresref", ps_GetIconResref(oItem, jItemData, nItemBaseItem));
     SqlBindJson  (sql, "@item_data",       jItemData);
     
-    //ps_BeginTransaction();
-
     if (SqlStep(sql))
     {
         if (SqlGetString(sql, 0) == "")
@@ -788,7 +851,8 @@ void HandleNUIEvents()
             int nGold = GetGold(ed.oPC);
             int nAmount = clamp(StringToInt(JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "gold_amount"))), 0, nGold);
 
-            if ((nGold = ps_GetMaxGold(ed.oPC)) > 0)
+            nGold = ps_GetMaxGold(ed.oPC);
+            if ((nGold = ps_GetMaxGold(ed.oPC)) > -2)
                 nAmount = min(nAmount, nGold - JsonGetInt(NuiGetBind(ed.oPC, ed.nToken, "gold_stored")));
 
             if (nAmount <= 0) return;
@@ -881,7 +945,7 @@ void ps_OnPCHeartbeat(object oPC, object oContainer)
         return;
 
     float fMax = ps_GetMaxDistance(oPC);
-    if (fMax <= 0.0) return;
+    if (fMax < 0.0) return;
 
     if (GetDistanceBetween(oLastContainer, oPC) > fMax)
         ps_CloseContainer(oPC);
@@ -894,9 +958,9 @@ void ps_OnPCHeartbeat(object oPC, object oContainer)
 void ps_OnContainerHeartbeat(object oContainer)
 {
     float fMax = ps_GetLocalFloatOrDefault(oContainer, PS_DISTANCE, PS_DISTANCE_DEFAULT);
-    if (fMax <= 0.0) return;
+    if (fMax < 0.0) return;
     
-    int nAccess = ps_GetLocalIntOrDefault(oContainer, PS_ACCESS_TYPE, PS_ACCESS_DEFAULT);
+    int nAccess = ps_GetLocalIntOrDefault(oContainer, PS_ACCESS_TYPE, PS_ACCESS_TYPE_DEFAULT);
     if (nAccess == PS_ACCESS_CONTENTIOUS)
     {
         int n; for (n; n < CountObjectList(oContainer, PS_USERS); n++)
@@ -923,21 +987,12 @@ void ps_OpenContainer(object oPC)
     DelayCommand(2.0, ps_OnPCHeartbeat(oPC, oContainer));
     DelayCommand(2.0, ps_OnContainerHeartbeat(oContainer));
 
-    NUI_DisplayForm(oPC, FORM_ID, ps_GetMaxGold(oPC) ? "default" : "noGold");
+    NUI_DisplayForm(oPC, FORM_ID, ps_GetMaxGold(oPC) > -2 ? "default" : "noGold");
 }
 
 void HandleModuleEvents()
 {
     object oPC = OBJECT_SELF;
-
-    /// @note and other stuff: // TODO
-    /// This setup is designed to run as a compiled formfile, but *should* be able to run
-    ///  as JIT.  It can be run through the event handling system or as assigned directly
-    ///  to an object's event handler, or through ExecuteScript().
-
-    /// If this form is called from the NUI Event Handling system, OBJECT_SELF should
-    /// *always* be a PC.  If this is called directly from an object's event handler,
-    /// OBJECT_SELF will likely not be a PC, so the interacting PC must be defined here.
 
     switch (GetCurrentlyRunningEvent())
     {
