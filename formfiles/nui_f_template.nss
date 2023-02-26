@@ -32,15 +32,15 @@ void DefineForm()
 
 void BindForm()
 {
-    json jValue, jBinds = NUI_GetOrphanBinds(FORM_ID);
+    json jBinds = NUI_GetOrphanBinds(FORM_ID);
     int nToken = NuiFindWindow(OBJECT_SELF, FORM_ID);
 
     int n; for (n; n < JsonGetLength(jBinds); n++)
     {
-        string sBind = JsonGetString(JsonArrayGet(jBinds, n));
+        string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
 
    
-        NUI_SetBind(OBJECT_SELF, nToken, sBind, jValue);
+        NUI_SetBind(OBJECT_SELF, nToken, sBind, sValue);
     }
 }
 
