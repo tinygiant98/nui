@@ -1,8 +1,8 @@
-####**NUI System Formfile: Persistent Storage**
+#### **NUI System Formfile: Persistent Storage**
 
-###Version History:
+### Version History:
 
-##0.1.1:
+## 0.1.1:
 
 - Added configuration option: `PS_MAX_CONTAINER_ITEMS_DEFAULT`.
 - Added configuration option: `PS_MAX_CONTAINER_ITEMS_INVENTORY_DEFAULT`.
@@ -26,11 +26,11 @@
 - Added configuration constant `PS_UNLIMITED_DISTANCE (-1.0)`
 - Updated `nui_c_config` constant descriptions for added configuration constants and clarity.
 
-##0.1.0:
+## 0.1.0:
 
-    Initial Release
+Initial Release
 
-###Usage:
+### Usage:
 
 This form can internally handle the following module events.  Additional events may be added by request:
 - OnPlaceableUsed
