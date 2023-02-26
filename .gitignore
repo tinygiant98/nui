@@ -7,7 +7,6 @@
 .nasher/
 
 # Specific Formfiles (in development)
-formfiles/nui_f_inspector.nss
-formfiles/nuif_appedit.nss
-formfiles/nuil_appedit_en.nss
-formfiles/nuio_appedit.nss
+formfiles/form_inspector
+formfiles/appearance_editor
+formfiles/table_of_contents

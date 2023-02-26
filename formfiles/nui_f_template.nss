@@ -1,18 +1,16 @@
 /// ----------------------------------------------------------------------------
-/// @file   nuif_toc.nss
+/// @file   nuif_f_template.nss
 /// @author Ed Burke (tinygiant98) <af.hog.pilot@gmail.com>
-/// @brief  Table of Contents formfile.
+/// @brief  Template formfile
 /// ----------------------------------------------------------------------------
 
-//#include "nui_i_library"
-#include "nui_i_main"
+#include "nui_i_library"
 #include "util_i_csvlists"
 #include "util_i_debug"
 
 const string FORM_ID = "<form_name>";
 const string VERSION = "0.1.0";
 const string IGNORE_FORM_EVENTS = "";
-
 
 void DefineForm()
 {
