@@ -1,5 +1,9 @@
 #### **NUI System Formfile: Persistent Storage**
 
+### Compatibility:
+
+Developed and tested under 8193.34.
+
 ### Version History:
 
 ## 0.1.1:
