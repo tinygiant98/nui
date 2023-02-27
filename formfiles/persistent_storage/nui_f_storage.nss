@@ -214,8 +214,8 @@ int ps_CountStoredItems(object oPC)
     if (nType == PS_CONTAINER_CHARACTER || nType == PS_CONTAINER_CDKEY)
     {
         sAnd = " AND owner GLOB @owner";
-        if (nType == PS_CONTAINER_CHARACTER) sOwner = ps_GetOwner(oPC, "uuid");
-        else                                 sOwner = ps_GetOwner(oPC, "cdkey");
+        if (nType == PS_CONTAINER_CHARACTER) sOwner = ps_GetOwner(oPC, "uuid") + ":*";
+        else                                 sOwner = "*:" + ps_GetOwner(oPC, "cdkey");
     }
 
     string sQuery = 
@@ -224,7 +224,7 @@ int ps_CountStoredItems(object oPC)
     sqlquery sql = ps_PrepareQuery(sQuery);
 
     if (sAnd != "")
-        SqlBindString(sql, "@owner", "*" + sOwner + "*");
+        SqlBindString(sql, "@owner", sOwner);
 
     return SqlStep(sql) ? SqlGetInt(sql, 0) : 0;
 }
@@ -239,8 +239,8 @@ int ps_CountStoredGold(object oPC)
         "WHERE item_uuid == 'gold'" + sWhere + ";";
     sql = ps_PrepareQuery(sQuery);
     
-    if      (nType == PS_CONTAINER_CHARACTER) SqlBindString(sql, "@owner", ps_GetOwner(oPC, "uuid"));
-    else if (nType == PS_CONTAINER_CDKEY)     SqlBindString(sql, "@owner", ps_GetOwner(oPC, "cdkey"));
+    if      (nType == PS_CONTAINER_CHARACTER) SqlBindString(sql, "@owner", ps_GetOwner(oPC, "uuid") + ":*");
+    else if (nType == PS_CONTAINER_CDKEY)     SqlBindString(sql, "@owner", "*:" + ps_GetOwner(oPC, "cdkey"));
 
     return SqlStep(sql) ? SqlGetInt(sql, 0) : 0;
 }
@@ -436,8 +436,8 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
     
     if (sSearch != "") SqlBindString(sql, "@item", "*" + sSearch + "*");
     
-    if      (nType == PS_CONTAINER_CHARACTER) SqlBindString(sql, "@owner", ps_GetOwner(oPC, "uuid"));
-    else if (nType == PS_CONTAINER_CDKEY)     SqlBindString(sql, "@owner", ps_GetOwner(oPC, "cdkey"));
+    if      (nType == PS_CONTAINER_CHARACTER) SqlBindString(sql, "@owner", ps_GetOwner(oPC, "uuid") + ":*");
+    else if (nType == PS_CONTAINER_CDKEY)     SqlBindString(sql, "@owner", "*:" + ps_GetOwner(oPC, "cdkey"));
 
     if (SqlStep(sql))
     {
