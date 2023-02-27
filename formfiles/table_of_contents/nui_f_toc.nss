@@ -108,8 +108,8 @@ void BindForm()
     {
         string sBind = JsonGetString(JsonArrayGet(jBinds, n));
 
-        if      (sBind == "lb_rowcount")    sValue = "[0,0,0]"; //JsonInt(JsonGetLength(jTitles));
-        else if (sBind == "combo_elements") sValue = JsonDump(jElements);
+        if      (sBind == "lb_rowcount")    sValue = JsonDump(jFormfiles); //JsonInt(JsonGetLength(jTitles));
+        //else if (sBind == "combo_elements") sValue = JsonDump(jElements);
         else if (sBind == "form_titles")    sValue = JsonDump(jTitles);
         else if (sBind == "chk_value")      sValue = "[true,false,true]";
         else                                sValue = nuiNull();
