@@ -23,10 +23,10 @@ void HandleModuleEvents();
 // These are dummy implementations to prevent nwnsc from complaining that they
 // do not exist. If you want to compile in the toolset rather than using nwnsc,
 // comment these lines out.
-#pragma default_function(DefineForm)
-#pragma default_function(BindForm)
-#pragma default_function(HandleNUIEvents)
-#pragma default_function(HandleModuleEvents)
+//#pragma default_function(DefineForm)
+//#pragma default_function(BindForm)
+//#pragma default_function(HandleNUIEvents)
+//#pragma default_function(HandleModuleEvents)
 
 // -----------------------------------------------------------------------------
 //                               Library Dispatch
