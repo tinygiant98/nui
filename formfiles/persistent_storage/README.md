@@ -6,6 +6,9 @@ Developed and tested under 8193.34.
 
 ### Version History:
 
+## 0.1.2:
+- Fixed bug in sqlite query when using containers as personal storage (by character/by cdkey) which prevented the item list from displaying after an item was deposited.
+
 ## 0.1.1:
 
 - Added configuration option: `PS_MAX_CONTAINER_ITEMS_DEFAULT`.
