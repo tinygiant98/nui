@@ -102,7 +102,7 @@ const int PS_ACCESS_TYPE_DEFAULT = PS_ACCESS_EXCLUSIVE;
 ///     Local Override (int): PS_CONTAINER_TYPE
 ///         1 = PS_CONTAINER_PUBLIC
 ///         2 = PS_CONTAINER_CHARACTER
-///         3 = PS_CONTAINER_CD_KEY
+///         3 = PS_CONTAINER_CDKEY
 const int PS_CONTAINER_TYPE_DEFAULT = PS_CONTAINER_PUBLIC;
 
 /// @brief Determines whether the player's inventory window will be opened
