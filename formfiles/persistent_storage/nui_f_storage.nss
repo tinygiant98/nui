@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.3";
+const string FORM_VERSION = "0.1.4";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -329,6 +329,7 @@ void ps_UpdateGoldBinds(object oPC, int nToken, int nTotal = -1)
         NuiSetBind(oPC, nToken, "gold_stored_tooltip", JsonString(""));
 
     int nGold = GetGold(oPC);
+
     NuiSetBind(oPC, nToken, "btn_withdraw_gold", JsonBool(nTotal > 0));
     NuiSetBind(oPC, nToken, "btn_deposit_gold", JsonBool(nGold > 0));
 
@@ -848,10 +849,14 @@ void HandleNUIEvents()
             ps_EnterDepositMode(ed.oPC);
         else if (ed.sControlID == "btn_deposit_gold")
         {
-            int nGold = GetGold(ed.oPC);
-            int nAmount = clamp(StringToInt(JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "gold_amount"))), 0, nGold);
+            int nAmount, nGold = GetGold(ed.oPC);
+            string sAmount = JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "gold_amount"));
 
-            nGold = ps_GetMaxGold(ed.oPC);
+            if (sAmount == "")
+                nAmount = nGold;
+            else 
+                nAmount = clamp(StringToInt(sAmount), 0, nGold);            
+
             if ((nGold = ps_GetMaxGold(ed.oPC)) > -2)
                 nAmount = min(nAmount, nGold - JsonGetInt(NuiGetBind(ed.oPC, ed.nToken, "gold_stored")));
 
@@ -859,16 +864,25 @@ void HandleNUIEvents()
 
             if (ps_UpdateGold(ed.oPC, ed.nToken, nAmount))
                 AssignCommand(ed.oPC, TakeGoldFromCreature(nAmount, ed.oPC, TRUE));
+
+            DelayCommand(0.1, ps_UpdateGoldBinds(ed.oPC, ed.nToken));
         }
         else if (ed.sControlID == "btn_withdraw_gold")
         {
-            int nGold = JsonGetInt(NuiGetBind(ed.oPC, ed.nToken, "gold_stored"));
-            int nAmount = clamp(StringToInt(JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "gold_amount"))), 0, nGold);
+            int nAmount, nGold = JsonGetInt(NuiGetBind(ed.oPC, ed.nToken, "gold_stored"));
+            string sAmount = JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "gold_amount"));
+
+            if (sAmount == "")
+                nAmount = nGold;
+            else 
+                nAmount = clamp(StringToInt(sAmount), 0, nGold);
 
             if (nAmount <= 0) return;
 
             if (ps_WithdrawGold(ed.oPC, ed.nToken, nAmount))
                 GiveGoldToCreature(ed.oPC, nAmount);
+
+            ps_UpdateGoldBinds(ed.oPC, ed.nToken);
         }
         else if (ed.sControlID == "btn_search")
         {
@@ -923,6 +937,8 @@ void HandleNUIEvents()
 
             if (StringToInt(sAmount) > nAmount)
                 NuiSetBind(ed.oPC, ed.nToken, ed.sControlID, JsonString(IntToString(nAmount)));
+
+            ps_UpdateGoldBinds(ed.oPC, ed.nToken);
         }
     }
     else if (ed.sEvent == "open")

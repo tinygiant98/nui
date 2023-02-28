@@ -6,6 +6,11 @@ Developed and tested under 8193.34.
 
 ### Version History:
 
+## 0.1.4:
+- Forced gold withdraw and deposit button tooltips to update more often to prevent out-of-sync condition.
+- Added gold withdraw/deposit functionality:
+    If the `Amount...` textbox is empty, clicking the gold `Withdraw` button will withdraw all gold up to the amount listed in the `Gold:` container.  If there is no gold stored in the container, the gold `Withdraw` button will be disabled.  Similarly, clicking on the gold `Deposit` button will deposit all gold up to the amount the PC has, as long as it doesn't exceed the total storage capability of the container as defined by `nui_c_storage` or local override variables set on the container object.  If the PC has no gold, the gold `Deposit` button will be disabled.
+
 ## 0.1.3:
 - Fixed typo in PS_CONTAINER_TYPE that prevented local overrides from reading correctly.
 
