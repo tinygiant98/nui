@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.2";
+const string FORM_VERSION = "0.1.3";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -33,7 +33,7 @@ const string PS_STORAGE_LIMIT                 = "PS_STORAGE_LIMIT";
 const string PS_DISTANCE                      = "PS_DISTANCE";
 const string PS_UNIQUE_ID                     = "PS_UNIQUE_ID";
 const string PS_ACCESS_TYPE                   = "PS_ACCESS_TYPE";
-const string PS_CONTAINER_TYPE                = "PS_CONTAINTER_TYPE";
+const string PS_CONTAINER_TYPE                = "PS_CONTAINER_TYPE";
 const string PS_OPEN_INVENTORY                = "PS_OPEN_INVENTORY";
 const string PS_MAX_GOLD                      = "PS_MAX_GOLD";
 const string PS_MAX_CONTAINER_ITEMS           = "PS_MAX_CONTAINER_ITEMS";
