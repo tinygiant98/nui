@@ -6,6 +6,9 @@ Developed and tested under 8193.34.
 
 ### Version History:
 
+## 0.1.5:
+- Fixed a gold duplication bug which only occurred when an item had already been deposited into the chest.  Thanks to @Chodezilla for finding the way to duplicate this bug. 
+
 ## 0.1.4:
 - Forced gold withdraw and deposit button tooltips to update more often to prevent out-of-sync condition.
 - Added gold withdraw/deposit functionality:

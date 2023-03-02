@@ -2,6 +2,7 @@
 *.hak
 *.mod
 *.tlk
+*.erf
 
 # Ignore the nasher directory
 .nasher/
@@ -10,3 +11,6 @@
 formfiles/form_inspector
 formfiles/appearance_editor
 formfiles/portrait_viewer
+formfiles/.test
+
+demo/

@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.4";
+const string FORM_VERSION = "0.1.5";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -399,14 +399,13 @@ int ps_WithdrawGold(object oPC, int nToken, int nGold)
     {
         sQuery = 
             "UPDATE " + sTable + " SET item_stacksize = item_stacksize - @gold " + 
-            "WHERE ROWID IN (SELECT ROWID FROM " + sTable + " WHERE item_stacksize > " +
+            "WHERE ROWID IN (SELECT ROWID FROM " + sTable + " WHERE item_stacksize >= " +
             "@gold AND item_uuid = 'gold' ORDER BY RANDOM() LIMIT 1);";
         sql = ps_PrepareQuery(sQuery);
         SqlBindInt(sql, "@gold", nGold - nRemoved);
         SqlStep(sql);
     }
 
-    ps_UpdateGoldBinds(oPC, nToken);
     return TRUE;
 }
 
