@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.8";
+const string FORM_VERSION = "0.1.9";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -411,6 +411,12 @@ int ps_WithdrawGold(object oPC, int nToken, int nGold)
 
 void ps_UpdateItemList(object oPC, int nFlag = FALSE)
 {
+    /// @note This NUI_DisplaySubform only exists because of an nui issue where shortening a array bound to a listbox
+    ///     a sufficient amount while scrolled near the bottom results in an nui error.  To fix this issue, the listbox
+    ///     is implemented as a subform and reloaded here each time this function is called.  It effectively fixes the
+    ///     problem, but should be removed when .35 is stable.  See additional sections affected by this in DefineForm().
+    NUI_DisplaySubform(oPC, FORM_ID, "grpItems", "lstItems");
+
     string sAnd, sSearch = GetLocalString(oPC, PS_SEARCH_STRING);
     int n, nItems, nGold, nType = ps_GetContainerType(oPC);
     int nToken = NUI_GetFormToken(oPC, FORM_ID);
@@ -425,7 +431,7 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
         "WITH gold AS (SELECT SUM(item_stacksize) pieces FROM " + sTable + " WHERE item_uuid == 'gold'$1 ), " +
         "items AS (SELECT item_uuid, IIF(item_stacksize > 1, item_name || ' (x' || item_stacksize || ')', item_name) name, " +
         "item_iconresref, json('false') selected FROM " + sTable + " WHERE item_uuid != 'gold'$2 " +
-        "ORDER BY item_baseitem ASC, item_name ASC) SELECT COUNT(items.item_uuid) items, gold.pieces, " +
+        "ORDER BY item_name ASC, item_baseitem ASC) SELECT COUNT(items.item_uuid) items, gold.pieces, " +
         "IIF(json_group_array(item_uuid) == json_array(null), json_array(), json_group_array(item_uuid)) uuid, " +
         "IIF(json_group_array(name) == json_array(null), json_array(), json_group_array(name)) name, " +
         "IIF(json_group_array(item_iconresref) == json_array(null), json_array(), json_group_array(item_iconresref)) resref, " +
@@ -525,8 +531,8 @@ int ps_DepositContainerItem(object oPC, object oItem)
                 return TRUE;
             else
             {
-                if (nMaxItems == PS_NONE && GetIsObjectValid(GetFirstItemInInventory(oItem)))
-                    return FALSE;
+                if (nMaxItems == PS_NONE)
+                    return !GetIsObjectValid(GetFirstItemInInventory(oItem));
                 else
                     return ps_CountInventoryItems(oItem) <= nMaxItems;
             }
@@ -727,10 +733,25 @@ void DefineForm()
                         NUI_SetDisabledTooltip("Live search enabled");
                 NUI_CloseRow();
 
+                /// @note Due to the list size issue with NUI in .34, the item listbox had to be
+                ///     implemented as a subform.  The commented out section immediately below
+                ///     this AddRow() block is the original implementation and should be reinstanted
+                ///     once (if?) .35 is stable.  Additionally, remove the subform definition
+                ///     below.
                 NUI_AddRow();
                     NUI_SetHeight(288.0);
                     NUI_SetMargin(0.0);
 
+                    NUI_AddGroup("grpItems");
+                        NUI_SetBorder(TRUE);
+                        NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
+                    {
+                        NUI_AddSpacer();
+                    } NUI_CloseGroup();
+                NUI_CloseRow();
+
+                /*
+                NUI_AddRow();
                     NUI_AddListbox();
                         NUI_BindRowCount("icons");
                         NUI_SetRowHeight(32.0);
@@ -752,6 +773,7 @@ void DefineForm()
                             NUI_BindValue("selected");
                     } NUI_CloseListbox();
                 NUI_CloseRow();
+                */
 
                 NUI_AddRow();
                     NUI_SetHeight(fRowHeight);
@@ -823,6 +845,34 @@ void DefineForm()
         NUI_CloseRow();
     }
 
+    /// @note Remove this subform definition when .35 is stable.
+    NUI_CreateSubform("lstItems");
+    {
+        NUI_AddRow();
+            NUI_AddListbox();
+                NUI_BindRowCount("icons");
+                NUI_SetRowHeight(32.0);
+                NUI_SetBorder(FALSE);
+            {
+                NUI_AddGroup();
+                    NUI_SetBorder(TRUE);
+                    NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
+                    NUI_SetTemplateWidth(32.0);
+                    NUI_SetTemplateVariable(FALSE);
+                {
+                    NUI_AddImage();
+                        NUI_BindResref("icons");
+                        NUI_SetAspect(NUI_ASPECT_FIT);
+                        NUI_SetHorizontalAlignment(NUI_HALIGN_CENTER);
+                        NUI_SetVerticalAlignment(NUI_VALIGN_MIDDLE);
+                } NUI_CloseGroup();
+                NUI_AddCheckbox();
+                    NUI_BindLabel("names");
+                    NUI_BindValue("selected");
+            } NUI_CloseListbox();
+        NUI_CloseRow();
+    }
+
     NUI_CreateDefaultProfile();
     {
         NUI_SetProfileBind("geometry", NUI_DefineRectangle(360.0, 0.0, 370.0, 470.0));
@@ -840,7 +890,7 @@ void DefineForm()
 void HandleNUIEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
-    string sProfile = JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "NUI_FORM_PROFILE"));
+
     if (ed.sEvent == "click")
     {
         if (ed.sControlID == "btn_withdraw")
