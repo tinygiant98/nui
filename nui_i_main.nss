@@ -63,7 +63,7 @@ json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
 // TODO remove upon debug completion
-const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
+const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
@@ -1404,6 +1404,7 @@ string nuiBool(int b)         {return b ? "true" : "false";}
 string nuiBind(string sBind)  {return "{" + nuiString("bind")   + ":" + nuiString(sBind) + "}";}
 string nuiStrRef(int nStrRef) {return "{" + nuiString("strref") + ":" + nuiInt(nStrRef)  + "}";}
 string nuiNull()              {return "null";}
+int    nuiIsBind(string s)    {return JsonGetType(JsonParse(s)) == JSON_TYPE_OBJECT;}
 
 // -----------------------------------------------------------------------------
 //                       Form/Subform/Layout Definition
@@ -1785,7 +1786,7 @@ void NUI_DrawTextbox(string sRect, string sText)
 {
     string sDraw =
         nuiString("rect") + ":" + sRect + "," +
-        nuiString("text")   + ":" + nuiString(sText) + "," +
+        nuiString("text") + ":" + (nuiIsBind(sText) ? sText : nuiString(sText)) + "," +
         nuiString("type")   + ":" + nuiInt(4);
 
     nui_ToggleIncrementFlag(FALSE);
@@ -1795,12 +1796,13 @@ void NUI_DrawTextbox(string sRect, string sText)
 void NUI_DrawImage(string sResref, string sRect, int nAspect, int nHAlign, int nVAlign)
 {
     string sDraw =
-        nuiString("rect")         + ":" + sRect             + "," +
-        nuiString("image")        + ":" + nuiString(sResref) + "," +
-        nuiString("image_aspect") + ":" + nuiInt(nAspect)   + "," +
-        nuiString("image_halign") + ":" + nuiInt(nHAlign)   + "," +
-        nuiString("image_valign") + ":" + nuiInt(nVAlign)   + "," +
-        nuiString("type")         + ":" + nuiInt(5);
+        nuiString("rect")         + ":" +  sRect                + "," +
+        nuiString("image")        + ":" +
+            (nuiIsBind(sResref) ? sResref : nuiString(sResref)) + "," +
+        nuiString("image_aspect") + ":" +   nuiInt(nAspect)     + "," +
+        nuiString("image_halign") + ":" +   nuiInt(nHAlign)     + "," +
+        nuiString("image_valign") + ":" +   nuiInt(nVAlign)     + "," +
+        nuiString("type")         + ":" +   nuiInt(5);
     
     nui_ToggleIncrementFlag(FALSE);
     nui_SetControl(nui_CreateCanvasTemplate(sDraw));

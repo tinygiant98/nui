@@ -1,8 +1,15 @@
 #### **NUI System Formfile: Persistent Storage**
 
+- [Compatibility](#compatibility)
+- [Version History](#version-history)
+- [Usage](#usage)
+    - [Basic](#basic)
+    - [Advanced](#advanced)
+    - [Configuration Options](#configuration)
+
 ### Compatibility:
 
-Developed and tested under 8193.34.
+Developed and tested under 8193.34.  Compatible with preview (.35).
 
 ### Version History:
 
@@ -63,10 +70,24 @@ Initial Release
 
 ### Usage:
 
-This form can internally handle the following module events.  Additional events may be added by request:
+The persistent storage formfile requires two scripts:  `nui_c_storage`, which contains all configuration defaults, and `nui_f_storage`, which contains the formfile's functionality.  Do not make any changes to `nui_f_storage`.  All constants in `nui_c_storage` can be changed per the module builder's desires, however, the actual configuration constant names should not be changed.
+
+In addition to the event calls required for the base NUI system, the following are required for the persistent storage form to function correctly:
+- The module's handler for `OnPlayerTarget` must include `NUI_HandleEvents(GetLastPlayerToSelectTarget());`.
+
+<a id="basic"></a>
+To primary method to instantiate the persistent storage form for any container is to set `nui_f_storage` as the event handler for the following events on each container that will be part of the system:
 - OnPlaceableUsed
 - OnPlaceableOpen
 - OnPlaceableClosed
 
-- Direct Call:  set `nui_f_storage` as the event script for any of the above events.
-- Event System Call:  call `NUI_HandleEvents(oPC);` from any script.  in this case, `oPC` must be the appopriate player characters (i.e. `GetLastOpenedBy()` in the `OnPlaceableOpen` event.)
+<a id="advanced"></a>
+Alternately, the form can be opened via calls from event handling system.  To instantiate the persistent storage form for any container from an event handler.  Once the container is verified as part of the system (through whatever method is deemed appropriate by the module builder), the following should be called:
+- In the `OnPlaceableUsed` handler: `NUI_HandleEvents(GetLastUsedBy());`
+- In the `OnPlaceableOpen` handler: `NUI_HandleEvents(GetLastOpenedBy());`
+- In the `OnPlaceableClosed` handler: `NUI_HandleEvents(GetLastClosedBy());`
+> Only one opening handler is required, either `OnPlaceableUsed` or `OnPlaceableOpen`.  Setting both will cause the form to open, immediately close and then open again.  Although this action may not be readily apparent, it can eat up valuable resources in large modules.
+
+### Configuration
+
+`nui_c_storage` contains all of the configuration options available for this formfile.  The values set for each configuration option in `nui_c_storage` are default values that will be used for any container that does not have a local override set.  To set a local override, set a local variable (int, float or string, depending on the configuration option) to a valid value as listed in the description for each configuration option.
