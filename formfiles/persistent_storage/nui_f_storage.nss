@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.6";
+const string FORM_VERSION = "0.1.7";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -670,7 +670,7 @@ void BindForm()
         NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
     }
 
-    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "search", !ps_GetUseSearchButton(OBJECT_SELF));
+    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "search", ps_GetUseSearchButton(OBJECT_SELF));
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "geometry");
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "gold_amount");
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "selected");

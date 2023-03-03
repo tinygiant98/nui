@@ -6,6 +6,9 @@ Developed and tested under 8193.34.
 
 ### Version History:
 
+## 0.1.7:
+- Fix search button configuration behavior.
+
 ## 0.1.6:
 - Fixed tooltip for the deposit gold command button to display the maximum amount available to deposit.  It will not display the minimum of the amount of gold the PC currently has or the difference between the maximum gold a container can store and how much is currently stored in the container.
 
