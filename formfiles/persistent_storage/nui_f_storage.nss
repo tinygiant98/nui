@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.5";
+const string FORM_VERSION = "0.1.6";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -335,7 +335,7 @@ void ps_UpdateGoldBinds(object oPC, int nToken, int nTotal = -1)
 
     int nAmount = StringToInt(JsonGetString(NuiGetBind(oPC, nToken, "gold_amount")));
     int nWithdraw = nAmount <= 0 || nAmount > nTotal ? nTotal : nAmount;
-    int nDeposit  = nAmount <= 0 || nAmount > nGold  ? nGold  : nAmount;
+    int nDeposit  = nAmount <= 0 || nAmount > nGold  ? min(ps_GetMaxGold(oPC) - nTotal, nGold) : nAmount;
 
     NuiSetBind(oPC, nToken, "btn_withdraw_tooltip", JsonString("Withdraw " + ps_FormatGold(nWithdraw, TRUE) + " gold"));
     NuiSetBind(oPC, nToken, "btn_deposit_tooltip", JsonString("Deposit " + ps_FormatGold(nDeposit, TRUE) + " gold"));
