@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.7";
+const string FORM_VERSION = "0.1.8";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -88,12 +88,12 @@ string ps_GetContainerID(object oPC)
 
 int ps_GetUseSearchButton(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_SEARCH_BUTTON, PS_FORCE_SEARCH_BUTTON_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_SEARCH_BUTTON, PS_FORCE_SEARCH_BUTTON_DEFAULT) == PS_TRUE;
 }
 
 int ps_GetSaveObjectState(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_OBJECT_STATE, PS_FORCE_OBJECT_STATE_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_FORCE_OBJECT_STATE, PS_FORCE_OBJECT_STATE_DEFAULT) == PS_TRUE;
 }
 
 int ps_GetContainerType(object oPC)
@@ -128,7 +128,7 @@ float ps_GetMaxDistance(object oPC)
 
 int ps_GetOpenInventory(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_OPEN_INVENTORY, PS_OPEN_INVENTORY_DEFAULT);
+    return ps_GetLocalIntOrDefault(oPC, PS_OPEN_INVENTORY, PS_OPEN_INVENTORY_DEFAULT) == PS_TRUE;
 }
 
 int ps_GetMaxGold(object oPC)
@@ -417,7 +417,7 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
 
     string sWhere  = (nType == PS_CONTAINER_PUBLIC ? "" : " AND owner GLOB @owner");
     json   jWhere = JsonArrayInsert(JsonArray(), JsonString(sWhere));
-           sWhere += (sSearch == ""      ? "" : " AND item_name GLOB @item");
+           sWhere += (sSearch == ""      ? "" : " AND lower(item_name) GLOB @item");
            jWhere = JsonArrayInsert(jWhere, JsonString(sWhere));
 
     string sTable = ps_GetTableName(oPC);
@@ -434,7 +434,7 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
 
     sqlquery sql = ps_PrepareQuery(SubstituteString(sQuery, jWhere));
     
-    if (sSearch != "") SqlBindString(sql, "@item", "*" + sSearch + "*");
+    if (sSearch != "") SqlBindString(sql, "@item", "*" + GetStringLowerCase(sSearch) + "*");
     
     if      (nType == PS_CONTAINER_CHARACTER) SqlBindString(sql, "@owner", ps_GetOwner(oPC, "uuid") + ":*");
     else if (nType == PS_CONTAINER_CDKEY)     SqlBindString(sql, "@owner", "*:" + ps_GetOwner(oPC, "cdkey"));
@@ -513,20 +513,26 @@ int ps_DepositContainerItem(object oPC, object oItem)
     if (!GetHasInventory(oItem))
         return TRUE;
 
-    if (ps_GetMaxContainerItems(oPC) <= PS_NONE)
+    int nMaxContainerItems = ps_GetMaxContainerItems(oPC);
+    if (nMaxContainerItems <= PS_NONE)
         return FALSE;
     else
     {
-        int nMaxItems = ps_GetMaxContainterItemInventory(oPC);
-        if (nMaxItems == PS_UNLIMITED)
-            return TRUE;
-        else
+        if (nMaxContainerItems == PS_UNLIMITED || ps_CountContainerItems(oPC) < nMaxContainerItems)
         {
-            if (nMaxItems == PS_NONE && GetIsObjectValid(GetFirstItemInInventory(oItem)))
-                return FALSE;
+            int nMaxItems = ps_GetMaxContainterItemInventory(oPC);
+            if (nMaxItems == PS_UNLIMITED)
+                return TRUE;
             else
-                return ps_CountContainerItems(oItem) <= nMaxItems;
+            {
+                if (nMaxItems == PS_NONE && GetIsObjectValid(GetFirstItemInInventory(oItem)))
+                    return FALSE;
+                else
+                    return ps_CountInventoryItems(oItem) <= nMaxItems;
+            }
         }
+        else
+            return FALSE;
     }
 }
 
@@ -637,8 +643,6 @@ void ps_OnFormOpen()
     int nType = ps_GetContainerType(OBJECT_SELF);
 
     NUI_SetBind(OBJECT_SELF, FORM_ID, "title", nuiString(ps_GetFormTitle(oContainer, OBJECT_SELF, nAccess, nType)));
-    //NUI_SetBind(OBJECT_SELF, FORM_ID, "btn_clear", nuiInt(ps_GetUseSearchButton(OBJECT_SELF)));
-    //NUI_SetBind(OBJECT_SELF, FORM_ID, "search", nuiString(""));
 
     if (ps_GetOpenInventory(OBJECT_SELF))
         PopUpGUIPanel(OBJECT_SELF, GUI_PANEL_INVENTORY);
@@ -665,12 +669,11 @@ void BindForm()
         string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
         
         if      (sBind == "search")    sValue = nuiString("");
-        else if (sBind == "btn_clear") sValue = nuiBool(ps_GetUseSearchButton(OBJECT_SELF));
 
         NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
     }
 
-    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "search", ps_GetUseSearchButton(OBJECT_SELF));
+    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "search");
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "geometry");
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "gold_amount");
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "selected");
@@ -913,10 +916,25 @@ void HandleNUIEvents()
         else if (ed.sControlID == "search")
         {
             string sSearch = JsonGetString(NuiGetBind(ed.oPC, ed.nToken, "search"));
+            int nSearch = GetStringLength(sSearch);
 
-            NuiSetBind(ed.oPC, ed.nToken, "btn_clear", JsonBool(GetStringLength(sSearch)));
-            SetLocalString(ed.oPC, PS_SEARCH_STRING, sSearch);
-            ps_UpdateItemList(ed.oPC);
+            NuiSetBind(ed.oPC, ed.nToken, "btn_clear", JsonBool(nSearch > 0));
+
+            if (ps_GetUseSearchButton(ed.oPC))
+            {
+                NuiSetBind(ed.oPC, ed.nToken, "btn_search", JsonBool(nSearch > 0));
+                if (!nSearch)
+                {
+                    DeleteLocalString(ed.oPC, PS_SEARCH_STRING);
+                    ps_UpdateItemList(ed.oPC);
+                }
+            }
+            else
+            {
+                NuiSetBind(ed.oPC, ed.nToken, "btn_search", JsonBool(FALSE));
+                SetLocalString(ed.oPC, PS_SEARCH_STRING, sSearch);
+                ps_UpdateItemList(ed.oPC);
+            }
         }
         else if (ed.sControlID == "gold_amount")
         {

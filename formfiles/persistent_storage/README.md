@@ -6,6 +6,13 @@ Developed and tested under 8193.34.
 
 ### Version History:
 
+## 0.1.8:
+- Search terms for item searching are now case insensitive.
+- Fixed `PS_FORCE_SEARCH_BUTTON_DEFAULT` configuration option behavior bug.
+- Fixed `PS_FORCE_OBJECT_STATE_DEFAULT` configuration option behavior bug.
+- Fixed `PS_OPEN_INVENTORY_DEFAULT` configuration option behavior bug.
+- Fixed container item storage logic which did not honor `nui_c_storage` container item settings.
+
 ## 0.1.7:
 - Fix search button configuration behavior.
 
