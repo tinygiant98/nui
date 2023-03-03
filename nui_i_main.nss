@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.2.0";
+const string NUI_VERSION = "0.2.1";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -934,6 +934,13 @@ void NUI_SetProfile(object oPC, string sFormID, string sProfile);
 /// @param sBind Bind/property name.
 /// @param sValue Json-parseable bind Value.
 void NUI_SetBind(object oPC, string sFormID, string sBind, string sValue);
+
+/// @brief Set a bind value.
+/// @param oPC Player to set the bind for.
+/// @param sFormID Form ID.
+/// @param sBind Bind/property name.
+/// @param jValue Json bind Value.
+void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue)
 
 /// @brief Set a delayed bind value.
 /// @param oPC Player to set the bind for.
@@ -2395,9 +2402,14 @@ void nui_HandleNUIEvents()
 //                                   Public
 // -----------------------------------------------------------------------------
 
-void NUI_SetBind(object oPC, string sFormID, string sBind, string sValue)
+void void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue)(object oPC, string sFormID, string sBind, string sValue)
 {
     NuiSetBind(oPC, NuiFindWindow(oPC, sFormID), sBind, JsonParse(sValue));
+}
+
+void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue)
+{
+    NuiSetBind(oPC, NuiFindWindow(oPC, sFormID), sBind, jValue);
 }
 
 void NUI_DelayBind(object oPC, string sFormID, string sBind, string sValue)

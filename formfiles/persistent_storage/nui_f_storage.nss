@@ -674,7 +674,7 @@ void BindForm()
     {
         string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
         
-        if      (sBind == "search")    sValue = nuiString("");
+        if (sBind == "search") sValue = nuiString("");
 
         NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
     }

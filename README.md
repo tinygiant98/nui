@@ -34,6 +34,8 @@
 
 ## Change Log
 
+*** 0.2.1 *** - Added `NUI_SetBindJ`, which has the same function as `NUI_SetBind`, but accepts a json value instead of a json-parseable string.
+
 *** 0.2.0 *** - This version is a complete system re-write with many breaking changes.  It is not compatible with any 0.1.x formfiles.  However, migration to 0.2.x-compatible formfiles is relatively straight-forward.
 
 ## Acknowledgements
