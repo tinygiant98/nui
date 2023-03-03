@@ -32,7 +32,7 @@
 ///     Local Override (int): PS_FORCE_SEARCH_BUTTON
 ///          1 = PS_TRUE
 ///         -1 = PS_FALSE
-const int PS_FORCE_SEARCH_BUTTON_DEFAULT = PS_TRUE;
+const int PS_FORCE_SEARCH_BUTTON_DEFAULT = PS_FALSE;
 
 /// @brief Determines whether item object state is saved to the database. The
 ///     object state includes variables and effects.
