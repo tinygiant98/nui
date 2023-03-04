@@ -940,7 +940,7 @@ void NUI_SetBind(object oPC, string sFormID, string sBind, string sValue);
 /// @param sFormID Form ID.
 /// @param sBind Bind/property name.
 /// @param jValue Json bind Value.
-void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue)
+void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue);
 
 /// @brief Set a delayed bind value.
 /// @param oPC Player to set the bind for.
@@ -2402,7 +2402,7 @@ void nui_HandleNUIEvents()
 //                                   Public
 // -----------------------------------------------------------------------------
 
-void void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue)(object oPC, string sFormID, string sBind, string sValue)
+void NUI_SetBind(object oPC, string sFormID, string sBind, string sValue)
 {
     NuiSetBind(oPC, NuiFindWindow(oPC, sFormID), sBind, JsonParse(sValue));
 }
