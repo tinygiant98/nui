@@ -38,6 +38,7 @@ const string PS_OPEN_INVENTORY                = "PS_OPEN_INVENTORY";
 const string PS_MAX_GOLD                      = "PS_MAX_GOLD";
 const string PS_MAX_CONTAINER_ITEMS           = "PS_MAX_CONTAINER_ITEMS";
 const string PS_MAX_CONTAINER_ITEMS_INVENTORY = "PS_MAX_CONTAINER_ITEMS_INVENTORY";
+const string PS_ORIGINAL_NAME                 = "PS_ORIGINAL_NAME";
 
 const string PS_DESTROYED           = "PS_DESTROYED";
 
@@ -155,6 +156,15 @@ string ps_GetOwner(object oPC, string sType = "")
     else if (sType == "uuid")  return GetObjectUUID(oPC);
     else if (sType == "cdkey") return GetPCPublicCDKey(oPC, TRUE);
     else                       return "";
+}
+
+int ps_GetIsColored(string s)
+{
+    string sPattern = "*<c???>*</c>*";
+    sqlquery sql = SqlPrepareQueryObject(GetModule(), "SELECT @string GLOB @pattern;");
+    SqlBindString(sql, "@string", s);
+    SqlBindString(sql, "@pattern", sPattern);
+    return SqlStep(sql) ? SqlGetInt(sql, 0) : FALSE;
 }
 
 void ps_BeginTransaction()
@@ -567,6 +577,12 @@ void ps_DepositItem(object oPC, object oItem)
     string sItemName  = GetIdentified(oItem) ? GetName(oItem) : GetStringByStrRef(StringToInt(Get2DAString("baseitems", "Name", nItemBaseItem))) + " (Unidentified)";
     json jItemData    = ObjectToJson(oItem, ps_GetSaveObjectState(oPC));
 
+    if (ps_GetIsColored(sItemName))
+    {
+        JsonObjectSet(jItemData, PS_ORIGINAL_NAME, JsonString(sItemName));
+        sItemName = UnColorString(sItemName);
+    }
+
     string sQuery =
         "INSERT INTO " + ps_GetTableName(oPC) +
         "(owner, item_uuid, item_name, item_baseitem, item_stacksize, item_iconresref, item_data) " +
@@ -602,7 +618,11 @@ void ps_DepositItem(object oPC, object oItem)
 /// @private void version of JsonToObject to prevent mass-withdraw overflow errors.
 void ps_JsonToObject(json jObject, location l, object oOwner, int nObjectState)
 {
-    JsonToObject(jObject, l, oOwner, nObjectState);
+    object oItem = JsonToObject(jObject, l, oOwner, nObjectState);
+    json   jName = JsonObjectGet(jObject, PS_ORIGINAL_NAME);
+    
+    if (jName != JsonNull())
+        SetName(oItem, JsonGetString(jName));
 }
 
 void ps_WithdrawItems(object oPC, int nToken, int bForceAll = FALSE)
@@ -641,7 +661,6 @@ void ps_WithdrawItems(object oPC, int nToken, int bForceAll = FALSE)
 
 void ps_OnFormOpen()
 {
-    //TODO do geometry and fixing here
     ps_InitializeDatabase(OBJECT_SELF);
 
     object oContainer = ps_GetContainer(OBJECT_SELF);

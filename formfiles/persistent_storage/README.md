@@ -13,6 +13,9 @@ Developed and tested under 8193.34.  Compatible with preview (.35).
 
 ### Version History:
 
+## 0.1.10:
+- Added ability to store and restore color-coded item names.  Previously, color-coded item names causes the item names of all stored items to be blank.  Now, the color-coding will be stripped when saved into a container, but will be restored upon withdrawal.
+
 ## 0.1.9:
 - Modified item listbox to be sorted alphabetically, then by base item type, instead of the previous base item type, then alphabetical.
 - Temporarily modified the form definition and item update functions to account for an NUI listbox limitation present in .34.  Original behavior will be restored once .35 is stable.  There only discernable visual effect is that that listbox now scrolls back to the top every time an item or gold is added or removed.
