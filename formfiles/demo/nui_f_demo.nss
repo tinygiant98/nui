@@ -528,9 +528,9 @@ void BindForm()
             sValue = nuiString("NUI Demo Form -- All Controls");
 
         if (sValue != "")
-            NUI_DelayBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+            NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
         else if (jValue != JsonNull())
-            NUI_DelayBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
+            NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 }
 

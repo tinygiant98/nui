@@ -32,11 +32,23 @@
 <a class="top-link hide" href="#top">↑</a>
 <a name="top"></a>
 
+## Requires
+
+NWN >= 8193.34.1
+
 ## Change Log
 
-*** 0.2.1 *** - Added `NUI_SetBindJ`, which has the same function as `NUI_SetBind`, but accepts a json value instead of a json-parseable string.
+*** 0.2.2 ***
+- Modified `NUI_AddListbox` to default to one row instead of null, which allows the listbox to render if the user didn't set or bind the RowCount.
+- Modified the automatic binding system to force the initial profile binding and the `BindForm()` formfile function to run after the form has opened, instead of before.  This prevents having to use `NUI_DelayBind` and `NUI_DelayBindJ` to get around the nui feature which clears all binds just before the form open event is fired.
+- Added `NUI_SetProfileBindJ`, which has the same function as `NUI_SetProfileBind`, but accepts a json value instead of a json-parseable string.
+- Deleted `NUI_DelayBind` and `NUI_DelayBindJ` functions as superfluous.  This could be a breaking change.  To fix, replace all `NUI_DelayBind` calls with `NUI_SetBind` and replace all `NUI_DelayBindJ` calls with `NUI_SetBindJ`.
 
-*** 0.2.0 *** - This version is a complete system re-write with many breaking changes.  It is not compatible with any 0.1.x formfiles.  However, migration to 0.2.x-compatible formfiles is relatively straight-forward.
+*** 0.2.1 *** 
+- Added `NUI_SetBindJ`, which has the same function as `NUI_SetBind`, but accepts a json value instead of a json-parseable string.
+
+*** 0.2.0 *** 
+- This version is a complete system re-write with many breaking changes.  It is not compatible with any 0.1.x formfiles.  However, migration to 0.2.x-compatible formfiles is relatively straight-forward.
 
 ## Acknowledgements
 

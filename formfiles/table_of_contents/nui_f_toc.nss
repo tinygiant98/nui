@@ -9,7 +9,7 @@
 #include "util_i_debug"
 
 const string FORM_ID = "toc";
-const string VERSION = "1.0.0";
+const string VERSION = "0.1.0";
 const string IGNORE_FORM_EVENTS = "blur,focus,range,mousedown";
 
 json jFormfiles;
@@ -49,7 +49,7 @@ void DefineForm()
                 NUI_AddListbox();
                     NUI_BindRowCount("lb_rowcount");
                     NUI_SetRowHeight(40.0);
-
+                {
                     NUI_AddCommandButton("open");
                         NUI_BindLabel("form_titles");
                     NUI_AddCombobox();
@@ -62,7 +62,7 @@ void DefineForm()
                         NUI_SetLabel("Redefine");
                         NUI_SetTemplateWidth(75.0);
                         NUI_SetTemplateVariable(FALSE);
-                NUI_CloseListbox();
+                } NUI_CloseListbox();
             NUI_CloseRow();
         NUI_CloseColumn();
     }
@@ -96,7 +96,7 @@ void BindForm()
     
     jElements = JsonParse("[[\"default\",0],[\"two\",1],[\"three\",3]]");
 
-    Notice("Formfiles: " + JsonDump(jFormfiles));
+    //Notice("Formfiles: " + JsonDump(jFormfiles));
 
     // Set random variables
     NUI_SetBind(OBJECT_SELF, FORM_ID, "form_ids", JsonDump(jFormIDs));
@@ -107,6 +107,7 @@ void BindForm()
     int n; for (n; n < JsonGetLength(jBinds); n++)
     {
         string sBind = JsonGetString(JsonArrayGet(jBinds, n));
+        json   jValue = JsonNull();
 
         if      (sBind == "lb_rowcount")    sValue = JsonDump(jFormfiles); //JsonInt(JsonGetLength(jTitles));
         //else if (sBind == "combo_elements") sValue = JsonDump(jElements);
@@ -114,7 +115,10 @@ void BindForm()
         else if (sBind == "chk_value")      sValue = "[true,false,true]";
         else                                sValue = nuiNull();
     
-        NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+        if (sValue != "")
+            NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+        else if (jValue != JsonNull());
+            NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 
     // Looks like value arrays have to be initialized after the elements arrays or they get erased?

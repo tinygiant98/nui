@@ -38,9 +38,13 @@ void BindForm()
     int n; for (n; n < JsonGetLength(jBinds); n++)
     {
         string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
+        json jValue = JsonNull();;
 
    
-        NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+        if (sValue != "")
+            NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+        else if (jValue != JsonNull())
+            NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 }
 

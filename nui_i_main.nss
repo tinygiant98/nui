@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.2.1";
+const string NUI_VERSION = "0.2.2";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -917,6 +917,11 @@ void NUI_CreateProfile(string sProfile, string sBase = "");
 /// @param sJson Json-parseable string representing the bind's profile value.
 void NUI_SetProfileBind(string sBind, string sJson);
 
+/// @brief Set a profile default bind value.
+/// @param sBind Bind name.
+/// @param jValue Json bind value.
+void NUI_SetProfileBindJ(string sBind, json jValue);
+
 /// @brief Set multiple profile binds to a single value.
 /// @param sBinds Comma-delimited list of bind names.
 /// @param sJson Json-parseable string representing the binds' profile value.
@@ -939,15 +944,8 @@ void NUI_SetBind(object oPC, string sFormID, string sBind, string sValue);
 /// @param oPC Player to set the bind for.
 /// @param sFormID Form ID.
 /// @param sBind Bind/property name.
-/// @param jValue Json bind Value.
+/// @param jValue Json bind value.
 void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue);
-
-/// @brief Set a delayed bind value.
-/// @param oPC Player to set the bind for.
-/// @param sFormID Form ID.
-/// @param sBind Bind/property name.
-/// @param sValue Json-parseable bind Value.
-void NUI_DelayBind(object oPC, string sFormID, string sBind, string sValue);
 
 /// @brief Set a bind watch.
 /// @param oPC Player to set the bind for.
@@ -1714,8 +1712,8 @@ void NUI_AddListbox(string sID = "")
 {
     sID = (sID == "" ? "" : nuiString("id") + ":" + nuiString(sID) + ",");
     string sList = "{" + sID +
-        nuiString("row_template") + ":[]," +
-        nuiString("row_count")    + ":null," +
+        nuiString("row_template") + ":[],"   +
+        nuiString("row_count")    + ":1,"    +
         nuiString("border")       + ":true," +
         nuiString("row_height")   + ":25.0," +
         nuiString("type")         + ":" + nuiString("list") + "," +
@@ -2261,18 +2259,17 @@ json nui_GetProfileBinds(string sFormID, string sProfile = "")
 }
 
 /// @private Called during form opening, sets the initial values for all default binds.
-void nui_SetProfileBinds(object oPC, int nToken, string sFormID, string sProfile)
+void nui_SetProfileBinds(object oPC, string sFormID, string sProfile)
 {
     json jProfile = nui_GetProfileBinds(sFormID, sProfile);
     json jKeys    = JsonObjectKeys(jProfile);
     int n; for (n; n < JsonGetLength(jKeys); n++)
     {
         string sKey = JsonGetString(JsonArrayGet(jKeys, n));
-        NuiSetBind(oPC, NuiFindWindow(oPC, sFormID), sKey, JsonObjectGet(jProfile, sKey));
+        NUI_SetBindJ(oPC, sFormID, sKey, JsonObjectGet(jProfile, sKey));
     }
 
-    NUI_DelayBind(oPC, sFormID, "NUI_FORM_PROFILE", nuiString(sProfile));
-    NUI_DelayBind(oPC, sFormID, "NUI_FORM_FILE", nuiString(nui_GetDefinitionValue(sFormID, "formfile")));
+    NUI_SetBind(oPC, sFormID, "NUI_FORM_PROFILE", nuiString(sProfile));
 }
 
 // -----------------------------------------------------------------------------
@@ -2302,7 +2299,6 @@ void NUI_DefineForms(string sFormfile = "")
             {
                 sFormfile = GetListItem(sFormfiles, f);
 
-                NUI_Debug(HexColorString("Attempting to define" + sFormfile, COLOR_CYAN));
                 nui_SetFormfile(sFormfile);
                 nui_ExecuteFunction(sFormfile, NUI_DEFINE);
             }
@@ -2318,10 +2314,12 @@ int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "default")
 {
     json jForm = nui_GetForm(sFormID);
     if (jForm != JsonNull())
-    {
+    {   
         int nToken = NuiCreate(oPC, jForm, sFormID);
-        nui_SetProfileBinds(oPC, nToken, sFormID, sProfile);
-        nui_ExecuteFunction(nui_GetDefinitionValue(sFormID, "formfile"), NUI_BIND, oPC);
+        json jData = JsonObjectSet(JsonObject(), "profile", JsonString(sProfile));
+             jData = JsonObjectSet(jData, "formfile", JsonString(nui_GetDefinitionValue(sFormID, "formfile")));
+
+        NuiSetUserData(oPC, NuiFindWindow(oPC, sFormID), jData);
         return nToken;
     }
 
@@ -2365,6 +2363,11 @@ void NUI_SetProfileBind(string sBind, string sJson)
     nui_SetProfileBind(sBind, sJson);
 }
 
+void NUI_SetProfileBindJ(string sBind, json jValue)
+{
+    NUI_SetProfileBind(sBind, JsonDump(jValue));
+}
+
 void NUI_SetProfileBinds(string sBinds, string sJson)
 {
     if (sBinds == "" || sJson == "" || JsonParse(sJson) == JsonNull())
@@ -2376,7 +2379,7 @@ void NUI_SetProfileBinds(string sBinds, string sJson)
 
 void NUI_SetProfile(object oPC, string sFormID, string sProfile)
 {
-    nui_SetProfileBinds(oPC, NuiFindWindow(oPC, sFormID), sFormID, sProfile);
+    nui_SetProfileBinds(oPC, sFormID, sProfile);
 }
 
 string NUI_GetProfile(object oPC, string sFormID)
@@ -2393,7 +2396,20 @@ void nui_HandleNUIEvents()
 {
     object oPC = NuiGetEventPlayer();
     string sFormID = NuiGetWindowId(oPC, NuiGetEventWindow());
-    string sFormfile = nui_GetDefinitionValue(sFormID, "formfile");
+    
+    json   jUserData = NuiGetUserData(oPC, NuiGetEventWindow());
+    string sFormfile = JsonGetString(JsonObjectGet(jUserData, "formfile"));    
+
+    if (NuiGetEventType() == "open")
+    {
+        string sProfile  = JsonGetString(JsonObjectGet(jUserData, "profile"));
+
+        nui_SetProfileBinds(oPC, sFormID, sProfile);
+        nui_ExecuteFunction(sFormfile, NUI_BIND, oPC);
+
+        Notice(HexColorString("Handling the NUI open event ....", COLOR_RED_LIGHT));
+    }
+
     nui_ExecuteFunction(sFormfile, NUI_EVENT_NUI, oPC);
 }
 
@@ -2410,11 +2426,6 @@ void NUI_SetBind(object oPC, string sFormID, string sBind, string sValue)
 void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue)
 {
     NuiSetBind(oPC, NuiFindWindow(oPC, sFormID), sBind, jValue);
-}
-
-void NUI_DelayBind(object oPC, string sFormID, string sBind, string sValue)
-{
-    DelayCommand(0.001, NuiSetBind(oPC, NuiFindWindow(oPC, sFormID), sBind, JsonParse(sValue)));
 }
 
 void NUI_SetBindWatch(object oPC, string sFormID, string sBind, int bWatch = TRUE)

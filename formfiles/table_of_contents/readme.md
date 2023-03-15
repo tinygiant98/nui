@@ -1,4 +1,4 @@
-#### **NUI System Formfile: Demo**
+#### **NUI System Formfile: Table of Contents**
 
 - [Compatibility](#compatibility)
 - [Version History](#version-history)
@@ -14,16 +14,13 @@ NUI >= 0.2.2
 
 ### Version History:
 
-## 0.1.1:
-- Modified bind function for late-binding methodology in NUI 0.2.2.
-
 ## 0.1.0:
 
 Initial Release
 
 ### Usage:
 
-Nothing special here.  This is just a form that displays all available NUI controls.
+`NUI_DisplayForm(oPC, "toc");`
 
 ### Configuration
 

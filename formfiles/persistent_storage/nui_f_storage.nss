@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.9";
+const string FORM_VERSION = "0.1.11";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -692,10 +692,14 @@ void BindForm()
     int n; for (n; n < JsonGetLength(jBinds); n++)
     {
         string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
+        json jValue = JsonNull();
         
         if (sBind == "search") sValue = nuiString("");
 
-        NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+        if (sValue != "")
+            NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
+        else if (jValue != JsonNull())
+            NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 
     NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "search");

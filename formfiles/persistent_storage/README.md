@@ -7,11 +7,15 @@
     - [Advanced](#advanced)
     - [Configuration Options](#configuration)
 
-### Compatibility:
+### Requires:
 
-Developed and tested under 8193.34.  Compatible with preview (.35).
+NWN >= 8193.34.1
+NUI >= 0.2.2
 
 ### Version History:
+
+## 0.1.11:
+- Added `BindForm()` option to pass binds as json values.  This ups the NUI requirement to 0.2.2.
 
 ## 0.1.10:
 - Added ability to store and restore color-coded item names.  Previously, color-coded item names causes the item names of all stored items to be blank.  Now, the color-coding will be stripped when saved into a container, but will be restored upon withdrawal.
