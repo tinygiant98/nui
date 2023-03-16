@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.11";
+const string FORM_VERSION = "0.1.12";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -701,11 +701,6 @@ void BindForm()
         else if (jValue != JsonNull())
             NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
-
-    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "search");
-    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "geometry");
-    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "gold_amount");
-    NUI_SetBindWatch(OBJECT_SELF, FORM_ID, "selected");
 }
 
 void DefineForm()
@@ -740,7 +735,7 @@ void DefineForm()
 
                     NUI_AddTextbox();
                         NUI_SetPlaceholder("Search...");
-                        NUI_BindValue("search");
+                        NUI_BindValue("search", TRUE);
                         NUI_SetLength(64);
                         NUI_SetMultiline(FALSE);
                     NUI_AddCommandButton("btn_clear");
@@ -847,7 +842,7 @@ void DefineForm()
                     NUI_AddTextbox();
                         NUI_SetPlaceholder("Amount...");
                         NUI_BindEnabled("txt_gold_amount");
-                        NUI_BindValue("gold_amount");
+                        NUI_BindValue("gold_amount", TRUE);
                         NUI_BindTooltip("gold_amount_tooltip");
                         NUI_SetLength(64);
                         NUI_SetMultiline(FALSE);
@@ -891,7 +886,7 @@ void DefineForm()
                 } NUI_CloseGroup();
                 NUI_AddCheckbox();
                     NUI_BindLabel("names");
-                    NUI_BindValue("selected");
+                    NUI_BindValue("selected", TRUE);
             } NUI_CloseListbox();
         NUI_CloseRow();
     }

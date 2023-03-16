@@ -10,9 +10,12 @@
 ### Requires:
 
 NWN >= 8193.34.1
-NUI >= 0.2.2
+NUI >= 0.2.3
 
 ### Version History:
+
+## 0.1.12:
+- Modified `nui_f_storage` to use automatic bind watching.  This ups the NUI requriement to 0.2.3.
 
 ## 0.1.11:
 - Added `BindForm()` option to pass binds as json values.  This ups the NUI requirement to 0.2.2.

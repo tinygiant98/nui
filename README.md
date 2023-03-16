@@ -38,6 +38,11 @@ NWN >= 8193.34.1
 
 ## Change Log
 
+*** 0.2.3 ***
+- Added automatic setting of bind watches.  All `NUI_Bind*` functions (and `nuiBind`) can now be passed an optional `bWatch` parameter.  This default value is `FALSE`.  If `TRUE`, the bind will automatically be watched on form open without user intervention.  This function is only available during form definition.  *Drawlist bind watching is not available with this method.*  The inherent `geometry` bind is set to be watched automatically. 
+
+> ***WARNING*** Do not set the value of watched binds inside the event handler for a watched bind.  This could lead to infinite loops and TMI.
+
 *** 0.2.2 ***
 - Modified `NUI_AddListbox` to default to one row instead of null, which allows the listbox to render if the user didn't set or bind the RowCount.
 - Modified the automatic binding system to force the initial profile binding and the `BindForm()` formfile function to run after the form has opened, instead of before.  This prevents having to use `NUI_DelayBind` and `NUI_DelayBindJ` to get around the nui feature which clears all binds just before the form open event is fired.

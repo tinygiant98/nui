@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.2.2";
+const string NUI_VERSION = "0.2.3";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -98,7 +98,8 @@ string nuiBool(int b);
 
 /// @brief Creates a json-parseable object for a data bind.
 /// @param sBind Bind variable.
-string nuiBind(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+string nuiBind(string sBind, int bWatch = FALSE);
 
 /// @brief Creates a json-parseable object for referencing strings by StringRef.
 /// @param nStrRef StringRef value.
@@ -479,155 +480,192 @@ void NUI_BindCurve(string sStart, string sEnd, string sCtrl0, string sCtrl1);
 
 /// @brief Binds the form's accepts input property.
 /// @param sBind Variable to bind.
-void NUI_BindAcceptsInput(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindAcceptsInput(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's aspect property.
 /// @param sBind Variable to bind.
-void NUI_BindAspect(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindAspect(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the form's or control's border property.
 /// @param sBind Variable to bind.
-void NUI_BindBorder(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindBorder(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the form's closable property.
 /// @param sBind Variable to bind.
-void NUI_BindClosable(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindClosable(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the form's collapsible property.
 /// @param sBind Variable to bind.
-void NUI_BindCollapsible(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindCollapsible(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's color property.
 /// @param sBind Variable to bind.
-void NUI_BindColor(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindColor(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the disabled control's tooltip property.
 /// @param sBind Variable to bind.
-void NUI_BindDisabledTooltip(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindDisabledTooltip(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's elements property.
 /// @param sBind Variable to bind.
-void NUI_BindElements(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindElements(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's enabled property.
 /// @param sBind Variable to bind.
-void NUI_BindEnabled(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindEnabled(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's encouraged property.
 /// @param sBind Variable to bind.
-void NUI_BindEncouraged(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindEncouraged(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's fill property.
 /// @param sBind Variable to bind.
-void NUI_BindFill(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindFill(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's foreground color property.
 /// @param sBind Variable to bind.
-void NUI_BindForegroundColor(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindForegroundColor(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the form's geometry property.
 /// @param sBind Variable to bind.
-void NUI_BindGeometry(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindGeometry(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's horizontal alignment property.
 /// @param sBind Variable to bind.
-void NUI_BindHorizontalAlignment(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindHorizontalAlignment(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's resref (image) property.
 /// @param sBind Variable to bind.
-void NUI_BindResref(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindResref(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's label property.
 /// @param sBind Variable to bind.
-void NUI_BindLabel(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindLabel(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's legend property.
 /// @param sBind Variable to bind.
-void NUI_BindLegend(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindLegend(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's line thickness property.
 /// @param sBind Variable to bind.
-void NUI_BindLineThickness(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindLineThickness(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's max property.
 /// @param sBind Variable to bind.
-void NUI_BindMax(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindMax(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's min property.
 /// @param sBind Variable to bind.
-void NUI_BindMin(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindMin(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's placeholder property.
 /// @param sBind Variable to bind.
-void NUI_BindPlaceholder(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindPlaceholder(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's points property.
 /// @param sBind Variable to bind.
-void NUI_BindPoints(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindPoints(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's rectangle property.
 /// @param sBind Variable to bind.
-void NUI_BindRectangle(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindRectangle(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's region property.
 /// @param sBind Variable to bind.
-void NUI_BindRegion(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindRegion(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the form's resizable property.
 /// @param sBind Variable to bind.
-void NUI_BindResizable(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindResizable(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's rowcount property.
 /// @param sBind Variable to bind.
-void NUI_BindRowCount(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindRowCount(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's scissor property.
 /// @param sBind Variable to bind.
-void NUI_BindScissor(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindScissor(string sBind, int bWatch = FALSE);
 
 /// @brief Binds a slider control's bounds.
 /// @param sUpper Variable to bind.
 /// @param sLower Variable to bind.
 /// @param sStep Variable to bind.
-void NUI_BindSliderBounds(string sUpper, string sLower, string sStep);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindSliderBounds(string sUpper, string sLower, string sStep, int bWatch = FALSE);
 
 /// @brief Binds the control's step property.
 /// @param sBind Variable to bind.
-void NUI_BindStep(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindStep(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's text property.
 /// @param sBind Variable to bind.
-void NUI_BindText(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindText(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the form's title property.
 /// @param sBind Variable to bind.
-void NUI_BindTitle(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindTitle(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's tooltip property.
 /// @param sBind Variable to bind.
+/// @param bWatch TRUE to set a bind watch.
 /// @param bDisabledTooltip If TRUE, the control's disabled tooltip property
 ///     will also be bound to sBind.
-void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE);
+void NUI_BindTooltip(string sBind, int bWatch = FALSE, int bDisabledTooltip = FALSE);
 
 /// @brief Binds the form's elements property.
 /// @param sBind Variable to bind.
-void NUI_BindTransparent(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindTransparent(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's type property.
 /// @param sBind Variable to bind.
-void NUI_BindType(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindType(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's value property.
 /// @param sBind Variable to bind.
-void NUI_BindValue(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindValue(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's vertical alignment property.
 /// @param sBind Variable to bind.
-void NUI_BindVerticalAlignment(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindVerticalAlignment(string sBind, int bWatch = FALSE);
 
 /// @brief Binds the control's visible property.
 /// @param sBind Variable to bind.
-void NUI_BindVisible(string sBind);
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindVisible(string sBind, int bWatch = FALSE);
 
 /// @brief Set the form's accepts input property.
 /// @param bAcceptsInput Whether the form will accept player input.
@@ -1406,10 +1444,15 @@ string nuiString(string s)    {return "\"" + s + "\"";}
 string nuiInt(int n)          {return IntToString(n);}
 string nuiFloat(float f)      {return FloatToString(f);}
 string nuiBool(int b)         {return b ? "true" : "false";}
-string nuiBind(string sBind)  {return "{" + nuiString("bind")   + ":" + nuiString(sBind) + "}";}
 string nuiStrRef(int nStrRef) {return "{" + nuiString("strref") + ":" + nuiInt(nStrRef)  + "}";}
 string nuiNull()              {return "null";}
 int    nuiIsBind(string s)    {return JsonGetType(JsonParse(s)) == JSON_TYPE_OBJECT;}
+
+string nuiBind(string sBind, int bWatch = FALSE)
+{
+    return "{" + nuiString("bind")   + ":" + nuiString(sBind) + "," +
+                 nuiString("watch")  + ":" + nuiBool(bWatch) + "}";
+}
 
 // -----------------------------------------------------------------------------
 //                       Form/Subform/Layout Definition
@@ -1443,7 +1486,7 @@ void NUI_CreateForm(string sID, string sVersion = "")
         nuiString("subforms")      + ":{},"    +
         nuiString("profiles")      + ":{" + nuiString("default") + ":{}}," +
         nuiString("formfile")      + ":"  + nuiString(nui_GetFormfile()) + "," +
-        nuiString("geometry")      + ":"  + nuiBind("geometry")          + "," + 
+        nuiString("geometry")      + ":"  + nuiBind("geometry", TRUE)    + "," + 
         nuiString("title")         + ":"  + nuiBind("title")             + "," +
         nuiString("local_version") + ":"  + nuiString(sVersion)          + "," +
         nuiString("id")            + ":"  + nuiString(sID) +
@@ -1891,48 +1934,48 @@ void NUI_BindCurve(string sStart, string sEnd, string sCtrl0, string sCtrl1)
 
 // Binds -----------------------------------------------------------------------
 //   Forms ---------------------------------------------------------------------
-void NUI_BindAcceptsInput(string sBind)         {nui_SetProperty("accepts_input",     nuiBind(sBind));}
-void NUI_BindClosable(string sBind)             {nui_SetProperty("closable",          nuiBind(sBind));}
-void NUI_BindCollapsible(string sBind)          {nui_SetProperty("collapsed",         nuiBind(sBind));}
-void NUI_BindGeometry(string sBind)             {nui_SetProperty("geometry",          nuiBind(sBind));}
-void NUI_BindResizable(string sBind)            {nui_SetProperty("resizable",         nuiBind(sBind));}
-void NUI_BindTitle(string sBind)                {nui_SetProperty("title",             nuiBind(sBind));}
-void NUI_BindTransparent(string sBind)          {nui_SetProperty("transparent",       nuiBind(sBind));}
+void NUI_BindAcceptsInput(string sBind, int bWatch = FALSE)        {nui_SetProperty("accepts_input",     nuiBind(sBind, bWatch));}
+void NUI_BindClosable(string sBind, int bWatch = FALSE)            {nui_SetProperty("closable",          nuiBind(sBind, bWatch));}
+void NUI_BindCollapsible(string sBind, int bWatch = FALSE)         {nui_SetProperty("collapsed",         nuiBind(sBind, bWatch));}
+void NUI_BindGeometry(string sBind, int bWatch = FALSE)            {nui_SetProperty("geometry",          nuiBind(sBind, bWatch));}
+void NUI_BindResizable(string sBind, int bWatch = FALSE)           {nui_SetProperty("resizable",         nuiBind(sBind, bWatch));}
+void NUI_BindTitle(string sBind, int bWatch = FALSE)               {nui_SetProperty("title",             nuiBind(sBind, bWatch));}
+void NUI_BindTransparent(string sBind, int bWatch = FALSE)         {nui_SetProperty("transparent",       nuiBind(sBind, bWatch));}
 
 // Binds -----------------------------------------------------------------------
 //   Shared --------------------------------------------------------------------
-void NUI_BindBorder(string sBind)               {nui_SetProperty("border",            nuiBind(sBind));}
+void NUI_BindBorder(string sBind, int bWatch = FALSE)              {nui_SetProperty("border",            nuiBind(sBind, bWatch));}
 
 // Binds -----------------------------------------------------------------------
 //   Controls ------------------------------------------------------------------
-void NUI_BindData(string sBind)                 {nui_SetProperty("data",              nuiBind(sBind));}
-void NUI_BindDisabledTooltip(string sBind)      {nui_SetProperty("disabled_tooltip",  nuiBind(sBind));}
-void NUI_BindElements(string sBind)             {nui_SetProperty("elements",          nuiBind(sBind));}
-void NUI_BindEnabled(string sBind)              {nui_SetProperty("enabled",           nuiBind(sBind));}
-void NUI_BindEncouraged(string sBind)           {nui_SetProperty("encouraged",        nuiBind(sBind));}
-void NUI_BindEndPoint(string sBind)             {nui_SetProperty("b",                 nuiBind(sBind));}
-void NUI_BindFill(string sBind)                 {nui_SetProperty("fill",              nuiBind(sBind));}
-void NUI_BindForegroundColor(string sBind)      {nui_SetProperty("foreground_color",  nuiBind(sBind));}
-void NUI_BindHorizontalAlignment(string sBind)  {nui_SetProperty("text_halign",       nuiBind(sBind));}
-void NUI_BindLegend(string sBind)               {nui_SetProperty("legend",            nuiBind(sBind));}
-void NUI_BindLength(string sBind)               {nui_SetProperty("max",               nuiBind(sBind));}
-void NUI_BindLineThickness(string sBind)        {nui_SetProperty("line_thickness",    nuiBind(sBind));}
-void NUI_BindPlaceholder(string sBind)          {nui_SetProperty("label",             nuiBind(sBind));}
-void NUI_BindPoints(string sBind)               {nui_SetProperty("points",            nuiBind(sBind));}
-void NUI_BindRadius(string sBind)               {nui_SetProperty("radius",            nuiBind(sBind));}
-void NUI_BindRectangle(string sBind)            {nui_SetProperty("rect",              nuiBind(sBind));}
-void NUI_BindRegion(string sBind)               {nui_SetProperty("image_region",      nuiBind(sBind));}
-void NUI_BindRowCount(string sBind)             {nui_SetProperty("row_count",         nuiBind(sBind));}
-void NUI_BindScissor(string sBind)              {nui_SetProperty("draw_list_scissor", nuiBind(sBind));}
-void NUI_BindStartPoint(string sBind)           {nui_SetProperty("a",                 nuiBind(sBind));}
-void NUI_BindStep(string sBind)                 {nui_SetProperty("step",              nuiBind(sBind));}
-void NUI_BindText(string sBind)                 {nui_SetProperty("text",              nuiBind(sBind));}
-void NUI_BindType(string sBind)                 {nui_SetProperty("type",              nuiBind(sBind));}
-void NUI_BindValue(string sBind)                {nui_SetProperty("value",             nuiBind(sBind));}
-void NUI_BindVerticalAlignment(string sBind)    {nui_SetProperty("text_valign",       nuiBind(sBind));}
-void NUI_BindVisible(string sBind)              {nui_SetProperty("visible",           nuiBind(sBind));}
+void NUI_BindData(string sBind, int bWatch = FALSE)                {nui_SetProperty("data",              nuiBind(sBind, bWatch));}
+void NUI_BindDisabledTooltip(string sBind, int bWatch = FALSE)     {nui_SetProperty("disabled_tooltip",  nuiBind(sBind, bWatch));}
+void NUI_BindElements(string sBind, int bWatch = FALSE)            {nui_SetProperty("elements",          nuiBind(sBind, bWatch));}
+void NUI_BindEnabled(string sBind, int bWatch = FALSE)             {nui_SetProperty("enabled",           nuiBind(sBind, bWatch));}
+void NUI_BindEncouraged(string sBind, int bWatch = FALSE)          {nui_SetProperty("encouraged",        nuiBind(sBind, bWatch));}
+void NUI_BindEndPoint(string sBind, int bWatch = FALSE)            {nui_SetProperty("b",                 nuiBind(sBind, bWatch));}
+void NUI_BindFill(string sBind, int bWatch = FALSE)                {nui_SetProperty("fill",              nuiBind(sBind, bWatch));}
+void NUI_BindForegroundColor(string sBind, int bWatch = FALSE)     {nui_SetProperty("foreground_color",  nuiBind(sBind, bWatch));}
+void NUI_BindHorizontalAlignment(string sBind, int bWatch = FALSE) {nui_SetProperty("text_halign",       nuiBind(sBind, bWatch));}
+void NUI_BindLegend(string sBind, int bWatch = FALSE)              {nui_SetProperty("legend",            nuiBind(sBind, bWatch));}
+void NUI_BindLength(string sBind, int bWatch = FALSE)              {nui_SetProperty("max",               nuiBind(sBind, bWatch));}
+void NUI_BindLineThickness(string sBind, int bWatch = FALSE)       {nui_SetProperty("line_thickness",    nuiBind(sBind, bWatch));}
+void NUI_BindPlaceholder(string sBind, int bWatch = FALSE)         {nui_SetProperty("label",             nuiBind(sBind, bWatch));}
+void NUI_BindPoints(string sBind, int bWatch = FALSE)              {nui_SetProperty("points",            nuiBind(sBind, bWatch));}
+void NUI_BindRadius(string sBind, int bWatch = FALSE)              {nui_SetProperty("radius",            nuiBind(sBind, bWatch));}
+void NUI_BindRectangle(string sBind, int bWatch = FALSE)           {nui_SetProperty("rect",              nuiBind(sBind, bWatch));}
+void NUI_BindRegion(string sBind, int bWatch = FALSE)              {nui_SetProperty("image_region",      nuiBind(sBind, bWatch));}
+void NUI_BindRowCount(string sBind, int bWatch = FALSE)            {nui_SetProperty("row_count",         nuiBind(sBind, bWatch));}
+void NUI_BindScissor(string sBind, int bWatch = FALSE)             {nui_SetProperty("draw_list_scissor", nuiBind(sBind, bWatch));}
+void NUI_BindStartPoint(string sBind, int bWatch = FALSE)          {nui_SetProperty("a",                 nuiBind(sBind, bWatch));}
+void NUI_BindStep(string sBind, int bWatch = FALSE)                {nui_SetProperty("step",              nuiBind(sBind, bWatch));}
+void NUI_BindText(string sBind, int bWatch = FALSE)                {nui_SetProperty("text",              nuiBind(sBind, bWatch));}
+void NUI_BindType(string sBind, int bWatch = FALSE)                {nui_SetProperty("type",              nuiBind(sBind, bWatch));}
+void NUI_BindValue(string sBind, int bWatch = FALSE)               {nui_SetProperty("value",             nuiBind(sBind, bWatch));}
+void NUI_BindVerticalAlignment(string sBind, int bWatch = FALSE)   {nui_SetProperty("text_valign",       nuiBind(sBind, bWatch));}
+void NUI_BindVisible(string sBind, int bWatch = FALSE)             {nui_SetProperty("visible",           nuiBind(sBind, bWatch));}
 
-void NUI_BindAspect(string sBind)
+void NUI_BindAspect(string sBind, int bWatch = FALSE)
 {
     string sProperty;
     if (nui_GetDrawlistFlag() || nui_GetControlType() == "image")
@@ -1940,41 +1983,41 @@ void NUI_BindAspect(string sBind)
     else
         sProperty = "aspect";
 
-    nui_SetProperty(sProperty, nuiBind(sBind));
+    nui_SetProperty(sProperty, nuiBind(sBind, bWatch));
 }
 
-void NUI_BindColor(string sBind)
+void NUI_BindColor(string sBind, int bWatch = FALSE)
 {
     string sProperty = (nui_GetControlType() == "color_picker" ? "value" : "color");
-    nui_SetProperty(sProperty, nuiBind(sBind));
+    nui_SetProperty(sProperty, nuiBind(sBind, bWatch));
 }
 
-void NUI_BindSliderBounds(string sUpper, string sLower, string sStep)
+void NUI_BindSliderBounds(string sUpper, string sLower, string sStep, int bWatch = FALSE)
 {
-    nui_SetProperty("max", nuiBind(sUpper));
-    nui_SetProperty("min", nuiBind(sLower));
-    nui_SetProperty("step", nuiBind(sStep));
+    nui_SetProperty("max", nuiBind(sUpper, bWatch));
+    nui_SetProperty("min", nuiBind(sLower, bWatch));
+    nui_SetProperty("step", nuiBind(sStep, bWatch));
 }
 
-void NUI_BindLabel(string sBind)
+void NUI_BindLabel(string sBind, int bWatch = FALSE)
 {
     string sProperty = (nui_GetControlType() == "label" ? "value" : "label");
-    nui_SetProperty(sProperty, nuiBind(sBind));
+    nui_SetProperty(sProperty, nuiBind(sBind, bWatch));
 }
 
-void NUI_BindMax(string sBind)
+void NUI_BindMax(string sBind, int bWatch = FALSE)
 {
     string sProperty = (nui_GetDrawlistFlag() ? "amax" : "max");
-    nui_SetProperty(sProperty, nuiBind(sBind));
+    nui_SetProperty(sProperty, nuiBind(sBind, bWatch));
 }
 
-void NUI_BindMin(string sBind)
+void NUI_BindMin(string sBind, int bWatch = FALSE)
 {
     string sProperty = (nui_GetDrawlistFlag() ? "amin" : "min");
-    nui_SetProperty(sProperty, nuiBind(sBind));
+    nui_SetProperty(sProperty, nuiBind(sBind, bWatch));
 }
 
-void NUI_BindResref(string sBind)
+void NUI_BindResref(string sBind, int bWatch = FALSE)
 {
     string sProperty, sType = nui_GetControlType();
     if      (sType == "button_image") sProperty = "label";
@@ -1982,13 +2025,13 @@ void NUI_BindResref(string sBind)
     else if (sType == "movieplayer")  sProperty = "value";
     else                              sProperty = "image";
 
-    nui_SetProperty(sProperty, nuiBind(sBind));
+    nui_SetProperty(sProperty, nuiBind(sBind, bWatch));
 }
 
-void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE)
+void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE, int bWatch = FALSE)
 {
-    nui_SetProperty("tooltip", nuiBind(sBind));
-    if (bDisabledTooltip) NUI_BindDisabledTooltip(sBind);
+    nui_SetProperty("tooltip", nuiBind(sBind, bWatch));
+    if (bDisabledTooltip) NUI_BindDisabledTooltip(sBind, bWatch);
 }
 
 // Sets ------------------------------------------------------------------------
@@ -2195,6 +2238,16 @@ int nui_ExecuteFunction(string sFile, string sFunction, object oTarget = OBJECT_
     return ExecuteScriptChunk(sChunk, oTarget, FALSE) == "";
 }
 
+json nui_GetWatchedBinds(string sFormID)
+{
+    sQuery = "SELECT json_group_array(value) FROM (SELECT DISTINCT value FROM nui_forms, " +
+        "json_tree(nui_forms.definition, '$') WHERE key = 'bind' AND json_extract(" +
+        "nui_forms.definition, path || '.watch') = true AND form = @form);";
+    sql = nui_PrepareQuery(sQuery);
+    SqlBindString(sql, "@form", sFormID);
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonArray();
+}
+
 json NUI_GetOrphanBinds(string sFormID)
 {
     sQuery = "SELECT json_group_array(value) FROM (SELECT DISTINCT value FROM nui_forms, " +
@@ -2270,6 +2323,16 @@ void nui_SetProfileBinds(object oPC, string sFormID, string sProfile)
     }
 
     NUI_SetBind(oPC, sFormID, "NUI_FORM_PROFILE", nuiString(sProfile));
+}
+
+void nui_SetWatchedBinds(object oPC, string sFormID)
+{
+    json jBinds = nui_GetWatchedBinds(sFormID);
+    int n; for (n; n < JsonGetLength(jBinds); n++)
+    {
+        string sBind = JsonGetString(JsonArrayGet(jBinds, n));
+        NUI_SetBindWatch(oPC, sFormID, sBind);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -2405,9 +2468,8 @@ void nui_HandleNUIEvents()
         string sProfile  = JsonGetString(JsonObjectGet(jUserData, "profile"));
 
         nui_SetProfileBinds(oPC, sFormID, sProfile);
+        nui_SetWatchedBinds(oPC, sFormID);
         nui_ExecuteFunction(sFormfile, NUI_BIND, oPC);
-
-        Notice(HexColorString("Handling the NUI open event ....", COLOR_RED_LIGHT));
     }
 
     nui_ExecuteFunction(sFormfile, NUI_EVENT_NUI, oPC);
