@@ -6,6 +6,24 @@
 /// ----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
+//                              FORM INSPECTOR
+// -----------------------------------------------------------------------------
+
+// The form inspection capability allows you to record data about a form's status,
+// including bind values and how various events affect them.  To use the inspection
+// capability, you must include the `nui_f_inspector` formfile in your module and
+// set NUI_FI_RECORD_DATA to the desired value.
+
+// *** WARNING *** Form inspection is very expensive.  Is it recommended that
+//      you only use the form inspection capability during debug or set this
+//      value to NUI_FI_WHEN_OPEN to prevent unnecessary traffic.
+const int NUI_FI_NEVER     = 0;
+const int NUI_FI_ALWAYS    = 1;
+const int NUI_FI_WHEN_OPEN = 2;
+
+const int NUI_FI_RECORD_DATA = NUI_FI_ALWAYS;
+
+// -----------------------------------------------------------------------------
 //                             Custom Functions
 //        MODIFY THESE TO ENSURE COMPATIBILTY WITH YOUR MODULE'S SYSTEMS
 // -----------------------------------------------------------------------------

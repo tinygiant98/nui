@@ -38,6 +38,12 @@ NWN >= 8193.34.1
 
 ## Change Log
 
+*** 0.3.0 ***
+- Add organic form inspection capability.  This does nothing without the `nui_f_inspector` formfile.  This is a breaking change because of an addition to `nui_c_config`, so the base NUI system minor version has been bumped.  See `nui_c_config` for appropriate configuration and `nui_f_inspector`'s readme for usage.
+- Added missing prototype for `NUI_GetEventData()`.
+- Added a missing build element for `tabbar` controls.
+- Blocked `NUI_SetTooltip` for comboboxes because an attached tooltip prevents the combox from functioning properly.
+
 *** 0.2.3 ***
 - Added automatic setting of bind watches.  All `NUI_Bind*` functions (and `nuiBind`) can now be passed an optional `bWatch` parameter.  This default value is `FALSE`.  If `TRUE`, the bind will automatically be watched on form open without user intervention.  This function is only available during form definition.  *Drawlist bind watching is not available with this method.*  The inherent `geometry` bind is set to be watched automatically. 
 

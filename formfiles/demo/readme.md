@@ -9,7 +9,7 @@
 
 ### Requires:
 
-NWN >= 8193.34.1
+NWN >= 8193.35
 NUI >= 0.2.2
 
 ### Version History:

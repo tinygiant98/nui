@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.2.3";
+const string NUI_VERSION = "0.3.0";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -58,6 +58,9 @@ const string NUI_EVENT_NUI = "HandleNUIEvents";
 const string NUI_EVENT_MOD = "HandleModuleEvents";
 
 const string NUI_OBJECT    = "NUI_OBJECT";
+
+const int NUI_FI_EVENT_UPDATE_FORMS  = 100001;
+const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 
 json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
@@ -1016,12 +1019,16 @@ string NUI_GetLayout();
 /// @brief Save all of sFormID's bind values to a local variable.
 /// @param oPC Player associated with sFormID.
 /// @param sFormID Form ID to save bind values for.
-void NUI_SaveState(object oPC, string sFormID);
+void NUI_SaveBindState(object oPC, string sFormID);
 
 /// @brief Restore all of sFormID's bind values from a local variable.
 /// @param oPC Player associated with sFormID.
 /// @param sFormID Form ID to restore bind values for.
-void NUI_RestoreState(object oPC, string sFormID);
+void NUI_RestoreBindState(object oPC, string sFormID);
+
+/// @brief Returns all events data as a struct NUIEventData.
+/// @note Only valid within HandleNUIEvents() event handler.
+struct NUIEventData NUI_GetEventData();
 
 /// @note Temporary prototypes to allow .35 function to work when .35 is not installed.
 /// TODO Remove when .35 is stable.
@@ -1282,6 +1289,24 @@ void nui_InitializeDatabase()
         "definition TEXT);";
     SqlStep(nui_PrepareQuery(sQuery));
     SqlStep(nui_PrepareQuery(sQuery, TRUE));
+
+    sQuery = "DROP TABLE IF EXISTS nui_fi_data;";
+    SqlStep(nui_PrepareQuery(sQuery));
+    
+    sQuery = 
+        "CREATE TABLE IF NOT EXISTS nui_fi_data (" +
+            "event_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "sPlayer INTEGER, " +
+            "sFormID STRING, " +
+            "nToken INTEGER, " +
+            "sEvent STRING, " +
+            "sControlID STRING, " +
+            "nIndex INTEGER, " +
+            "jPayload STRING, " +
+            "binds_before STRING, " +
+            "binds_after STRING, " +
+            "timestamp INTEGER);";
+    SqlStep(nui_PrepareQuery(sQuery));
 }
 
 void nui_SaveForm(string sID, string sJson)
@@ -1381,7 +1406,7 @@ void nui_SetObject(string sProperty, string sValue, string sType = "")
 
         if (sType != "")
         {
-            if (sType == "combo" || sType == "options")
+            if (sType == "combo" || sType == "options" || sType == "tabbar")
                 nui_ResetEntryCount();
 
             nui_SetControlType(sType);
@@ -1512,20 +1537,30 @@ string NUI_GetLayout()
     return sLayout;
 }
 
-void NUI_SaveState(object oPC, string sFormID)
+json NUI_GetBindState(object oPC, string sFormID)
 {
     int n, nToken = NuiFindWindow(oPC, sFormID);
     json jState = JsonObject();
     string sBind;
 
-    while ((sBind = NuiGetNthBind(oPC, nToken, FALSE, n++)) != "")
-        jState = JsonObjectSet(jState, sBind, NuiGetBind(oPC, nToken, sBind));
+    if (nToken)
+    {
+        while ((sBind = NuiGetNthBind(oPC, nToken, FALSE, n++)) != "")
+            jState = JsonObjectSet(jState, sBind, NuiGetBind(oPC, nToken, sBind));
+    }
 
+    return jState;
+}
+
+void NUI_SaveBindState(object oPC, string sFormID)
+{
+    json jState = NUI_GetBindState(oPC, sFormID);
+    
     if (jState != JsonObject())
         SetLocalJson(oPC, "NUI_STATE:" + sFormID, jState);
 }
 
-void NUI_RestoreState(object oPC, string sFormID)
+void NUI_RestoreBindState(object oPC, string sFormID)
 {
     json jState = GetLocalJson(oPC, "NUI_STATE:" + sFormID);
     if (jState == JsonNull())
@@ -2030,6 +2065,9 @@ void NUI_BindResref(string sBind, int bWatch = FALSE)
 
 void NUI_BindTooltip(string sBind, int bDisabledTooltip = FALSE, int bWatch = FALSE)
 {
+    if (nui_GetControlType() == "combo")
+        return;
+
     nui_SetProperty("tooltip", nuiBind(sBind, bWatch));
     if (bDisabledTooltip) NUI_BindDisabledTooltip(sBind, bWatch);
 }
@@ -2166,6 +2204,9 @@ void NUI_SetSquare(float fSide)
 
 void NUI_SetTooltip(string sTooltip, int bDisabledTooltip = FALSE)
 {
+    if (nui_GetControlType() == "combo")
+        return;
+
     nui_SetProperty("tooltip", nuiString(sTooltip));
     if (bDisabledTooltip) NUI_SetDisabledTooltip(sTooltip);
 }
@@ -2455,6 +2496,69 @@ string NUI_GetProfile(object oPC, string sFormID)
 //                                   Private
 // -----------------------------------------------------------------------------
 
+int nui_HandleInspectionEvents(int nEventID = -1)
+{
+    struct NUIEventData ed = NUI_GetEventData();
+
+    if (NUI_FI_RECORD_DATA == NUI_FI_NEVER)
+        return -1;
+    else if (NUI_FI_RECORD_DATA == NUI_FI_WHEN_OPEN && !NUI_GetIsFormOpen(ed.oPC, "nui_inspector"))
+        return -1;
+
+    if (ed.sEvent == "close")
+    {
+        sql = nui_PrepareQuery("DELETE FROM nui_fi_data WHERE nToken = @token;");
+        SqlBindInt(sql, "@token", NuiGetEventWindow());
+        SqlStep(sql);
+        return -1;
+    }
+
+    json jCurrentState = NUI_GetBindState(ed.oPC, ed.sFormID);
+
+    string sQuery;
+    sqlquery sql;
+
+    if (nEventID == -1)
+    {
+        sQuery = 
+            "INSERT INTO nui_fi_data (sPlayer, sFormID, nToken, sEvent, sControlID, nIndex, jPayload, " +
+            "binds_before, timestamp) VALUES (@sPlayer, @sFormID, @nToken, @sEvent, @sControlID, @nIndex, " +
+            "@jPayload, @binds_before, strftime('%s','now')) RETURNING event_id;";
+
+        sql = nui_PrepareQuery(sQuery);
+
+        SqlBindString(sql, "@sPlayer", GetObjectUUID(ed.oPC));
+        SqlBindString(sql, "@sFormID", ed.sFormID);
+        SqlBindInt   (sql, "@nToken", ed.nToken);
+        SqlBindString(sql, "@sEvent", ed.sEvent);
+        SqlBindString(sql, "@sControlID", ed.sControlID);
+        SqlBindInt   (sql, "@nIndex", ed.nIndex);
+        SqlBindJson  (sql, "@jPayload", ed.jPayload);
+        SqlBindJson  (sql, "@binds_before", jCurrentState);
+
+        nEventID = SqlStep(sql) ? SqlGetInt(sql, 0) : -1;
+    }
+    else
+    {
+        sQuery =
+            "UPDATE nui_fi_data SET binds_after = @binds_after " +
+            "WHERE event_id = @event_id;";
+        sql = nui_PrepareQuery(sQuery);
+        SqlBindJson  (sql, "@binds_after", jCurrentState);
+        SqlBindInt   (sql, "@event_id", nEventID);
+
+        SqlStep(sql);
+    }
+
+    if (nEventID != -1)
+    {
+        SignalEvent(GetModule(), EventUserDefined(NUI_FI_EVENT_UPDATE_FORMS));
+        SignalEvent(GetModule(), EventUserDefined(NUI_FI_EVENT_UPDATE_EVENTS));
+    }
+
+    return nEventID;
+}
+
 void nui_HandleNUIEvents()
 {
     object oPC = NuiGetEventPlayer();
@@ -2463,7 +2567,13 @@ void nui_HandleNUIEvents()
     json   jUserData = NuiGetUserData(oPC, NuiGetEventWindow());
     string sFormfile = JsonGetString(JsonObjectGet(jUserData, "formfile"));    
 
-    if (NuiGetEventType() == "open")
+    // TODO integrate form inspection
+    // Should we check for the inspection window, or just save everything?
+    //  Or hide it behind a configuration option?
+    int nInspectorEventID = nui_HandleInspectionEvents();
+
+    string sEvent = NuiGetEventType();
+    if (sEvent == "open")
     {
         string sProfile  = JsonGetString(JsonObjectGet(jUserData, "profile"));
 
@@ -2473,6 +2583,11 @@ void nui_HandleNUIEvents()
     }
 
     nui_ExecuteFunction(sFormfile, NUI_EVENT_NUI, oPC);
+    
+    if (nInspectorEventID != -1)
+        nui_HandleInspectionEvents(nInspectorEventID);
+
+
 }
 
 // -----------------------------------------------------------------------------

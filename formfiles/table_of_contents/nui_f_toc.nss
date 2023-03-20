@@ -9,10 +9,8 @@
 #include "util_i_debug"
 
 const string FORM_ID = "toc";
-const string VERSION = "0.1.0";
+const string VERSION = "0.1.1";
 const string IGNORE_FORM_EVENTS = "blur,focus,range,mousedown";
-
-json jFormfiles;
 
 void DefineForm()
 {
@@ -47,18 +45,21 @@ void DefineForm()
 
             NUI_AddRow();
                 NUI_AddListbox();
-                    NUI_BindRowCount("lb_rowcount");
+                    NUI_BindRowCount("cmdOpen:label");
+                    //NUI_SetRowCount(10);
                     NUI_SetRowHeight(40.0);
                 {
-                    NUI_AddCommandButton("open");
-                        NUI_BindLabel("form_titles");
+                    NUI_AddCommandButton("cmdOpen");
+                        NUI_BindLabel("cmdOpen:label");
                     NUI_AddCombobox();
                         NUI_BindElements("combo_elements");
                         NUI_BindValue("combo_value");
-                        NUI_SetTemplateWidth(200.0);
-                        NUI_SetTemplateVariable(FALSE);
+                        //NUI_SetTemplateWidth(200.0);
+                        //NUI_SetTemplateVariable(FALSE);
+                        //NUI_SetTemplateWidth(50.0);
+                        NUI_SetTemplateVariable(TRUE);
                         NUI_BindEnabled("combo_enabled");
-                    NUI_AddCommandButton("redefine");
+                    NUI_AddCommandButton("cmdRedefine");
                         NUI_SetLabel("Redefine");
                         NUI_SetTemplateWidth(75.0);
                         NUI_SetTemplateVariable(FALSE);
@@ -69,7 +70,7 @@ void DefineForm()
 
     NUI_CreateDefaultProfile();
     {
-        string sGeometry = NUI_DefineRectangle(100.0, 100.0, 650.0, 800.0);
+        string sGeometry = NUI_DefineRectangle(1400.0, 600.0, 450.0, 350.0);
         NUI_SetProfileBind("geometry", sGeometry);
     }
 }
@@ -94,13 +95,13 @@ void BindForm()
     json jElements  = SqlGetJson(sql, 2); // array of arrays of arrays of element
     json jTitles    = SqlGetJson(sql, 3); // array of form toc titles
     
-    jElements = JsonParse("[[\"default\",0],[\"two\",1],[\"three\",3]]");
+    //jElements = JsonParse("[[\"default\",0],[\"two\",1],[\"three\",3]]");
 
-    //Notice("Formfiles: " + JsonDump(jFormfiles));
+    NUI_SetBindJ(OBJECT_SELF, FORM_ID, "varFormIDs", jFormIDs);
+    NUI_SetBindJ(OBJECT_SELF, FORM_ID, "varFormfiles", jFormfiles);
+    DelayCommand(0.01, NUI_SetBindJ(OBJECT_SELF, FORM_ID, "cmdOpen:label", jTitles));
 
-    // Set random variables
-    NUI_SetBind(OBJECT_SELF, FORM_ID, "form_ids", JsonDump(jFormIDs));
-    NUI_SetBind(OBJECT_SELF, FORM_ID, "form_files", JsonDump(jFormfiles));
+    Notice("Form Titles -> " + JsonDump(jTitles));
 
     string sValue;
     json jBinds = NUI_GetOrphanBinds(FORM_ID);
@@ -109,20 +110,14 @@ void BindForm()
         string sBind = JsonGetString(JsonArrayGet(jBinds, n));
         json   jValue = JsonNull();
 
-        if      (sBind == "lb_rowcount")    sValue = JsonDump(jFormfiles); //JsonInt(JsonGetLength(jTitles));
-        //else if (sBind == "combo_elements") sValue = JsonDump(jElements);
-        else if (sBind == "form_titles")    sValue = JsonDump(jTitles);
-        else if (sBind == "chk_value")      sValue = "[true,false,true]";
-        else                                sValue = nuiNull();
-    
         if (sValue != "")
             NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
         else if (jValue != JsonNull());
             NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 
-    // Looks like value arrays have to be initialized after the elements arrays or they get erased?
-    NUI_SetBind(OBJECT_SELF, FORM_ID, "combo_value", "[0,0,0]");
+    //// Looks like value arrays have to be initialized after the elements arrays or they get erased?
+    //NUI_SetBind(OBJECT_SELF, FORM_ID, "combo_value", "[0,0,0]");
 }
 
 void HandleNUIEvents()
@@ -136,19 +131,13 @@ void HandleNUIEvents()
     if (HasListItem(IGNORE_FORM_EVENTS, ed.sEvent))
         return;
 
-    if (ed.sEvent == "open")
-    {
-        json jValue = NuiGetBind(ed.oPC, ed.nToken, "tabbar_value");
-        Notice("Tab Bar Value -> " + JsonDump(jValue));
-    }
-
     if (ed.sEvent == "click")
     {
         if (ed.sControlID == "redefine_all")
         {
             NUI_DefineForms();
 
-            json jFormIDs = NuiGetBind(ed.oPC, ed.nToken, "form_ids");
+            json jFormIDs = NuiGetBind(ed.oPC, ed.nToken, "varFormIDs");
             int n; for (n; n < JsonGetLength(jFormIDs); n++)
             {
                 string sFormID = JsonGetString(JsonArrayGet(jFormIDs, n));
@@ -156,18 +145,18 @@ void HandleNUIEvents()
                     NUI_DisplayForm(ed.oPC, sFormID);
             }
         }
-        else if (ed.sControlID == "redefine")
+        else if (ed.sControlID == "cmdRedefine")
         {
-            string sFormfile = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "form_files"), ed.nIndex));
-            string sFormID = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "form_ids"), ed.nIndex));
+            string sFormfile = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "varFormfiles"), ed.nIndex));
+            string sFormID = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "varFormIDs"), ed.nIndex));
             NUI_DefineForms(sFormfile);
 
             if (NuiFindWindow(ed.oPC, sFormID) > 0)
                 NUI_DisplayForm(ed.oPC, sFormID);
         }
-        else if (ed.sControlID == "open")
+        else if (ed.sControlID == "cmdOpen")
         {
-            string sFormID = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "form_ids"), ed.nIndex));
+            string sFormID = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "varFormIDs"), ed.nIndex));
             NUI_DisplayForm(ed.oPC, sFormID);
         }
     }

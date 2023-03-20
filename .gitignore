@@ -10,7 +10,6 @@
 nasher.cfg
 
 # Specific Formfiles (in development)
-formfiles/form_inspector
 formfiles/appearance_editor
 formfiles/portrait_viewer
 formfiles/.test

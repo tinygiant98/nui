@@ -14,6 +14,9 @@ NUI >= 0.2.2
 
 ### Version History:
 
+## 0.1.1:
+- Minor updates to background control names.  No obvious usage changes.
+
 ## 0.1.0:
 
 Initial Release
