@@ -21,7 +21,7 @@ const int NUI_FI_NEVER     = 0;
 const int NUI_FI_ALWAYS    = 1;
 const int NUI_FI_WHEN_OPEN = 2;
 
-const int NUI_FI_RECORD_DATA = NUI_FI_ALWAYS;
+const int NUI_FI_RECORD_DATA = NUI_FI_WHEN_OPEN;
 
 // -----------------------------------------------------------------------------
 //                             Custom Functions
