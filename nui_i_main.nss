@@ -1016,6 +1016,12 @@ void NUI_CreateLayout();
 ///     meant for dynamic form building.
 string NUI_GetLayout();
 
+/// @brief Determines if a form is currently open.
+/// @param oPC Players to check for the form.
+/// @param sFormID The form's ID.
+/// @returns TRUE if oPC has sFormID open, FALSE otherwise.
+int NUI_GetIsFormOpen(object oPC, string sFormID);
+
 /// @brief Save all of sFormID's bind values to a local variable.
 /// @param oPC Player associated with sFormID.
 /// @param sFormID Form ID to save bind values for.
