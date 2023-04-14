@@ -14,6 +14,9 @@ NUI >= 0.2.2
 
 ### Version History:
 
+## 0.1.2:
+- Debug bind errors.
+
 ## 0.1.1:
 - Minor updates to background control names.  No obvious usage changes.
 

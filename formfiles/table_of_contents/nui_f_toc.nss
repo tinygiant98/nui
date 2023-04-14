@@ -9,7 +9,7 @@
 #include "util_i_debug"
 
 const string FORM_ID = "toc";
-const string VERSION = "0.1.1";
+const string VERSION = "0.1.2";
 const string IGNORE_FORM_EVENTS = "blur,focus,range,mousedown";
 
 void DefineForm()
@@ -112,7 +112,7 @@ void BindForm()
 
         if (sValue != "")
             NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
-        else if (jValue != JsonNull());
+        else if (jValue != JsonNull())
             NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 
