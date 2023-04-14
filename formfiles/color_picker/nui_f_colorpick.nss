@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------------------
 
 #include "nui_c_colorpick"
-#include "nui_i_main"
+#include "nui_i_library"
 #include "util_i_csvlists"
 #include "util_i_color"
 
@@ -42,8 +42,6 @@ void cp_UpdateColorBinds(object oPlayer, int nToken)
            sHex = GetStringRight(sHex, 6);
 
     NuiSetBind(oPlayer, nToken, "hex", JsonString(sHex));
-    NuiSetBind(oPlayer, nToken, "box_color", jColor);
-    NuiSetBind(oPlayer, nToken, "text_color", jColor);
 }
 
 void BindForm()
@@ -62,8 +60,6 @@ void BindForm()
             NUI_SetBindJ(OBJECT_SELF, FORM_ID, sBind, jValue);
     }
 }
-
-#include "util_i_debug"
 
 void HandleNUIEvents()
 {
