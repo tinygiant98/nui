@@ -14,6 +14,9 @@ NUI >= 0.2.2
 
 ### Version History:
 
+## 0.1.1:
+- Added NWN Color Codes and Hex Color Code displays, both copiable by selection.
+
 ## 0.1.0:
 
 Initial Release

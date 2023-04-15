@@ -13,7 +13,7 @@
 #include "util_i_csvlists"
 #include "util_i_color"
 
-const string VERSION = "0.1.0";
+const string VERSION = "0.1.1";
 const string FORM_ID = "color_picker";
 const string IGNORE_FORM_EVENTS = "mouseup,mousedown,mousescroll,close,range";
 
@@ -42,6 +42,13 @@ void cp_UpdateColorBinds(object oPlayer, int nToken)
            sHex = GetStringRight(sHex, 6);
 
     NuiSetBind(oPlayer, nToken, "hex", JsonString(sHex));
+    NuiSetBind(oPlayer, nToken, "cc", JsonString(GetColorCode(r, g, b) + " "));
+
+    string sRHex = FormatInt(r, "\\x%02X");
+    string sGHex = FormatInt(g, "\\x%02X");
+    string sBHex = FormatInt(b, "\\x%02X");
+
+    NuiSetBind(oPlayer, nToken, "ec", JsonString(sRHex + sGHex + sBHex));
 }
 
 void BindForm()
@@ -100,6 +107,7 @@ void DefineForm()
     string sGreen = NUI_DefineRGBColor(51, 177, 30);
     string sBlue = NUI_DefineRGBColor(121, 122, 220);
     string sHex = NUI_DefineRGBColor(176, 209, 34);
+    string sCode = NUI_DefineRGBColor(28, 197, 203);
 
     NUI_CreateForm(FORM_ID, VERSION);
         NUI_SetTitle("Color Picker");
@@ -130,7 +138,7 @@ void DefineForm()
                         NUI_AddRow();
                             NUI_AddColumn();
                                 NUI_AddLabel();
-                                    NUI_SetWidth(50.0);
+                                    NUI_SetWidth(75.0);
                                     NUI_SetHeight(fLabelHeight);
                                     NUI_SetForegroundColor(sRed);
                                     NUI_SetLabel("Red");
@@ -149,11 +157,16 @@ void DefineForm()
                                     NUI_SetHeight(fLabelHeight);
                                     NUI_SetLabel("Alpha");
                                     NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                                NUI_AddLabel();
+                                    NUI_SetHeight(fLabelHeight);
+                                    NUI_SetLabel("NWN Code");
+                                    NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                                    NUI_SetForegroundColor(sCode);
                             NUI_CloseColumn();
 
                             NUI_AddColumn();
                             {
-                                int n; for (n; n < 3; n++)
+                                int n; for (n; n < 4; n++)
                                 {
                                     NUI_AddSpacer();
                                         NUI_SetWidth(10.0);
@@ -165,7 +178,7 @@ void DefineForm()
                             NUI_AddColumn();
                                 NUI_AddLabel();
                                     NUI_SetHeight(fLabelHeight);
-                                    NUI_SetWidth(25.0);
+                                    NUI_SetWidth(65.0);
                                     NUI_SetForegroundColor(sRed);
                                     NUI_BindLabel("r");
                                     NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
@@ -183,11 +196,18 @@ void DefineForm()
                                     NUI_SetHeight(fLabelHeight);
                                     NUI_BindLabel("a");
                                     NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
+                                NUI_AddLabel();
+                                NUI_AddTextbox();
+                                    NUI_SetHeight(fLabelHeight);
+                                    NUI_BindValue("cc");
+                                    NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
+                                    NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
+                                    NUI_SetForegroundColor(sCode);
                             NUI_CloseColumn();
 
                             NUI_AddColumn();
                             {
-                                int n; for (n; n < 3; n++)
+                                int n; for (n; n < 4; n++)
                                 {
                                     NUI_AddSpacer();
                                         NUI_SetWidth(10.0);
@@ -199,7 +219,7 @@ void DefineForm()
                             NUI_AddColumn();
                                 NUI_AddLabel();
                                     NUI_SetHeight(fLabelHeight);
-                                    NUI_SetWidth(100.0);
+                                    NUI_SetWidth(80.0);
                                     NUI_SetLabel("Hue");
                                     NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
                                 NUI_AddLabel();
@@ -215,11 +235,15 @@ void DefineForm()
                                     NUI_SetForegroundColor(sHex);
                                     NUI_SetLabel("Hex");
                                     NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
+                                NUI_AddLabel();
+                                    NUI_SetHeight(fLabelHeight);
+                                    NUI_SetLabel("Escape Code");
+                                    NUI_SetHorizontalAlignment(NUI_HALIGN_RIGHT);
                             NUI_CloseColumn();
 
                             NUI_AddColumn();
                             {
-                                int n; for (n; n < 3; n++)
+                                int n; for (n; n < 4; n++)
                                 {
                                     NUI_AddSpacer();
                                         NUI_SetWidth(10.0);
@@ -246,6 +270,12 @@ void DefineForm()
                                     NUI_SetForegroundColor(sHex);
                                     NUI_BindLabel("hex");
                                     NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
+                                //NUI_AddLabel();
+                                NUI_AddTextbox();
+                                    NUI_SetHeight(fLabelHeight);
+                                    NUI_BindValue("ec");
+                                    NUI_SetHorizontalAlignment(NUI_HALIGN_LEFT);
+                                    NUI_SetScrollbars(NUI_SCROLLBARS_NONE);
                             NUI_CloseColumn();
                         NUI_CloseRow();
                     } NUI_CloseGroup();
@@ -276,7 +306,7 @@ void DefineForm()
     }
 
     NUI_CreateDefaultProfile();
-        NUI_SetProfileBind("geometry", NUI_DefineRectangle(100.0, 100.0, 567.0, 217.0));
+        NUI_SetProfileBind("geometry", NUI_DefineRectangle(100.0, 100.0, 590.0, 217.0));
         NUI_SetProfileBind("cpPicker:color", NUI_DefineRGBColor(255, 255, 255));
 }
         
