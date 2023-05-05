@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.1.12";
+const string FORM_VERSION = "0.2.0";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -99,7 +99,13 @@ int ps_GetSaveObjectState(object oPC)
 
 int ps_GetContainerType(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_CONTAINER_TYPE, PS_CONTAINER_TYPE_DEFAULT);
+    int nType = GetLocalInt(oPC, PS_CONTAINER_TYPE);
+    object oContainer = ps_GetContainer(oPC);
+
+    if (!nType && GetObjectType(oContainer) == OBJECT_TYPE_ITEM)
+        return PS_CONTAINER_ITEM_TYPE_DEFAULT;
+    else
+        return PS_CONTAINER_TYPE_DEFAULT;
 }
 
 int ps_GetAccessType(object oPC)
@@ -134,7 +140,11 @@ int ps_GetOpenInventory(object oPC)
 
 int ps_GetMaxGold(object oPC)
 {
-    return ps_GetLocalIntOrDefault(oPC, PS_MAX_GOLD, PS_MAX_GOLD_DEFAULT);
+    object oContainer = ps_GetContainer(oPC);
+    if (GetObjectType(oContainer) == OBJECT_TYPE_ITEM)
+        return PS_NONE;
+    else
+        return ps_GetLocalIntOrDefault(oPC, PS_MAX_GOLD, PS_MAX_GOLD_DEFAULT);
 }
 
 object ps_GetFirstUser(object oPC)
@@ -437,6 +447,7 @@ void ps_UpdateItemList(object oPC, int nFlag = FALSE)
            jWhere = JsonArrayInsert(jWhere, JsonString(sWhere));
 
     string sTable = ps_GetTableName(oPC);
+
     string sQuery = 
         "WITH gold AS (SELECT SUM(item_stacksize) pieces FROM " + sTable + " WHERE item_uuid == 'gold'$1 ), " +
         "items AS (SELECT item_uuid, IIF(item_stacksize > 1, item_name || ' (x' || item_stacksize || ')', item_name) name, " +
@@ -714,6 +725,7 @@ void DefineForm()
         NUI_SubscribeEvent(EVENT_SCRIPT_PLACEABLE_ON_USED);
         NUI_SubscribeEvent(EVENT_SCRIPT_PLACEABLE_ON_OPEN);
         NUI_SubscribeEvent(EVENT_SCRIPT_PLACEABLE_ON_CLOSED);
+        NUI_SubscribeEvent(EVENT_SCRIPT_MODULE_ON_ACTIVATE_ITEM);
     {
         NUI_AddRow();
             NUI_AddColumn();
@@ -1045,6 +1057,9 @@ void ps_OnPCHeartbeat(object oPC, object oContainer)
     if (oLastContainer == OBJECT_INVALID || oLastContainer != oContainer)
         return;
 
+    if (GetObjectType(oContainer) == OBJECT_TYPE_ITEM)
+        return;
+
     float fMax = ps_GetMaxDistance(oPC);
     if (fMax < 0.0) return;
 
@@ -1058,6 +1073,9 @@ void ps_OnPCHeartbeat(object oPC, object oContainer)
 ///     container.
 void ps_OnContainerHeartbeat(object oContainer)
 {
+    if (GetObjectType(oContainer) == OBJECT_TYPE_ITEM)
+        return;
+
     float fMax = ps_GetLocalFloatOrDefault(oContainer, PS_DISTANCE, PS_DISTANCE_DEFAULT);
     if (fMax < 0.0) return;
     
@@ -1074,12 +1092,12 @@ void ps_OnContainerHeartbeat(object oContainer)
 
     if (CountObjectList(oContainer, PS_USERS))
         AssignCommand(oContainer, DelayCommand(2.0, ps_OnContainerHeartbeat(oContainer)));
-
 }
 
-void ps_OpenContainer(object oPC)
+void ps_OpenContainer(object oPC, object oContainer = OBJECT_INVALID)
 {
-    object oContainer = oPC == OBJECT_SELF ? GetLocalObject(oPC, NUI_OBJECT) : OBJECT_SELF;
+    if (oContainer == OBJECT_INVALID)
+        oContainer = oPC == OBJECT_SELF ? GetLocalObject(oPC, NUI_OBJECT) : OBJECT_SELF;
     SetLocalObject(oPC, PS_CONTAINER, oContainer);
 
     if (ps_GetAccessType(oPC) == PS_ACCESS_CONTENTIOUS)
@@ -1115,6 +1133,9 @@ void HandleModuleEvents()
         case EVENT_SCRIPT_PLACEABLE_ON_CLOSED:
             if (!GetIsPC(OBJECT_SELF)) oPC = GetLastClosedBy();
             ps_CloseContainer(oPC);
+            break;
+        case EVENT_SCRIPT_MODULE_ON_ACTIVATE_ITEM:
+            ps_OpenContainer(GetItemActivator(), GetItemActivated());
             break;
         default:
     }

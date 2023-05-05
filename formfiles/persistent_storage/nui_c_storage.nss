@@ -63,8 +63,6 @@ const int PS_STORAGE_LIMIT_DEFAULT = 200;
 ///         Set to any positive float to limit distance to that amount.
 const float PS_DISTANCE_DEFAULT = 2.0;
 
-
-
 /// @brief Set the container access type.  Container inventories can be accessed
 ///     by two methods:  exclusive and contentious.
 ///     - Exclusive:  Multiple players may open the same container, but each
@@ -104,6 +102,29 @@ const int PS_ACCESS_TYPE_DEFAULT = PS_ACCESS_EXCLUSIVE;
 ///         2 = PS_CONTAINER_CHARACTER
 ///         3 = PS_CONTAINER_CDKEY
 const int PS_CONTAINER_TYPE_DEFAULT = PS_CONTAINER_PUBLIC;
+
+/// @brief Set the default container type, if the container is an item.  Containers
+///     can be of multiple types:
+///     - Public:  Any player can open, deposit and withdraw items from this
+///         container.  Whether they are limited to specific items is dependant
+///         on the container's access setting.
+///     - Character:  Creates a 'portable' storage container for any player
+///         character.  Any container of this type will hold the same inventory
+///         for any specific player.
+///     - CD Key:  Creates a 'portable' storage container for any characters
+///         owned by cd-key associated with the player character.  Any container
+///         of this type will hold the inventory desposited by any character
+///         sharing the player's cd key.
+///
+///     Configuration File:
+///         PS_CONTAINER_PUBLIC for public.
+///         PS_CONTAINER_CHARACTER for per-character.
+///         PS_CONTAINER_CD_KEY for per-cdkey.
+///     Local Override (int): PS_CONTAINER_TYPE
+///         1 = PS_CONTAINER_PUBLIC
+///         2 = PS_CONTAINER_CHARACTER
+///         3 = PS_CONTAINER_CDKEY
+const int PS_CONTAINER_ITEM_TYPE_DEFAULT = PS_CONTAINER_CHARACTER;
 
 /// @brief Determines whether the player's inventory window will be opened
 ///     when a container is opened. 
