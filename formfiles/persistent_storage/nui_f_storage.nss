@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.2.0";
+const string FORM_VERSION = "0.2.1";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -1096,6 +1096,8 @@ void ps_OnContainerHeartbeat(object oContainer)
 
 void ps_OpenContainer(object oPC, object oContainer = OBJECT_INVALID)
 {
+    //ps_OnFormClose();
+
     if (oContainer == OBJECT_INVALID)
         oContainer = oPC == OBJECT_SELF ? GetLocalObject(oPC, NUI_OBJECT) : OBJECT_SELF;
     SetLocalObject(oPC, PS_CONTAINER, oContainer);
@@ -1103,8 +1105,11 @@ void ps_OpenContainer(object oPC, object oContainer = OBJECT_INVALID)
     if (ps_GetAccessType(oPC) == PS_ACCESS_CONTENTIOUS)
         AddListObject(oContainer, oPC, PS_USERS, TRUE);
 
-    DelayCommand(2.0, ps_OnPCHeartbeat(oPC, oContainer));
-    DelayCommand(2.0, ps_OnContainerHeartbeat(oContainer));
+    if (GetObjectType(oContainer) != OBJECT_TYPE_ITEM)
+    {
+        DelayCommand(2.0, ps_OnPCHeartbeat(oPC, oContainer));
+        DelayCommand(2.0, ps_OnContainerHeartbeat(oContainer));
+    }
 
     NUI_DisplayForm(oPC, FORM_ID, ps_GetMaxGold(oPC) > -2 ? "default" : "noGold");
 }
