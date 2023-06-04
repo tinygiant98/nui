@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.3.0";
+const string NUI_VERSION = "0.4.0";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -1266,9 +1266,6 @@ string nui_DecrementPath(int n = 1)
 //                                 Database
 // -----------------------------------------------------------------------------
 
-string sQuery;
-sqlquery sql;
-
 void nui_BeginTransaction()  {SqlStep(SqlPrepareQueryObject(GetModule(), "BEGIN TRANSACTION;"));}
 void nui_CommitTransaction() {SqlStep(SqlPrepareQueryObject(GetModule(), "COMMIT TRANSACTION;"));}
 
@@ -1285,14 +1282,14 @@ sqlquery nui_PrepareQuery(string sQuery, int bForceModule = FALSE)
 
 void nui_InitializeDatabase()
 {
-    sQuery = "DROP TABLE IF EXISTS nui_forms;";
+    string sQuery = "DROP TABLE IF EXISTS nui_forms;";
     SqlStep(nui_PrepareQuery(sQuery));
     SqlStep(nui_PrepareQuery(sQuery, TRUE));
 
     sQuery = "CREATE TABLE IF NOT EXISTS nui_forms (" +
         "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
         "form TEXT NOT NULL UNIQUE, " +
-        "definition TEXT);";
+        "definition BLOB);";
     SqlStep(nui_PrepareQuery(sQuery));
     SqlStep(nui_PrepareQuery(sQuery, TRUE));
 
@@ -1317,11 +1314,11 @@ void nui_InitializeDatabase()
 
 void nui_SaveForm(string sID, string sJson)
 {
-    sQuery = "INSERT INTO nui_forms (form, definition) " +
+    string sQuery = "INSERT INTO nui_forms (form, definition) " +
         "VALUES (@form, json(@json)) " +
         "ON CONFLICT (form) DO UPDATE SET " +
             "definition = json(@json);";
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sID);
     SqlBindString(sql, "@json", sJson);
     SqlStep(sql);
@@ -1329,7 +1326,7 @@ void nui_SaveForm(string sID, string sJson)
 
 void nui_DeleteForm(string sID)
 {
-    sql = nui_PrepareQuery("DELETE FROM nui_forms WHERE form = @form;");
+    sqlquery sql = nui_PrepareQuery("DELETE FROM nui_forms WHERE form = @form;");
     SqlBindString(sql, "@form", sID);
     SqlStep(sql);
 }
@@ -1339,9 +1336,9 @@ void nui_CopyDefinitions(string sTable = "nui_forms")
     if (!NUI_USE_CAMPAIGN_DATABASE)
         return;
 
-    sQuery = "WITH forms AS (SELECT json_object('form', form, 'definition', definition) AS f " +
+    string sQuery = "WITH forms AS (SELECT json_object('form', form, 'definition', definition) AS f " +
              "FROM " + sTable + ") SELECT json_group_array(json(f)) FROM forms;";
-    sql = nui_PrepareQuery(sQuery, TRUE);
+    sqlquery sql = nui_PrepareQuery(sQuery, TRUE);
     json jForms = SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
 
     if (jForms == JsonNull())
@@ -1367,10 +1364,10 @@ void nui_CopyDefinitions(string sTable = "nui_forms")
 
 string nui_GetDefinitionValue(string sFormID, string sPath = "")
 {
-    sQuery = "SELECT json_extract(definition, '$" + (sPath == "" ? "" : "." + sPath) + "') " +
+    string sQuery = "SELECT json_extract(definition, '$" + (sPath == "" ? "" : "." + sPath) + "') " +
         "FROM nui_forms WHERE form = @form;";
     
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
     return SqlStep(sql) ? SqlGetString(sql, 0) : "";
 }
@@ -1421,10 +1418,10 @@ void nui_SetObject(string sProperty, string sValue, string sType = "")
         sPath = nui_GetSubstitutedPath("#");
     }
 
-    sQuery = "UPDATE nui_forms SET definition = (SELECT json_set(definition, '" + sPath + 
+    string sQuery = "UPDATE nui_forms SET definition = (SELECT json_set(definition, '" + sPath + 
         "', json(@value)) FROM nui_forms WHERE form = @form) WHERE form = @form;";
 
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
     SqlBindString(sql, "@value", sValue);
     SqlStep(sql);
@@ -1741,6 +1738,7 @@ void NUI_AddCheckbox(string sID = "")      {nui_CreateControl("check",         s
 void NUI_AddColorPicker(string sID = "")   {nui_CreateControl("color_picker",  sID);}
 void NUI_AddCommandButton(string sID = "") {nui_CreateControl("button",        sID);}
 void NUI_AddFloatSlider(string sID = "")   {nui_CreateControl("sliderf",       sID);}
+void NUI_AddProperty(string sID = "")      {nui_CreateControl("propertyi",     sID);}
 void NUI_AddImage(string sID = "")         {nui_CreateControl("image",         sID);}
 void NUI_AddImageButton(string sID = "")   {nui_CreateControl("button_image",  sID);}
 void NUI_AddIntSlider(string sID = "")     {nui_CreateControl("slider",        sID);}
@@ -1981,6 +1979,7 @@ void NUI_BindCollapsible(string sBind, int bWatch = FALSE)         {nui_SetPrope
 void NUI_BindGeometry(string sBind, int bWatch = FALSE)            {nui_SetProperty("geometry",          nuiBind(sBind, bWatch));}
 void NUI_BindResizable(string sBind, int bWatch = FALSE)           {nui_SetProperty("resizable",         nuiBind(sBind, bWatch));}
 void NUI_BindTitle(string sBind, int bWatch = FALSE)               {nui_SetProperty("title",             nuiBind(sBind, bWatch));}
+void NUI_BindTitleColor(string sBind, int bWatch = FALSE)          {nui_SetProperty("foreground_color",  nuiBind(sBind, bWatch));}
 void NUI_BindTransparent(string sBind, int bWatch = FALSE)         {nui_SetProperty("transparent",       nuiBind(sBind, bWatch));}
 
 // Binds -----------------------------------------------------------------------
@@ -2006,11 +2005,15 @@ void NUI_BindPoints(string sBind, int bWatch = FALSE)              {nui_SetPrope
 void NUI_BindRadius(string sBind, int bWatch = FALSE)              {nui_SetProperty("radius",            nuiBind(sBind, bWatch));}
 void NUI_BindRectangle(string sBind, int bWatch = FALSE)           {nui_SetProperty("rect",              nuiBind(sBind, bWatch));}
 void NUI_BindRegion(string sBind, int bWatch = FALSE)              {nui_SetProperty("image_region",      nuiBind(sBind, bWatch));}
+void NUI_BindRotation(string sBind, int bWatch = FALSE)            {nui_SetProperty("rotate",            nuiBind(sBind, bWatch));}
 void NUI_BindRowCount(string sBind, int bWatch = FALSE)            {nui_SetProperty("row_count",         nuiBind(sBind, bWatch));}
+void NUI_BindScale(string sBind, int bWatch = FALSE)               {nui_SetProperty("scale",             nuiBind(sBind, bWatch));}
 void NUI_BindScissor(string sBind, int bWatch = FALSE)             {nui_SetProperty("draw_list_scissor", nuiBind(sBind, bWatch));}
+void NUI_BindShear(string sBInd, int bWatch = FALSE)               {nui_SetProperty("shear",             nuiBind(sBInd, bWatch));}
 void NUI_BindStartPoint(string sBind, int bWatch = FALSE)          {nui_SetProperty("a",                 nuiBind(sBind, bWatch));}
 void NUI_BindStep(string sBind, int bWatch = FALSE)                {nui_SetProperty("step",              nuiBind(sBind, bWatch));}
 void NUI_BindText(string sBind, int bWatch = FALSE)                {nui_SetProperty("text",              nuiBind(sBind, bWatch));}
+void NUI_BindTranslation(string sBInd, int bWatch = FALSE)         {nui_SetProperty("translate",         nuiBind(sBInd, bWatch));}
 void NUI_BindType(string sBind, int bWatch = FALSE)                {nui_SetProperty("type",              nuiBind(sBind, bWatch));}
 void NUI_BindValue(string sBind, int bWatch = FALSE)               {nui_SetProperty("value",             nuiBind(sBind, bWatch));}
 void NUI_BindVerticalAlignment(string sBind, int bWatch = FALSE)   {nui_SetProperty("text_valign",       nuiBind(sBind, bWatch));}
@@ -2084,6 +2087,7 @@ void NUI_SetAcceptsInput(int bAcceptsInput = TRUE)       {nui_SetProperty("accep
 void NUI_SetClosable(int bClosable = TRUE)               {nui_SetProperty("closable",               nuiBool(bClosable));}
 void NUI_SetCollapsible(int bCollapsible = TRUE)         {nui_SetProperty("collapsed",              nuiBool(bCollapsible));}
 void NUI_SetTitle(string sTitle)                         {nui_SetProperty("title",                  nuiString(sTitle));}
+void NUI_SetTitleColor(string sColor)                    {nui_SetProperty("foreground_color",       sColor);}
 void NUI_SetTOCTitle(string sTitle)                      {nui_SetProperty("toc_title",              nuiString(sTitle));}
 void NUI_SetDefinedGeometry(string sGeometry)            {nui_SetProperty("geometry",               sGeometry);}
 void NUI_SetGeometry(float x, float y, float w, float h) {nui_SetProperty("geometry",               NUI_DefineRectangle(x, y, w, h));}
@@ -2120,14 +2124,18 @@ void NUI_SetPoints(string sPoints)                            {nui_SetProperty("
 void NUI_SetRadius(float r)                                   {nui_SetProperty("radius",                 nuiFloat(r));}
 void NUI_SetRectangle(string sRectangle)                      {nui_SetProperty("rect",                   sRectangle);}
 void NUI_SetRegion(string sRegion)                            {nui_SetProperty("image_region",           sRegion);}
+void NUI_SetRotation(float fAngle)                            {nui_SetProperty("rotate",                 nuiFloat(fAngle));}
 void NUI_SetRowCount(int nRowCount)                           {nui_SetProperty("row_count",              nuiInt(nRowCount));}
 void NUI_SetRowHeight(float fRowHeight)                       {nui_SetProperty("row_height",             nuiFloat(fRowHeight));}
+void NUI_SetScale(float x, float y)                           {nui_SetProperty("scale",                  NUI_DefinePoint(x, y));}
 void NUI_SetScissor(int bScissor)                             {nui_SetProperty("draw_list_scissor",      nuiBool(bScissor));}
 void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO) {nui_SetProperty("scrollbars",             nuiInt(nScrollbars));}
+void NUI_SetShear(float x, float y)                           {nui_SetProperty("shear",                  NUI_DefinePoint(x, y));}
 void NUI_SetStatic()                                          {nui_SetProperty("type",                   nuiString("text"));}
 void NUI_SetTemplateVariable(int bVariable)                   {nui_SetProperty("NUI_TEMPLATE_VARIABLE",  nuiBool(bVariable));}
 void NUI_SetTemplateWidth(float fWidth)                       {nui_SetProperty("NUI_TEMPLATE_WIDTH",     nuiFloat(fWidth));}
 void NUI_SetText(string sText)                                {nui_SetProperty("text",                   nuiString(sText));}
+void NUI_SetTranslation(float x, float y)                     {nui_SetProperty("translate",              NUI_DefinePoint(x, y));}
 void NUI_SetValue(string sValue)                              {nui_SetProperty("value",                  sValue);}
 void NUI_SetVisible(int bVisible = TRUE)                      {nui_SetProperty("visible",                nuiBool(bVisible));}
 void NUI_SetWidth(float fWidth)                               {nui_SetProperty("width",                  nuiFloat(fWidth));}
@@ -2197,6 +2205,7 @@ void NUI_SetResref(string sResref)
     if      (sType == "button_image") sProperty = "label";
     else if (sType == "image")        sProperty = "value";
     else if (sType == "movieplayer")  sProperty = "value";
+    else if (sType == "button")       sProperty = "value";
     else                              sProperty = "image";
 
     nui_SetProperty(sProperty, nuiString(sResref));
@@ -2244,7 +2253,7 @@ void NUI_SetChartSeries(int nType, string sLegend, string sColor, string sData)
 
 json nui_GetForm(string sFormID, int bForceModule = FALSE)
 {
-    sql = nui_PrepareQuery("SELECT definition FROM nui_forms WHERE form = @form;", bForceModule);    
+    sqlquery sql = nui_PrepareQuery("SELECT definition FROM nui_forms WHERE form = @form;", bForceModule);    
     SqlBindString(sql, "@form", sFormID);
 
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
@@ -2287,21 +2296,21 @@ int nui_ExecuteFunction(string sFile, string sFunction, object oTarget = OBJECT_
 
 json nui_GetWatchedBinds(string sFormID)
 {
-    sQuery = "SELECT json_group_array(value) FROM (SELECT DISTINCT value FROM nui_forms, " +
+    string sQuery = "SELECT json_group_array(value) FROM (SELECT DISTINCT value FROM nui_forms, " +
         "json_tree(nui_forms.definition, '$') WHERE key = 'bind' AND json_extract(" +
         "nui_forms.definition, path || '.watch') = true AND form = @form);";
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonArray();
 }
 
 json NUI_GetOrphanBinds(string sFormID)
 {
-    sQuery = "SELECT json_group_array(value) FROM (SELECT DISTINCT value FROM nui_forms, " +
+    string sQuery = "SELECT json_group_array(value) FROM (SELECT DISTINCT value FROM nui_forms, " +
         "json_tree(nui_forms.definition, '$') WHERE key = 'bind' and form = @form EXCEPT " +
         "SELECT key FROM (SELECT DISTINCT key FROM nui_forms, json_each(nui_forms.definition, " +
         "'$.profiles.default') AS value WHERE form = @form));";
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonArray();
 }
@@ -2318,10 +2327,10 @@ string nui_GetProfile()                {return GetLocalString(nui_GetDataObject(
 void nui_SetProfileBind(string sProperty, string sJson = "")
 {
     string sPath = "$.profiles." + nui_GetProfile() + "." + sProperty;
-    sQuery = "UPDATE nui_forms SET definition = (SELECT json_set(definition, '" + sPath + 
+    string sQuery = "UPDATE nui_forms SET definition = (SELECT json_set(definition, '" + sPath + 
         "', json(@json)) FROM nui_forms WHERE form = @form) WHERE form = @form;";
 
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", nui_GetFormID());
     SqlBindString(sql, "@json", sJson);
     SqlStep(sql);
@@ -2331,12 +2340,12 @@ void nui_SetProfileBind(string sProperty, string sJson = "")
 ///     of potential recursion, just copy the base profile and go from there.
 void nui_CopyProfile(string sBase)
 {
-    sQuery = "WITH base AS (SELECT value FROM nui_forms, json_tree(nui_forms.definition, " +
+    string sQuery = "WITH base AS (SELECT value FROM nui_forms, json_tree(nui_forms.definition, " +
         "'$.profiles') WHERE key = @base AND form = @form) UPDATE nui_forms SET definition = " +
         "(SELECT json_set(definition, '$.profiles." + nui_GetProfile() + "', json_extract(base.value, '$')) " +
         "FROM nui_forms, base WHERE form = @form) WHERE form = @form;";
 
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@base", sBase);
     SqlBindString(sql, "@form", nui_GetFormID());
     SqlStep(sql);
@@ -2346,13 +2355,13 @@ void nui_CopyProfile(string sBase)
 ///     by sProfile.
 json nui_GetProfileBinds(string sFormID, string sProfile = "")
 {
-    sQuery = "WITH def AS (SELECT value FROM nui_forms, json_tree(nui_forms.definition, " +
+    string sQuery = "WITH def AS (SELECT value FROM nui_forms, json_tree(nui_forms.definition, " +
         "'$.profiles') WHERE key = 'default' AND form = @form), sel AS (SELECT " +
         "COALESCE((SELECT value from nui_forms, json_tree(nui_forms.definition, '$.profiles') " +
         "WHERE key = @profile AND form = @form), json_object()) value FROM nui_forms WHERE form = @form) " +
         "SELECT json_patch(json_extract(def.value, '$'), json_extract(sel.value, '$')) FROM def, sel;";
 
-    sql = nui_PrepareQuery(sQuery);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
     SqlBindString(sql, "@profile", sProfile);
     return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonObject();    
@@ -2363,6 +2372,7 @@ void nui_SetProfileBinds(object oPC, string sFormID, string sProfile)
 {
     json jProfile = nui_GetProfileBinds(sFormID, sProfile);
     json jKeys    = JsonObjectKeys(jProfile);
+
     int n; for (n; n < JsonGetLength(jKeys); n++)
     {
         string sKey = JsonGetString(JsonArrayGet(jKeys, n));
@@ -2513,7 +2523,7 @@ int nui_HandleInspectionEvents(int nEventID = -1)
 
     if (ed.sEvent == "close")
     {
-        sql = nui_PrepareQuery("DELETE FROM nui_fi_data WHERE nToken = @token;");
+        sqlquery sql = nui_PrepareQuery("DELETE FROM nui_fi_data WHERE nToken = @token;");
         SqlBindInt(sql, "@token", NuiGetEventWindow());
         SqlStep(sql);
         return -1;
@@ -2582,7 +2592,6 @@ void nui_HandleNUIEvents()
     if (sEvent == "open")
     {
         string sProfile  = JsonGetString(JsonObjectGet(jUserData, "profile"));
-
         nui_SetProfileBinds(oPC, sFormID, sProfile);
         nui_SetWatchedBinds(oPC, sFormID);
         nui_ExecuteFunction(sFormfile, NUI_BIND, oPC);
@@ -2592,8 +2601,6 @@ void nui_HandleNUIEvents()
     
     if (nInspectorEventID != -1)
         nui_HandleInspectionEvents(nInspectorEventID);
-
-
 }
 
 // -----------------------------------------------------------------------------
@@ -2626,6 +2633,25 @@ int NUI_GetIsFormOpen(object oPC, string sFormID)
     return NuiFindWindow(oPC, sFormID) > 0;
 }
 
+void NUI_DumpEventData(struct NUIEventData ed)
+{
+    string sDump =
+        HexColorString("NUI Event Data Dump:", COLOR_CYAN) +
+        "\n  -> " + HexColorString("PC: ", COLOR_GREEN_LIGHT) + HexColorString(GetName(ed.oPC), COLOR_ORANGE_LIGHT) +
+        "\n  -> " + HexColorString("Form ID: ", COLOR_GREEN_LIGHT) + HexColorString(ed.sFormID, COLOR_ORANGE_LIGHT) +
+        "\n  -> " + HexColorString("Form Token: ", COLOR_GREEN_LIGHT) + HexColorString(IntToString(ed.nToken), COLOR_ORANGE_LIGHT) +
+        "\n  -> " + HexColorString("NUI Event: ", COLOR_GREEN_LIGHT) + HexColorString(ed.sEvent, COLOR_ORANGE_LIGHT) +
+        (ed.sEvent == "watch" ?
+            "\n  -> " + HexColorString("Watched Bind: ", COLOR_GREEN_LIGHT) + HexColorString(ed.sControlID, COLOR_ORANGE_LIGHT) +
+            "\n  -> " + HexColorString("Watched Bind Value: ", COLOR_GREEN_LIGHT) + 
+                        HexColorString(JsonDump(NuiGetBind(ed.oPC, ed.nToken, ed.sControlID)), COLOR_ORANGE_LIGHT) :
+            "\n  -> " + HexColorString("Control ID: ", COLOR_GREEN_LIGHT) + HexColorString(ed.sControlID, COLOR_ORANGE_LIGHT)) +
+        (ed.nIndex > -1 ?
+            "\n  -> " + HexColorString("Control Array Index: ", COLOR_GREEN_LIGHT) + HexColorString(IntToString(ed.nIndex), COLOR_ORANGE_LIGHT) : "") +
+        "\n  -> " + HexColorString("Event Payload: ", COLOR_GREEN_LIGHT) + HexColorString(JsonDump(ed.jPayload), COLOR_ORANGE_LIGHT);
+    NUI_Debug(sDump);        
+}
+
 struct NUIEventData NUI_GetEventData()
 {
     struct NUIEventData ed;
@@ -2643,11 +2669,11 @@ struct NUIEventData NUI_GetEventData()
 
 void NUI_SubscribeEvent(int nEvent)
 {
-    sQuery = "UPDATE nui_forms SET definition = (SELECT json_set(definition, " +
+    string sQuery = "UPDATE nui_forms SET definition = (SELECT json_set(definition, " +
         "'$.event_data[#]', json(@value)) FROM nui_forms WHERE form = @form) " +
         "WHERE form = @form;";
     
-    sql = nui_PrepareQuery(sQuery, TRUE);
+    sqlquery sql = nui_PrepareQuery(sQuery, TRUE);
     SqlBindString(sql, "@form", nui_GetFormID());
     SqlBindInt   (sql, "@value", nEvent);
     SqlStep(sql);
@@ -2657,14 +2683,17 @@ void NUI_HandleEvents(object oPC = OBJECT_SELF)
 {
     int nEvent = GetCurrentlyRunningEvent();
 
+    if (nEvent == EVENT_SCRIPT_MODULE_ON_MODULE_LOAD)
+        NUI_Initialize();
+
     if (nEvent == EVENT_SCRIPT_MODULE_ON_NUI_EVENT)
         nui_HandleNUIEvents();
     else
     {
-        sQuery = "SELECT json_group_array(json_extract(nui_forms.definition, '$.formfile')) " +
+        string sQuery = "SELECT json_group_array(json_extract(nui_forms.definition, '$.formfile')) " +
             "FROM nui_forms WHERE EXISTS (SELECT 1 FROM json_each(nui_forms.definition, " +
             "'$.event_data') WHERE value = @event);";
-        sql = nui_PrepareQuery(sQuery);
+        sqlquery sql = nui_PrepareQuery(sQuery);
         SqlBindInt(sql, "@event", nEvent);
 
         SetLocalObject(oPC, NUI_OBJECT, OBJECT_SELF);
