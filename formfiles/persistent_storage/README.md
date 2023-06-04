@@ -14,6 +14,9 @@ NUI >= 0.2.3
 
 ### Version History:
 
+## 0.2.1:
+- Move global `sQuery` and `sql` variables into local scope to prevent conflicts with custom user formfiles.
+
 ## 0.2.0:
 - BREAKING CHANGE:  This modification requires an addition to `nui_c_storage`, so be sure to copy over
 all of your current configuration values to the new `nui_c_storage`.

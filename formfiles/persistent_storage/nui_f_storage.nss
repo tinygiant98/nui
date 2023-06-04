@@ -6,7 +6,7 @@
 
 const string FORM_ID      = "persistent_storage";
 const string PS_DATABASE  = "nui_ps_data";
-const string FORM_VERSION = "0.2.1";
+const string FORM_VERSION = "0.2.2";
 
 const int PS_ACCESS_EXCLUSIVE    = 1;
 const int PS_ACCESS_CONTENTIOUS  = 2;
@@ -254,10 +254,10 @@ int ps_CountStoredGold(object oPC)
     int nType = ps_GetContainerType(oPC);
     string sWhere  = (nType == PS_CONTAINER_PUBLIC ? "" : " AND owner GLOB @owner");
 
-    sQuery = 
+    string sQuery = 
         "SELECT SUM(item_stacksize) FROM " + ps_GetTableName(oPC) + " " +
         "WHERE item_uuid == 'gold'" + sWhere + ";";
-    sql = ps_PrepareQuery(sQuery);
+    sqlquery sql = ps_PrepareQuery(sQuery);
     
     if      (nType == PS_CONTAINER_CHARACTER) SqlBindString(sql, "@owner", ps_GetOwner(oPC, "uuid") + ":*");
     else if (nType == PS_CONTAINER_CDKEY)     SqlBindString(sql, "@owner", "*:" + ps_GetOwner(oPC, "cdkey"));
@@ -400,12 +400,12 @@ int ps_WithdrawGold(object oPC, int nToken, int nGold)
         return ps_UpdateGold(oPC, nToken, -nGold);
 
     string sTable = ps_GetTableName(oPC);
-    sQuery =
+    string sQuery =
         "DELETE FROM " + sTable + " WHERE ROWID IN (SELECT ROWID FROM " + sTable + " t1 " +
         "WHERE (SELECT SUM(t2.item_stacksize) FROM " + sTable + " t2 WHERE t1.item_stacksize >= " +
         "t2.item_stacksize) <= @target ORDER BY t1.item_stacksize ASC) AND item_uuid = 'gold' " +
         "RETURNING item_stacksize;";
-    sql = ps_PrepareQuery(sQuery);
+    sqlquery sql = ps_PrepareQuery(sQuery);
     SqlBindInt(sql, "@target", nGold);
 
     int nRemoved, nRecords;
