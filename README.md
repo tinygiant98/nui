@@ -34,9 +34,21 @@
 
 ## Requires
 
-NWN >= 8193.34.1
+NWN >= 8193.35
 
 ## Change Log
+
+*** 0.4.0 ***
+- Breaking Change -> NWN 8193.35 is now the minimum requried game version.
+- Add automatic handling for NUI_Initialize().  The only call required during the `OnModuleLoad` event is not `NUI_HandleEvents()`.
+- Move `sQuery` and `sql` global variables into local scope to prevent conflict with custom user forms.
+- Add `NUI_DumpEventData()` to allow event data to be dumped through `NUI_Debug()` as defined in `nui_c_config.nss`.
+- Modify `NUI_SetResref()` to automatically assign image resrefs for image buttons for future growth.
+- Add `NUI_Set|BindRotation()`, `NUI_Set|BindScale()`, `NUI_Set|BindShear()` and `NUI_Set|BindTranslation()` as future NUI properties.
+- Add `NUI_Set|BindTitleColor()` to support title coloring added in .35.
+- Add `NUI_AddProperty()` to support future widget addition to NUI.
+- 
+
 
 *** 0.3.0 ***
 - Add organic form inspection capability.  This does nothing without the `nui_f_inspector` formfile.  This is a breaking change because of an addition to `nui_c_config`, so the base NUI system minor version has been bumped.  See `nui_c_config` for appropriate configuration and `nui_f_inspector`'s readme for usage.
