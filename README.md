@@ -34,9 +34,18 @@
 
 ## Requires
 
-NWN >= 8193.35
+NWN:EE >= 8193.35
 
 ## Change Log
+
+*** 0.4.1 ***
+- Modified `NUI_GetKey()` and `NUI_GetValue()` to use regex instead of character looping.
+- Added `nNth` parameter to `NUI_GetValue()` to allow for getting the nNth value in a key:value:value... list.  nNth = 1 retrieves the first value.
+- Added `NUI_GetVersions()` which returns the current version of `nui_i_main.nss` and, optionally, the versions all forms loaded into the system.
+- Fixed grammatical errors in prototype comments.
+- Removed all remaining .34 shims.
+- Added prototypes for `NUI_DumpEventData()`, `NUI_GetKey()`, `NUI_GetValue()`.
+- Various minor efficiency/readability improvements (drive-by formatting).
 
 *** 0.4.0 ***
 - Breaking Change -> NWN 8193.35 is now the minimum requried game version.
@@ -47,8 +56,6 @@ NWN >= 8193.35
 - Add `NUI_Set|BindRotation()`, `NUI_Set|BindScale()`, `NUI_Set|BindShear()` and `NUI_Set|BindTranslation()` as future NUI properties.
 - Add `NUI_Set|BindTitleColor()` to support title coloring added in .35.
 - Add `NUI_AddProperty()` to support future widget addition to NUI.
-- 
-
 
 *** 0.3.0 ***
 - Add organic form inspection capability.  This does nothing without the `nui_f_inspector` formfile.  This is a breaking change because of an addition to `nui_c_config`, so the base NUI system minor version has been bumped.  See `nui_c_config` for appropriate configuration and `nui_f_inspector`'s readme for usage.

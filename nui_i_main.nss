@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.0";
+const string NUI_VERSION = "0.4.1";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -65,7 +65,6 @@ const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
-// TODO remove upon debug completion
 const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
@@ -117,6 +116,8 @@ string nuiNull();
 
 /// @brief Must be called during the module load process.  Initializes the
 ///     required nui database tables and loads all available formfiles.
+///     Automatically called by the system during the OnModuleLoad event
+///     if not specifically called prior.
 void NUI_Initialize();
 
 /// @brief Creates a form template with all required form properties set to
@@ -129,7 +130,7 @@ void NUI_Initialize();
 ///         resizable:      true
 ///         title:          bind:"title"
 ///         transparent:    false
-/// @param sID FormID.
+/// @param sID Form ID.
 /// @param sVersion A local version set into the form's json structure as
 ///     "local_version".  This is different than the nui system's required
 ///     version, which should never be changed.
@@ -155,7 +156,7 @@ string NUI_DefinePoint(float x, float y);
 /// @param y2 End point y-coordinate.
 /// @returns A json-parseable string representing an array of coordinates
 ///     that can be used in NUI_DrawLine().
-///     [x1, y1, x2, y2]
+///     [x1.x, y1.y, x2.x, y2.y]
 string NUI_GetLinePoints(float x1, float y1, float x2, float y2);
 
 /// @brief Add a single coordinate set to an empty or existing coordinate array.
@@ -165,7 +166,7 @@ string NUI_GetLinePoints(float x1, float y1, float x2, float y2);
 /// @param y Y-coordinate.
 /// @returns A json-parseable string representing an array of coordinates
 ///     that can be used in NUI_DrawLine().
-///     [..., x, y]
+///     [..., x.x, y.y]
 string NUI_AddLinePoint(string sPoints, float x, float y);
 
 /// @brief Define an nui-usable color vector via rgba values.
@@ -202,7 +203,7 @@ string NUI_DefineRandomColor();
 /// @param w Width.
 /// @param h Height.
 /// @returns A json-parseable string representing a rectangular region.
-///     {"x":x, "y":y, "w":w, "h":h}
+///     {"x":x.x, "y":y.y, "w":w.w, "h":h.h}
 string NUI_DefineRectangle(float x, float y, float w, float h);
 
 /// @brief Get an array of rectangle corner coordinates.
@@ -212,7 +213,7 @@ string NUI_DefineRectangle(float x, float y, float w, float h);
 /// @param h Height.
 /// @returns A json-parseable string representing an array of coordinates
 ///     that can be used in NUI_DrawLine.
-///     [x, y, x+w, y, x+w, y+h, x, y+h, x, y]
+///     [x.x, y.y, x.x+w.w, y.y, x.x+w.w, y.y+h.h, x.x, y.y+h.h, x.x, y.y]
 string NUI_GetRectanglePoints(float x, float y, float w, float h);
 
 /// @brief Get an array of rectangle corner coordinates.
@@ -220,7 +221,7 @@ string NUI_GetRectanglePoints(float x, float y, float w, float h);
 ///     region as returned by NUI_DefineRectangle().
 /// @returns A json-parseable string representing an array of coordinates
 ///     that can be used in NUI_DrawLine.
-///     [x, y, x+w, y, x+w, y+h, x, y+h, x, y]
+///     [x.x, y.y, x.x+w.w, y.y, x.x+w.w, y.y+h.h, x.x, y.y+h.h, x.x, y.y]
 string NUI_GetDefinedRectanglePoints(string sRectangle);
 
 /// @brief Define a circle based on coordinates and radius.
@@ -229,6 +230,7 @@ string NUI_GetDefinedRectanglePoints(string sRectangle);
 /// @param r Radius.
 /// @returns A json-parseable string representing a rectangular region
 ///     that can be used in NUI_DrawDefinedCircle().
+///     [x.x-r.r, y.y-r.r, 2*r.r, 2*r.r]
 string NUI_DefineCircle(float x, float y, float r);
 
 /// @brief Add a column to the form or control group.
@@ -927,7 +929,7 @@ void NUI_DefineForms(string sFormfile = "");
 
 /// @brief Display an NUI form.
 /// @param oPC Client to display the form on.
-/// @param sFormID ID of the for to display.
+/// @param sFormID ID of the form to display.
 /// @param sProfile Optional form profile.
 /// @returns Form's token as assigned by the game engine.
 int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "default");
@@ -937,7 +939,7 @@ int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "default");
 /// @param sFormID ID of the form to close.
 void NUI_CloseForm(object oPC, string sFormID);
 
-/// @brief Display a subform onto control group element or form root.
+/// @brief Display a subform onto a control group element or form root.
 /// @param oPC Client to display the subform on.
 /// @param sFormID Form ID.
 /// @param sElementID Element ID to replace.
@@ -965,7 +967,7 @@ void NUI_SetProfileBindJ(string sBind, json jValue);
 
 /// @brief Set multiple profile binds to a single value.
 /// @param sBinds Comma-delimited list of bind names.
-/// @param sJson Json-parseable string representing the binds' profile value.
+/// @param sJson Json-parseable string representing the bind's profile value.
 void NUI_SetProfileBinds(string sBinds, string sJson);
 
 /// @brief Set a form's profile.
@@ -995,7 +997,7 @@ void NUI_SetBindJ(object oPC, string sFormID, string sBind, json jValue);
 /// @param bWatch TRUE to set the watch, FALSE to remove it.
 void NUI_SetBindWatch(object oPC, string sFormID, string sBind, int bWatch = TRUE);
 
-/// @brief Retireve a bind value.
+/// @brief Retrieve a bind value.
 /// @param oPC Player to set the bind for.
 /// @param sFormID Form ID.
 /// @param sBind Bind/property name.
@@ -1012,7 +1014,7 @@ void NUI_CreateLayout();
 /// @brief Get the temporary layout created with NUI_CreateLayout().
 /// @note The json-parseable string can be inserted directly into the current layout
 ///     or used in a layout replacement (tabs).  This data will not, however, be
-///     saved to the database, so this function and NUI_CreateLayout(). are
+///     saved to the database, so this function and NUI_CreateLayout() are
 ///     meant for dynamic form building.
 string NUI_GetLayout();
 
@@ -1021,6 +1023,15 @@ string NUI_GetLayout();
 /// @param sFormID The form's ID.
 /// @returns TRUE if oPC has sFormID open, FALSE otherwise.
 int NUI_GetIsFormOpen(object oPC, string sFormID);
+
+/// @brief Sends relevant event data to NUI_Debug().
+/// @param ed Event data structure retrieved from NUI_GetEventData().
+void NUI_DumpEventData(struct NUIEventData ed);
+
+/// @brief Retrieves versioning information.
+/// @param bIncludeForms If TRUE, will include the versions for all forms
+///     loaded into the module.
+string NUI_GetVersions(int bIncludeForms = TRUE);
 
 /// @brief Save all of sFormID's bind values to a local variable.
 /// @param oPC Player associated with sFormID.
@@ -1032,39 +1043,35 @@ void NUI_SaveBindState(object oPC, string sFormID);
 /// @param sFormID Form ID to restore bind values for.
 void NUI_RestoreBindState(object oPC, string sFormID);
 
-/// @brief Returns all events data as a struct NUIEventData.
+/// @brief Returns all event data as a struct NUIEventData.
 /// @note Only valid within HandleNUIEvents() event handler.
 struct NUIEventData NUI_GetEventData();
 
-/// @note Temporary prototypes to allow .35 function to work when .35 is not installed.
-/// TODO Remove when .35 is stable.
-//json RegExpMatch(string sRegExp, string sValue, int nSyntaxFlags = REGEXP_ECMASCRIPT, int nMatchFlags = REGEXP_FORMAT_DEFAULT);
-//string RegExpReplace(string sRegExp, string sValue, string sReplacement, int nSyntaxFlags = REGEXP_ECMASCRIPT, int nMatchFlags = REGEXP_FORMAT_DEFAULT);
+/// @brief Retrieve the key from a key value pair.
+/// @param sPair A key:value... or key=value... pair.
+/// @note Returns all characters before the first : or =.
+string NUI_GetKey(string sPair);
+
+/// @brief Retrieve the nNth value from a key value series.
+/// @param sPair a key:value:value... or key=:value:value... series.
+string NUI_GetValue(string sPair, int nNth = 1);
 
 // -----------------------------------------------------------------------------
 //                             Public Functions
 //                          Administrative Helpers
 // -----------------------------------------------------------------------------
 
-// TODO Need prototypes
 string NUI_GetKey(string sPair)
 {
-    int nIndex;
-    if ((nIndex = FindSubString(sPair, ":")) == -1)
-        nIndex = FindSubString(sPair, "=");
-
-    if (nIndex == -1) return sPair;
-    else              return GetSubString(sPair, 0, nIndex);
+    json jMatch = RegExpMatch("(.*?)[:=].*", sPair);
+    return JsonGetLength(jMatch) != 2 ? "" : JsonGetString(JsonArrayGet(jMatch, 1));
 }
 
-string NUI_GetValue(string sPair)
+string NUI_GetValue(string sPair, int nNth = 1)
 {
-    int nIndex;
-    if ((nIndex = FindSubString(sPair, ":")) == -1)
-        nIndex = FindSubString(sPair, "=");
-
-    if (nIndex == -1) return "";
-    else              return GetSubString(sPair, ++nIndex, GetStringLength(sPair));
+    string sRegex = "(?:.*?[:=]){" + IntToString(nNth) + "}(.*?)(?:[:=]|$)";
+    json jMatch = RegExpMatch(sRegex, sPair);
+    return JsonGetLength(jMatch) != 2 ? "" : JsonGetString(JsonArrayGet(jMatch, 1));
 }
 
 object nui_GetDataObject() {return GetModule();}
@@ -1073,74 +1080,6 @@ object nui_GetDataObject() {return GetModule();}
 //                             Private Functions
 //                        Build Flags and JSON Pathing
 // -----------------------------------------------------------------------------
-
-// TODO
-/// CUT LINE FOR .35 - Remove below once .35 is stable
-
-string nui_ReplaceSubString(string sString, string sSub, int nStart, int nEnd)
-{
-    int nLength = GetStringLength(sString);
-    if (nStart < 0 || nStart >= nLength || nStart > nEnd)
-        return sString;
-
-    return GetSubString(sString, 0, nStart) + sSub +
-           GetSubString(sString, nEnd + 1, nLength - nEnd);
-}
-
-string nui_SubstituteSubString(string sString, string sToken, string sSub)
-{
-    int nPos;
-    if ((nPos = FindSubString(sString, sToken)) == -1)
-        return sString;
-
-    return nui_ReplaceSubString(sString, sSub, nPos, nPos + GetStringLength(sToken) - 1);
-} 
-
-string nui_SubstituteSubStrings(string sString, string sToken, string sSub)
-{
-    int n;
-    while ((n = FindSubString(sString, sToken)) >= 0)
-        sString = nui_SubstituteSubString(sString, sToken, sSub);
-
-    return sString;
-}
-
-int nui_GetMatchesPattern(string sString, string sPattern)
-{
-    sqlquery q = SqlPrepareQueryObject(GetModule(),
-        "SELECT @string GLOB @pattern;");
-    SqlBindString(q, "@string", sString);
-    SqlBindString(q, "@pattern", sPattern);
-    return SqlStep(q) ? SqlGetInt(q, 0) : FALSE;
-}
-
-string nui_RegExpReplace(string sToken, string sString, string sSub)
-{
-    return nui_SubstituteSubStrings(sString, sToken, sSub);
-}
-
-int nui_RegExpMatch(string sString)
-{
-    return nui_GetMatchesPattern(sString, "*row_template???") || nui_GetMatchesPattern(sString, "*row_template?????");
-}
-
-string nui_RegExpReplaceLast(string sToken, string sString, string sSub)
-{
-    int nCount = GetSubStringCount(sString, sToken);
-    
-    if (nCount)
-    {
-        int nPos = FindSubStringN(sString, sToken, nCount - 1);
-
-        // Need to delete the rest of the path too!
-        return nui_ReplaceSubString(sString, sSub, nPos, nPos + GetStringLength(sString));
-        //return nui_ReplaceSubString(sString, sSub, nPos, nPos + GetStringLength(sToken) - 1);
-    }
-    else
-        return sString;
-}
-
-/// CUT LINE FOR .35 - Remove above once .35 is stable
 
 void nui_ClearVariables()
 {
@@ -1205,17 +1144,10 @@ string nui_GetFormID()                       {return GetLocalString(nui_GetDataO
 void   nui_SetFormfile(string sFormfile)     {SetLocalString(nui_GetDataObject(), "NUI_FORMFILE", sFormfile);}
 string nui_GetFormfile()                     {return GetLocalString(nui_GetDataObject(), "NUI_FORMFILE");}
 
-// TODO When .35 is stable, remove the `nui_` in front of both `nui_RegExpReplace` functions
-// to restore .35 functionality.
-string nui_SubstitutePath(string sSub)       {return nui_SetPath(nui_RegExpReplace("@", nui_GetPath(), sSub));}
-string nui_GetSubstitutedPath(string sSub)   {return nui_RegExpReplace("@", nui_GetPath(), sSub);}
+string nui_SubstitutePath(string sSub)       {return nui_SetPath(RegExpReplace("@", nui_GetPath(), sSub));}
+string nui_GetSubstitutedPath(string sSub)   {return RegExpReplace("@", nui_GetPath(), sSub);}
 
-// TODO Restore `RegExpMatch` when .35 is stable.
-string nui_GetGroupKey()
-{
-    //return JsonGetString(JsonArrayGet(RegExpMatch("\\.(\\w*)\\[(?!.*\\.\\w*\\[)", nui_GetPath()), 1));
-    return nui_RegExpMatch(nui_GetPath()) ? "row_template" : "";
-}
+string nui_GetGroupKey()                     {return JsonGetString(JsonArrayGet(RegExpMatch("\\.(\\w*)\\[(?!.*\\.\\w*\\[)", nui_GetPath()), 1));}
 
 string nui_IncrementPath(string sElement = "", int bForce = FALSE)
 {
@@ -1249,14 +1181,11 @@ string nui_IncrementPath(string sElement = "", int bForce = FALSE)
     return nui_SetPath(sPath);
 }
 
-// TODO Restore .35 functionality
-
 string nui_DecrementPath(int n = 1)
 {
     string sPath;
     while (n-- > 0)
-        sPath = nui_SetPath(nui_RegExpReplaceLast("[#-1]", nui_GetPath(), "[@]"));
-        //sPath = nui_SetPath(RegExpReplace("\\[#-1\\](?!.*\\[#-1\\]).*", nui_GetPath(), "[@]"));
+        sPath = nui_SetPath(RegExpReplace("\\[#-1\\](?!.*\\[#-1\\]).*", nui_GetPath(), "[@]"));
 
     return sPath;
 }
@@ -1344,16 +1273,10 @@ void nui_CopyDefinitions(string sTable = "nui_forms")
     if (jForms == JsonNull())
         return;
 
-    // ->> only works in .35!  D'oh!
-    /*
     sQuery = "INSERT OR REPLACE INTO " + sTable + " (form, definition) " +
         "SELECT value ->> '$.form', value ->> '$.definition' " +
         "FROM (SELECT value FROM json_each(@forms));";
-    */
-    // TODO remove when .35 is live
-    sQuery = "INSERT OR REPLACE INTO " + sTable + " (form, definition) " +
-        "SELECT json_extract(value, '$.form'), json_extract(value, '$.definition') " +
-        "FROM (SELECT value FROM json_each(@forms));";
+    
     sql = nui_PrepareQuery(sQuery);
     SqlBindJson(sql, "@forms", jForms);
     SqlStep(sql);
@@ -1814,7 +1737,6 @@ void NUI_AddOptionGroup(string sID = "")
     nui_SetProperty("elements", "[]");
 }
 
-// TODO prototype
 void NUI_AddToggleGroup(string sID = "")
 {
     nui_CreateControl("tabbar", sID);
@@ -2583,13 +2505,9 @@ void nui_HandleNUIEvents()
     json   jUserData = NuiGetUserData(oPC, NuiGetEventWindow());
     string sFormfile = JsonGetString(JsonObjectGet(jUserData, "formfile"));    
 
-    // TODO integrate form inspection
-    // Should we check for the inspection window, or just save everything?
-    //  Or hide it behind a configuration option?
     int nInspectorEventID = nui_HandleInspectionEvents();
 
-    string sEvent = NuiGetEventType();
-    if (sEvent == "open")
+    if (NuiGetEventType() == "open")
     {
         string sProfile  = JsonGetString(JsonObjectGet(jUserData, "profile"));
         nui_SetProfileBinds(oPC, sFormID, sProfile);
@@ -2650,6 +2568,27 @@ void NUI_DumpEventData(struct NUIEventData ed)
             "\n  -> " + HexColorString("Control Array Index: ", COLOR_GREEN_LIGHT) + HexColorString(IntToString(ed.nIndex), COLOR_ORANGE_LIGHT) : "") +
         "\n  -> " + HexColorString("Event Payload: ", COLOR_GREEN_LIGHT) + HexColorString(JsonDump(ed.jPayload), COLOR_ORANGE_LIGHT);
     NUI_Debug(sDump);        
+}
+
+string NUI_GetVersions(int bIncludeForms = TRUE)
+{
+    int nKey = COLOR_BLUE_SKY_DEEP;
+    int nValue = COLOR_BLUE_LIGHT;
+    string sVersions = HexColorString("NUI System: ", COLOR_ORANGE_LIGHT) + HexColorString(NUI_VERSION, nValue);
+
+    if (bIncludeForms)
+    {
+        string s =
+            "SELECT form || ': ', IIF(json_extract(definition, '$.local_version') = '', " +
+                "'<not specified>', json_extract(definition, '$.local_version')) " +
+            "FROM nui_forms;";
+        sqlquery q = nui_PrepareQuery(s);
+
+        while (SqlStep(q))
+            sVersions += "\n  " + HexColorString(SqlGetString(q, 0), nKey) + HexColorString(SqlGetString(q, 1), nValue);
+    }
+
+    return sVersions;
 }
 
 struct NUIEventData NUI_GetEventData()
