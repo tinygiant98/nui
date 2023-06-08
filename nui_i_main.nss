@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.1";
+const string NUI_VERSION = "0.4.2";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -1218,7 +1218,7 @@ void nui_InitializeDatabase()
     sQuery = "CREATE TABLE IF NOT EXISTS nui_forms (" +
         "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
         "form TEXT NOT NULL UNIQUE, " +
-        "definition BLOB);";
+        "definition NONE);";
     SqlStep(nui_PrepareQuery(sQuery));
     SqlStep(nui_PrepareQuery(sQuery, TRUE));
 
@@ -1391,7 +1391,7 @@ string nui_CreateCanvasTemplate(string sProperties)
 //                          Json-Parseable Creators
 // -----------------------------------------------------------------------------
 
-string nuiString(string s)    {return "\"" + s + "\"";}
+string nuiString(string s)    {return JsonDump(JsonParse("\"" + s + "\""));}
 string nuiInt(int n)          {return IntToString(n);}
 string nuiFloat(float f)      {return FloatToString(f);}
 string nuiBool(int b)         {return b ? "true" : "false";}

@@ -38,6 +38,11 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.4.2 ***
+- Modifed json-building methodology to account for characters present in file encodings other than cp1252.  This should allow any game-supported language to display correctly in forms built with this NUI system.  However, the following two rules must be followed for this to work:
+ - The game must be run in the language associated with the desired encoding (ex: Run the game in Polish)
+ - The scripts must be compiled with the desired encoding set (ex: Compile with file encoding = cp1250)
+
 *** 0.4.1 ***
 - Modified `NUI_GetKey()` and `NUI_GetValue()` to use regex instead of character looping.
 - Added `nNth` parameter to `NUI_GetValue()` to allow for getting the nNth value in a key:value:value... list.  nNth = 1 retrieves the first value.
