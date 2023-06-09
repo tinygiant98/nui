@@ -14,6 +14,9 @@ NUI >= 0.2.3
 
 ### Version History:
 
+## 0.2.2:
+- Modify item name processing to allow proper display of characters containing various accent marks.
+
 ## 0.2.1:
 - Move global `sQuery` and `sql` variables into local scope to prevent conflicts with custom user formfiles.
 

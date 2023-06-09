@@ -597,13 +597,13 @@ void ps_DepositItem(object oPC, object oItem)
     string sQuery =
         "INSERT INTO " + ps_GetTableName(oPC) +
         "(owner, item_uuid, item_name, item_baseitem, item_stacksize, item_iconresref, item_data) " +
-        "VALUES(@owner, @item_uuid, @item_name, @item_baseitem, @item_stacksize, @item_iconresref, @item_data) " +
+        "VALUES(@owner, @item_uuid, @item_name ->> '$', @item_baseitem, @item_stacksize, @item_iconresref, @item_data) " +
         "RETURNING item_uuid;";
     sqlquery sql = ps_PrepareQuery(sQuery);
 
     SqlBindString(sql, "@owner",           ps_GetOwner(oPC));
     SqlBindString(sql, "@item_uuid",       GetObjectUUID(oItem));
-    SqlBindString(sql, "@item_name",       sItemName);
+    SqlBindJson  (sql, "@item_name",       JsonString(sItemName));
     SqlBindInt   (sql, "@item_baseitem",   nItemBaseItem);
     SqlBindInt   (sql, "@item_stacksize",  GetItemStackSize(oItem));
     SqlBindString(sql, "@item_iconresref", ps_GetIconResref(oItem, jItemData, nItemBaseItem));
