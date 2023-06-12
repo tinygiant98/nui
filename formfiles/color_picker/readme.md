@@ -7,6 +7,8 @@
     - [Advanced](#advanced)
     - [Configuration Options](#configuration)
 
+<img src="../../.images/color_picker.png"  width="75%" height="75%">
+
 ### Requires:
 
 NWN >= 8193.34.1

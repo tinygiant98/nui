@@ -10,7 +10,7 @@
 
 const string FORM_ID = "toc";
 const string VERSION = "0.1.2";
-const string IGNORE_FORM_EVENTS = "blur,focus,range,mousedown";
+const string IGNORE_FORM_EVENTS = "blur,focus,range,mousedown,mouseup";
 
 void DefineForm()
 {
@@ -124,10 +124,6 @@ void HandleNUIEvents()
 {
     struct NUIEventData ed = NUI_GetEventData();
 
-    Notice("We're handling nui events!" +
-        "\n  Event: " + ed.sEvent +
-        "\n  Control: " + ed.sControlID);
-
     if (HasListItem(IGNORE_FORM_EVENTS, ed.sEvent))
         return;
 
@@ -158,14 +154,6 @@ void HandleNUIEvents()
         {
             string sFormID = JsonGetString(JsonArrayGet(NuiGetBind(ed.oPC, ed.nToken, "varFormIDs"), ed.nIndex));
             NUI_DisplayForm(ed.oPC, sFormID);
-        }
-    }
-    else if (ed.sEvent == "mouseup")
-    {
-        if (ed.sControlID == "tabgroup")
-        {
-            json jValue = NuiGetBind(ed.oPC, ed.nToken, "tabbar_value");
-            Notice("Tab Bar Value -> " + JsonDump(jValue));
         }
     }
 }

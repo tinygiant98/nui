@@ -7,6 +7,8 @@
     - [Advanced](#advanced)
     - [Configuration Options](#configuration)
 
+<img src="../../.images/persistent_storage.png"  width="50%" height="50%">
+
 ### Requires:
 
 NWN >= 8193.34.1

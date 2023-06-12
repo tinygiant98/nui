@@ -7,6 +7,8 @@
     - [Advanced](#advanced)
     - [Configuration Options](#configuration)
 
+<img src="../../.images/table_of_contents.png"  width="60%" height="60%">
+
 ### Requires:
 
 NWN >= 8193.34.1
@@ -31,3 +33,7 @@ Initial Release
 ### Configuration
 
 None required.
+
+### Notes
+
+This form will list all forms that have been loaded into the module as long as the form as included `NUI_SetTOCTitle()` during the form definition process in the `DefineForm()` function. The `Profiles` comboboxes are currently inoperative awaiting a bugfix in the base game handling of comboboxes inside listboxes when the options are different for each combobox.  This form is very useful for debugging forms in development because it allows live-reloading of the form definition with the `Redefine` button for the associated form.

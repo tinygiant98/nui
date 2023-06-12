@@ -7,6 +7,8 @@
     - [Advanced](#advanced)
     - [Configuration Options](#configuration)
 
+<img src="../../.images/form_inspector.png"  width="100%" height="100%">
+
 ### Requires:
 
 NWN >= 8193.35

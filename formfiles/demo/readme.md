@@ -7,6 +7,8 @@
     - [Advanced](#advanced)
     - [Configuration Options](#configuration)
 
+<img src="../../.images/demo.png"  width="50%" height="50%">
+
 ### Requires:
 
 NWN >= 8193.35
