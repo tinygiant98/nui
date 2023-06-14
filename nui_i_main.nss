@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.2";
+const string NUI_VERSION = "0.4.3";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -65,7 +65,7 @@ const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
-const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
@@ -1429,7 +1429,7 @@ void NUI_CreateForm(string sID, string sVersion = "")
         nuiString("border")        + ":true,"  +
         nuiString("closable")      + ":true,"  +
         nuiString("resizable")     + ":true,"  +
-        nuiString("collapsed")     + ":false," +
+        nuiString("collapsed")     + ":null," +
         nuiString("transparent")   + ":false," +
         nuiString("version")       + ":1,"     +
         nuiString("user_data")     + ":{},"    +
@@ -1498,6 +1498,16 @@ void NUI_RestoreBindState(object oPC, string sFormID)
 
     while ((sBind = JsonGetString(JsonArrayGet(jKeys, n++))) != "")
         NuiSetBind(oPC, nToken, sBind, JsonObjectGet(jState, sBind));
+}
+
+void NUI_RepairGeometry(object oPC, string sFormID)
+{
+    int nToken = NuiFindWindow(oPC, sFormID);
+
+    json j = NuiGetBind(OBJECT_SELF, nToken, "geometry");
+    float h = JsonGetFloat(JsonObjectGet(j, "h"));
+    h += FloatToInt(h) % 2 == 0 ? 1.0 : -1.0;
+    NuiSetBind(oPC, nToken, "geometry", JsonObjectSet(j, "h", JsonFloat(h)));
 }
 
 // -----------------------------------------------------------------------------
@@ -1660,6 +1670,7 @@ void NUI_CloseRow()                        {nui_DecrementPath();}
 void NUI_AddCheckbox(string sID = "")      {nui_CreateControl("check",         sID);}
 void NUI_AddColorPicker(string sID = "")   {nui_CreateControl("color_picker",  sID);}
 void NUI_AddCommandButton(string sID = "") {nui_CreateControl("button",        sID);}
+void NUI_AddCustomControl(string sJson)    {nui_SetControl(sJson);}
 void NUI_AddFloatSlider(string sID = "")   {nui_CreateControl("sliderf",       sID);}
 void NUI_AddProperty(string sID = "")      {nui_CreateControl("propertyi",     sID);}
 void NUI_AddImage(string sID = "")         {nui_CreateControl("image",         sID);}
@@ -1898,8 +1909,10 @@ void NUI_BindCurve(string sStart, string sEnd, string sCtrl0, string sCtrl1)
 void NUI_BindAcceptsInput(string sBind, int bWatch = FALSE)        {nui_SetProperty("accepts_input",     nuiBind(sBind, bWatch));}
 void NUI_BindClosable(string sBind, int bWatch = FALSE)            {nui_SetProperty("closable",          nuiBind(sBind, bWatch));}
 void NUI_BindCollapsible(string sBind, int bWatch = FALSE)         {nui_SetProperty("collapsed",         nuiBind(sBind, bWatch));}
+void NUI_BindEdgeConstraint(string sBind, int bWatch = FALSE)      {nui_SetProperty("edge_constraint",   nuiBind(sBind, bWatch));}
 void NUI_BindGeometry(string sBind, int bWatch = FALSE)            {nui_SetProperty("geometry",          nuiBind(sBind, bWatch));}
 void NUI_BindResizable(string sBind, int bWatch = FALSE)           {nui_SetProperty("resizable",         nuiBind(sBind, bWatch));}
+void NUI_BindSizeConstraint(string sBind, int bWatch = FALSE)      {nui_SetProperty("size_constraint",   nuiBind(sBind, bWatch));}
 void NUI_BindTitle(string sBind, int bWatch = FALSE)               {nui_SetProperty("title",             nuiBind(sBind, bWatch));}
 void NUI_BindTitleColor(string sBind, int bWatch = FALSE)          {nui_SetProperty("foreground_color",  nuiBind(sBind, bWatch));}
 void NUI_BindTransparent(string sBind, int bWatch = FALSE)         {nui_SetProperty("transparent",       nuiBind(sBind, bWatch));}
@@ -2016,9 +2029,20 @@ void NUI_SetGeometry(float x, float y, float w, float h) {nui_SetProperty("geome
 void NUI_SetResizable(int bResizable = TRUE)             {nui_SetProperty("resizable",              nuiBool(bResizable));}
 void NUI_SetTransparent(int bTransparent = TRUE)         {nui_SetProperty("transparent",            nuiBool(bTransparent));}
 
+void NUI_SetEdgeConstraint(float fLeft, float fRight, float fTop, float fBottom)
+{
+    nui_SetProperty("edge_constraint", NUI_DefineRectangle(fLeft, fTop, fRight, fBottom));
+}
+
+void NUI_SetSizeConstraint(float fMinWidth, float fMinHeight, float fMaxWidth, float fMaxHeight)
+{
+    nui_SetProperty("size_constraint", NUI_DefineRectangle(fMinWidth, fMinHeight, fMaxWidth, fMaxHeight));
+}
+
 // Sets ------------------------------------------------------------------------        
 //   Shared --------------------------------------------------------------------        
 void NUI_SetBorder(int bVisible = TRUE)                  {nui_SetProperty("border",                 nuiBool(bVisible));}
+void NUI_SetCustomKey(string sKey, string sValue)        {nui_SetProperty(sKey,                     sValue);}
 
 // Sets ------------------------------------------------------------------------
 //   Controls ------------------------------------------------------------------

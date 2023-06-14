@@ -38,10 +38,19 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.4.3 ***
+- Added the following functions in preparation for future growth:  `NUI_SetSizeConstraint()`, `NUI_SetEdgeConstraint()`, `NUI_BindSizeConstraint()`, `NUI_BindEdgeConstraint()`.  See the prototypes for additional information and usage.
+- Added `NUI_AddCustomControl()`.  This is *very* advanced usage and should only used in special cases.  The only argument this function takes is a json-parseable string representing an entire control.  After adding a control this way, properties cannot be added and the next command must be to add another control or close out the current control container.
+- Added `NUI_SetCustomKey()`, which allows a custom key:value pair to be added to the json build at any point.  This is advanced usages.  The key:value pair set with this function may not be generally available during the form usage process, but will be available to advanced methods, such as sql querying.
+- Changed the default value for the `collapsed` form property to `null` to allow the user to determine whether the property is set or not through normal definition.  Thanks to discord user `Tildryn` for this bugfix!
+- Added `NUI_RepairGeometry()`.  This is advanced usage that can attempt to repair a window in the rare case that a window is not updated after a layout is swapped out, such as with tabbed forms or displaying subforms.
+
 *** 0.4.2 ***
 - Modifed json-building methodology to account for characters present in file encodings other than cp1252.  This should allow any game-supported language to display correctly in forms built with this NUI system.  However, the following two rules must be followed for this to work:
- - The game must be run in the language associated with the desired encoding (ex: Run the game in Polish)
- - The scripts must be compiled with the desired encoding set (ex: Compile with file encoding = cp1250)
+> The game must be run in the language associated with the desired encoding (ex: Run the game in Polish)
+> The scripts must be compiled with the desired encoding set (ex: Compile with file encoding = cp1250)
+
+- Known Issue:  This change, while allowing other code pages to be used, does not allow `nuiString` to process escaped characters correctly.  If setting a bind, for example in `BindForm()`, you may new to use `jValue` instead of `sValue` for strings.
 
 *** 0.4.1 ***
 - Modified `NUI_GetKey()` and `NUI_GetValue()` to use regex instead of character looping.
