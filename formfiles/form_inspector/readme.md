@@ -16,6 +16,9 @@ NUI >= 0.3.0
 
 ### Version History:
 
+## 0.1.1:
+- Fixed comparison typo in `HandleModuleEvents()`.
+
 ## 0.1.0:
 
 Initial Release

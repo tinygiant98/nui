@@ -18,8 +18,7 @@ void DefineForm()
     NUI_CreateForm(FORM_ID);
     {
         NUI_AddColumn();
-
-
+            NUI_AddSpacer();
         NUI_CloseColumn();
     }
 
@@ -33,13 +32,10 @@ void DefineForm()
 void BindForm()
 {
     json jBinds = NUI_GetOrphanBinds(FORM_ID);
-    int nToken = NuiFindWindow(OBJECT_SELF, FORM_ID);
-
     int n; for (n; n < JsonGetLength(jBinds); n++)
     {
         string sValue, sBind = JsonGetString(JsonArrayGet(jBinds, n));
-        json jValue = JsonNull();;
-
+        json jValue = JsonNull();
    
         if (sValue != "")
             NUI_SetBind(OBJECT_SELF, FORM_ID, sBind, sValue);
@@ -57,4 +53,9 @@ void HandleNUIEvents()
 void HandleModuleEvents()
 {
 
+}
+
+void HandleNWNXEvents()
+{
+    
 }

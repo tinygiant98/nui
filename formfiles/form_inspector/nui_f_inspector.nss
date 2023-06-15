@@ -9,7 +9,7 @@
 #include "util_i_debug"
 
 const string FORM_ID = "nui_inspector";
-const string VERSION = "1.0.0";
+const string VERSION = "0.1.1";
 const string IGNORE_FORM_EVENTS = "";
 const string DEBUG_PREAMBLE = "[Form Inspector]";
 
@@ -479,7 +479,7 @@ void HandleModuleEvents()
 {
     int nEvent = GetCurrentlyRunningEvent();
 
-    if (nEvent = EVENT_SCRIPT_MODULE_ON_USER_DEFINED_EVENT)
+    if (nEvent == EVENT_SCRIPT_MODULE_ON_USER_DEFINED_EVENT)
     {
         if (NuiFindWindow(NuiGetEventPlayer(), FORM_ID) == 0)
             return;

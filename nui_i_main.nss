@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.4";
+const string NUI_VERSION = "0.4.5";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -972,14 +972,14 @@ void NUI_SetWordWrap(int bWrap = TRUE);
 /// @note If sFormfile is passed, only the specified formfile will be loaded.
 void NUI_DefineForms(string sFormfile = "");
 
-/// @brief Display an NUI form.
+/// @brief Display a form.
 /// @param oPC Client to display the form on.
 /// @param sFormID ID of the form to display.
 /// @param sProfile Optional form profile.
 /// @returns Form's token as assigned by the game engine.
 int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "default");
 
-/// @brief Close an open NUI form.
+/// @brief Close an open form.
 /// @param oPC Client on which to close the form.
 /// @param sFormID ID of the form to close.
 void NUI_CloseForm(object oPC, string sFormID);
@@ -1062,6 +1062,22 @@ void NUI_CreateLayout();
 ///     saved to the database, so this function and NUI_CreateLayout() are
 ///     meant for dynamic form building.
 string NUI_GetLayout();
+
+/// @brief Trigger the system to respond to an NUI or module event.
+/// @param oPC Optional; the PC triggering the event.
+/// @note If the event requires a PC object, the PC object must be
+///     specified in this call.  For example, in the OnClientEnter handler,
+///     this function should be called as NUI_HandleEvents(GetEnteringObject());
+///     For events that do not require a PC object, or for the form to be displayed,
+///     such as OnModuleLoad, or if the PC object is the OBJECT_SELF of the running
+///     script, oPC does not have to be specified, however, it is a best practice
+///     to always include the PC object to ensure the correct object is being passed
+///     to the system.
+void NUI_HandleEvents(object oPC = OBJECT_SELF);
+
+/// @brief Convenience funtion for NUI_HandleEvents().
+/// @param oPC Optional.  See description above for NUI_HandleEvents().
+void NUI(object oPC = OBJECT_SELF);
 
 /// @brief Determines if a form is currently open.
 /// @param oPC Players to check for the form.
@@ -1709,6 +1725,8 @@ void NUI_CloseColumn()                     {nui_DecrementPath();}
 
 void NUI_AddRow(float fHeight = -1.0)      {nui_AddLayout("row", fHeight);}
 void NUI_CloseRow()                        {nui_DecrementPath();}
+
+void NUI_CloseLayout()                     {nui_DecrementPath();}
 
 // Controls --------------------------------------------------------------------
 
@@ -2681,7 +2699,7 @@ void NUI_SubscribeEvent(int nEvent)
         "'$.event_data[#]', json(@value)) FROM nui_forms WHERE form = @form) " +
         "WHERE form = @form;";
     
-    sqlquery sql = nui_PrepareQuery(sQuery, TRUE);
+    sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", nui_GetFormID());
     SqlBindInt   (sql, "@value", nEvent);
     SqlStep(sql);
@@ -2690,7 +2708,6 @@ void NUI_SubscribeEvent(int nEvent)
 void NUI_HandleEvents(object oPC = OBJECT_SELF)
 {
     int nEvent = GetCurrentlyRunningEvent();
-
     if (nEvent == EVENT_SCRIPT_MODULE_ON_MODULE_LOAD)
         NUI_Initialize();
 
@@ -2716,3 +2733,5 @@ void NUI_HandleEvents(object oPC = OBJECT_SELF)
         DeleteLocalObject(oPC, NUI_OBJECT);
     }
 }
+
+void NUI(object oPC = OBJECT_SELF) {NUI_HandleEvents(oPC);}
