@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.3";
+const string NUI_VERSION = "0.4.4";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -65,7 +65,7 @@ const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
-const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
+const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
@@ -284,6 +284,16 @@ void NUI_AddCombobox(string sID = "");
 /// @param sID Control id.  Returned by NuiGetEventElement() (nwscript) or as
 ///     ed.sControlID in event data.
 void NUI_AddCommandButton(string sID = "");
+
+/// @brief Add a fully-formed custom control.
+/// @param sJson Json-parseable string representing a form control with all
+///     desired properties defined.
+/// @warning This is a very advanced-use function and typically should not be
+///     used unless you know what you are doing with respect to how the json
+///     definitions are built.  Once a custom control is added with this function,
+///     the control definition is closed and properties cannot be added or
+///     modified.
+void NUI_AddCustomControl(string sJson);
 
 /// @brief Add a float-based slider to the form or control group
 /// @param sID Control id.  Returned by NuiGetEventElement() (nwscript) or as
@@ -518,6 +528,11 @@ void NUI_BindColor(string sBind, int bWatch = FALSE);
 /// @param bWatch TRUE to set a bind watch.
 void NUI_BindDisabledTooltip(string sBind, int bWatch = FALSE);
 
+/// @brief Binds the form's edge constraint property.
+/// @param sBind Variable to bind.
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindEdgeConstraint(string sBind, int bWatch = FALSE);
+
 /// @brief Binds the control's elements property.
 /// @param sBind Variable to bind.
 /// @param bWatch TRUE to set a bind watch.
@@ -618,6 +633,11 @@ void NUI_BindRowCount(string sBind, int bWatch = FALSE);
 /// @param bWatch TRUE to set a bind watch.
 void NUI_BindScissor(string sBind, int bWatch = FALSE);
 
+/// @brief Binds the form's size constraint property.
+/// @param sBind Variable to bind.
+/// @param bWatch TRUE to set a bind watch.
+void NUI_BindSizeConstraint(string sBind, int bWatch = FALSE);
+
 /// @brief Binds a slider control's bounds.
 /// @param sUpper Variable to bind.
 /// @param sLower Variable to bind.
@@ -707,6 +727,12 @@ void NUI_SetCollapsible(int bCollapsible = TRUE);
 ///     NUI_DefineRandomColor().
 void NUI_SetColor(string sColor);
 
+/// @brief Set a custom key:value pair into the build data for the
+///     form or control currently being defined.
+/// @param sKey Key.
+/// @param sValue Json-parseable string.
+void NUI_SetCustomKey(string sKey, string sValue);
+
 /// @brief For bound controls, sets the value that will be initially set
 ///     to the control's value property.
 /// @param sDefault Default value to set.
@@ -741,6 +767,13 @@ void NUI_SetDrawCondition(int nCondition = NUI_DRAW_ALWAYS);
 /// @brief Sets the control's draw position property.
 /// @param nPosition NUI_POSITION_* constant.
 void NUI_SetDrawPosition(int nPosition = NUI_DRAW_ABOVE);
+
+/// @brief Sets the form's edge constraint property.
+/// @param fLeft Left Margin.
+/// @param fRight Right Margin.
+/// @param fTop Top Margin.
+/// @param fBottom Bottom Margin.
+void NUI_SetEdgeConstraint(float fLeft, float fRight, float fTop, float fBottom);
 
 /// @brief Sets the control's elements property.
 /// @param sElements 
@@ -865,6 +898,18 @@ void NUI_SetScissor(int bScissor);
 /// @brief Sets the control's scrollbars property.
 /// @param nScrollBars NUI_SCROLLBARS_* constant.
 void NUI_SetScrollbars(int nScrollbars = NUI_SCROLLBARS_AUTO);
+
+/// @brief Sets the form's size constraint property.
+/// @param fMinWidth Minimum width.
+/// @param fMinHeight Minimum height.
+/// @param fMaxWidth Maximum width.
+/// @param fMaxHeight Maximum height.
+/// @note Set any parameter to 0.0 to ignore that parameter while
+///     honoring the remaining parameters.
+/// @note Setting a maximum constraint less than or equal to a minimum
+///     constraint on the same dimension will prevent the form from
+///     being resized in that dimension.
+void NUI_SetSizeConstraint(float fMinWidth, float fMinHeight, float fMaxWidth, float fMaxHeight);
 
 /// @brief Sets the control's width and height properties.
 /// @param fSide Length of one side.
