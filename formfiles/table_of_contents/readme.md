@@ -16,6 +16,10 @@ NUI >= 0.2.2
 
 ### Version History:
 
+## 0.1.3:
+- Modify default profile geometry.
+- Modify listbox template properties to make resizing more palatable.
+
 ## 0.1.2:
 - Debug bind errors.
 

@@ -9,7 +9,7 @@
 #include "util_i_debug"
 
 const string FORM_ID = "toc";
-const string VERSION = "0.1.2";
+const string VERSION = "0.1.3";
 const string IGNORE_FORM_EVENTS = "blur,focus,range,mousedown,mouseup";
 
 void DefineForm()
@@ -57,7 +57,8 @@ void DefineForm()
                         //NUI_SetTemplateWidth(200.0);
                         //NUI_SetTemplateVariable(FALSE);
                         //NUI_SetTemplateWidth(50.0);
-                        NUI_SetTemplateVariable(TRUE);
+                        NUI_SetTemplateWidth(50.0);
+                        //NUI_SetTemplateVariable(TRUE);
                         NUI_BindEnabled("combo_enabled");
                     NUI_AddCommandButton("cmdRedefine");
                         NUI_SetLabel("Redefine");
@@ -70,7 +71,7 @@ void DefineForm()
 
     NUI_CreateDefaultProfile();
     {
-        string sGeometry = NUI_DefineRectangle(1400.0, 600.0, 450.0, 350.0);
+        string sGeometry = NUI_DefineRectangle(1400.0, 200.0, 450.0, 700.0);
         NUI_SetProfileBind("geometry", sGeometry);
     }
 }
@@ -100,8 +101,6 @@ void BindForm()
     NUI_SetBindJ(OBJECT_SELF, FORM_ID, "varFormIDs", jFormIDs);
     NUI_SetBindJ(OBJECT_SELF, FORM_ID, "varFormfiles", jFormfiles);
     DelayCommand(0.01, NUI_SetBindJ(OBJECT_SELF, FORM_ID, "cmdOpen:label", jTitles));
-
-    Notice("Form Titles -> " + JsonDump(jTitles));
 
     string sValue;
     json jBinds = NUI_GetOrphanBinds(FORM_ID);
