@@ -13,6 +13,7 @@
 // -----------------------------------------------------------------------------
 
 const string NUI_VERSION = "0.4.5";
+const string NUI_VERSION = "0.4.6";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -425,6 +426,7 @@ void NUI_DrawDefinedCircle(string sCircle);
 /// @note X and Y coordinates are relative to the top-left corner of the control
 ///     the drawlist element is being added to.
 void NUI_DrawText(string sRect, string sText);
+void NUI_DrawTextbox(string sRect, string sText);
 
 /// @brief Draw an image on the canvas.
 /// @param sResref Resref of the image to be displayed.

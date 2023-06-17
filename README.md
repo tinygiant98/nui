@@ -43,6 +43,9 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.4.6 ***
+- Fixed incorrect prototype `NUI_DrawText()` to the correct `NUI_DrawTextbox`.  Thanks to discord user `Tildryn` for the bug report.
+
 *** 0.4.5 ***
 - Added convenience function `NUI()`.  This function replaces calls to `NUI_HandleEvents()`.  `NUI_HandleEvents()` is *not* being deprecated and will remain in the system as an available trigger, however, any new implementations can use `NUI()` with the same object parameter you would normally call `NUI_HandleEvents()` with to trigger the NUI system.
 - Added missing prototype for `NUI_HandleEvents()`.
