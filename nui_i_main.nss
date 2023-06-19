@@ -12,8 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.5";
-const string NUI_VERSION = "0.4.6";
+const string NUI_VERSION = "0.4.7";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -425,7 +424,6 @@ void NUI_DrawDefinedCircle(string sCircle);
 /// @param sText Text to be displayed in the drawn textbox.
 /// @note X and Y coordinates are relative to the top-left corner of the control
 ///     the drawlist element is being added to.
-void NUI_DrawText(string sRect, string sText);
 void NUI_DrawTextbox(string sRect, string sText);
 
 /// @brief Draw an image on the canvas.
@@ -1272,7 +1270,7 @@ sqlquery nui_PrepareQuery(string sQuery, int bForceModule = FALSE)
         return SqlPrepareQueryObject(GetModule(), sQuery);
 }
 
-void nui_InitializeDatabase()
+int nui_InitializeDatabase()
 {
     string sQuery = "DROP TABLE IF EXISTS nui_forms;";
     SqlStep(nui_PrepareQuery(sQuery));
@@ -1302,6 +1300,9 @@ void nui_InitializeDatabase()
             "binds_after STRING, " +
             "timestamp INTEGER);";
     SqlStep(nui_PrepareQuery(sQuery));
+
+    sQuery = "SELECT * FROM nui_forms;";
+    return SqlStep(nui_PrepareQuery(sQuery));
 }
 
 void nui_SaveForm(string sID, string sJson)
@@ -1477,10 +1478,11 @@ void NUI_Initialize()
     if (GetLocalInt(GetModule(), "NUI_INITIALIZED"))
         return;
 
-    SetLocalInt(GetModule(), "NUI_INITIALIZED", TRUE);
-
-    nui_InitializeDatabase();
-    NUI_DefineForms();
+    if (nui_InitializeDatabase())
+    {
+        SetLocalInt(GetModule(), "NUI_INITIALIZED", TRUE);
+        NUI_DefineForms();
+    }
 }
 
 void NUI_CreateForm(string sID, string sVersion = "")

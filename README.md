@@ -43,6 +43,9 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.4.7 ***
+- Modified `nui_InitializeDatabase()` to check for existing tables before setting the initialization variable on the module.
+
 *** 0.4.6 ***
 - Fixed incorrect prototype `NUI_DrawText()` to the correct `NUI_DrawTextbox`.  Thanks to discord user `Tildryn` for the bug report.
 
