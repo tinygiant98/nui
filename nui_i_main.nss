@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.7";
+const string NUI_VERSION = "0.4.8";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -1301,8 +1301,12 @@ int nui_InitializeDatabase()
             "timestamp INTEGER);";
     SqlStep(nui_PrepareQuery(sQuery));
 
-    sQuery = "SELECT * FROM nui_forms;";
-    return SqlStep(nui_PrepareQuery(sQuery));
+    sQuery = "SELECT COUNT(*) FROM nui_forms;";
+    //return SqlStep(nui_PrepareQuery(sQuery));
+
+    int nResult = SqlStep(nui_PrepareQuery(sQuery));
+    NUI_Debug("nui_InitializeDatabase: nResult -> " + (nResult ? "TRUE" : "FALSE"));
+    return nResult;
 }
 
 void nui_SaveForm(string sID, string sJson)
