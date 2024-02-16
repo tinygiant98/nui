@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.7";
+const string NUI_VERSION = "0.4.8";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -1301,7 +1301,7 @@ int nui_InitializeDatabase()
             "timestamp INTEGER);";
     SqlStep(nui_PrepareQuery(sQuery));
 
-    sQuery = "SELECT * FROM nui_forms;";
+    sQuery = "SELECT COUNT(*) FROM nui_forms;";
     return SqlStep(nui_PrepareQuery(sQuery));
 }
 

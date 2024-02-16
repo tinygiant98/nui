@@ -43,6 +43,9 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.4.8 ***
+- Fixed a bug that caused the system to cease operation after creating the database, essentially telling the system the database was not created.  This prevent any system operation.  Bug created by tinygiant in 0.4.7.
+
 *** 0.4.7 ***
 - Modified `nui_InitializeDatabase()` to check for existing tables before setting the initialization variable on the module.
 
