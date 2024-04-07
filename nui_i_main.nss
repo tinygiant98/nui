@@ -7,6 +7,7 @@
 #include "util_i_csvlists"
 #include "util_i_color"
 #include "nui_c_config"
+#include "nw_inc_nui"
 
 // -----------------------------------------------------------------------------
 //                                    Constants
@@ -28,29 +29,29 @@ const int NUI_DRAW_MOUSELEFT     = 3;
 const int NUI_DRAW_MOUSERIGHT    = 4;
 const int NUI_DRAW_MOUSEMIDDLE   = 5;
 
-const int NUI_SCROLLBARS_NONE    = 0;
-const int NUI_SCROLLBARS_X       = 1;
-const int NUI_SCROLLBARS_Y       = 2;
-const int NUI_SCROLLBARS_BOTH    = 3;
-const int NUI_SCROLLBARS_AUTO    = 4;
+//const int NUI_SCROLLBARS_NONE    = 0;
+//const int NUI_SCROLLBARS_X       = 1;
+//const int NUI_SCROLLBARS_Y       = 2;
+//const int NUI_SCROLLBARS_BOTH    = 3;
+//const int NUI_SCROLLBARS_AUTO    = 4;
 
 const int NUI_CHART_LINE         = 0;
 const int NUI_CHART_BAR          = 1;
 
-const int NUI_ASPECT_FIT         = 0;
-const int NUI_ASPECT_FILL        = 1;
-const int NUI_ASPECT_FIT100      = 2;
-const int NUI_ASPECT_EXACT       = 3;
-const int NUI_ASPECT_EXACTSCALED = 4;
-const int NUI_ASPECT_STRETCH     = 5;
+//const int NUI_ASPECT_FIT         = 0;
+//const int NUI_ASPECT_FILL        = 1;
+//const int NUI_ASPECT_FIT100      = 2;
+//const int NUI_ASPECT_EXACT       = 3;
+//const int NUI_ASPECT_EXACTSCALED = 4;
+//const int NUI_ASPECT_STRETCH     = 5;
 
-const int NUI_HALIGN_CENTER      = 0;
-const int NUI_HALIGN_LEFT        = 1;
-const int NUI_HALIGN_RIGHT       = 2;
+//const int NUI_HALIGN_CENTER      = 0;
+//const int NUI_HALIGN_LEFT        = 1;
+//const int NUI_HALIGN_RIGHT       = 2;
 
-const int NUI_VALIGN_MIDDLE      = 0;
-const int NUI_VALIGN_TOP         = 1;
-const int NUI_VALIGN_BOTTOM      = 2;
+//const int NUI_VALIGN_MIDDLE      = 0;
+//const int NUI_VALIGN_TOP         = 1;
+//const int NUI_VALIGN_BOTTOM      = 2;
 
 const string NUI_DEFINE    = "DefineForm";
 const string NUI_BIND      = "BindForm";
@@ -65,7 +66,7 @@ const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 json jTrue = JsonBool(TRUE);
 json jFalse = JsonBool(FALSE);
 
-const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
@@ -2738,4 +2739,4 @@ void NUI_HandleEvents(object oPC = OBJECT_SELF)
     }
 }
 
-void NUI(object oPC = OBJECT_SELF) {NUI_HandleEvents(oPC);}
+void NUI(object oPC = OBJECT_SELF) { NUI_HandleEvents(oPC); }
