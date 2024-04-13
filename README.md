@@ -43,6 +43,9 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.4.9 ***
+- Fixed a bug that occurred in an edge case where the nui system was installed in a module, but no formfiles were found during the initialization process.  This bug manifests in a hard-to-track behavior where multiple sql statements, including statements not related to the nui system, were rolled back by the game because an open transaction was never closed by the nui system.
+
 *** 0.4.8 ***
 - Fixed a bug that caused the system to cease operation after creating the database, essentially telling the system the database was not created.  This prevent any system operation.  Bug created by tinygiant in 0.4.7.
 

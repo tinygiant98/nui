@@ -12,7 +12,7 @@
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.8";
+const string NUI_VERSION = "0.4.9";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -2426,7 +2426,7 @@ void NUI_DefineForms(string sFormfile = "")
         int n; for (n; n < CountList(NUI_FORMFILE_PREFIX); n++)
         {
             string sFormfiles = nui_GetForms(GetListItem(NUI_FORMFILE_PREFIX, n));
-            if (sFormfiles == "") return;
+            if (sFormfiles == "") break;
 
             int f; for (f; f < CountList(sFormfiles); f++)
             {
