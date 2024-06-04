@@ -47,7 +47,7 @@ const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 json jTrue = JSON_TRUE;
 json jFalse = JSON_FALSE;
 
-const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
+const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {

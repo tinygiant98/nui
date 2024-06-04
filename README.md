@@ -44,7 +44,7 @@ NWN:EE >= 8193.35
 ## Change Log
 
 *** 0.5.0 ***
-- Modified system constants in `nui_i_main` to allow `nw_inc_nui` to be included in formfiles, allowing this nui system and the base game's nui implementation script to work together.  `nw_inc_nui` is now `#include`d in `nui_i_main`.
+- Removed some constants in `nui_i_main` to permit including `nw_inc_nui`, allowing this nui system and the base game's nui implementation script to work together.  `nw_inc_nui` is now `#include`d in `nui_i_main`.
 - Modified `NUI_DisplayForm()` prototype:
  - Modified default value for `sProfile` parameter changed from `"default"` to `""`.  Passing `""` will still call the `default` profile, so no behavior has changed and no code requires updating.
  - Added fourth parameter `int bSelfManage = FALSE` to direct the game to call the formfile directly instead of the module's NUI handler.
