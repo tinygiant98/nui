@@ -7,12 +7,13 @@
 #include "util_i_csvlists"
 #include "util_i_color"
 #include "nui_c_config"
+#include "nw_inc_nui"
 
 // -----------------------------------------------------------------------------
 //                                    Constants
 // -----------------------------------------------------------------------------
 
-const string NUI_VERSION = "0.4.9";
+const string NUI_VERSION = "0.5.0";
 const string NUI_DATABASE = "nui_form_data";
 
 const int NUI_ORIENTATION_ROW    = 0;
@@ -28,29 +29,8 @@ const int NUI_DRAW_MOUSELEFT     = 3;
 const int NUI_DRAW_MOUSERIGHT    = 4;
 const int NUI_DRAW_MOUSEMIDDLE   = 5;
 
-const int NUI_SCROLLBARS_NONE    = 0;
-const int NUI_SCROLLBARS_X       = 1;
-const int NUI_SCROLLBARS_Y       = 2;
-const int NUI_SCROLLBARS_BOTH    = 3;
-const int NUI_SCROLLBARS_AUTO    = 4;
-
 const int NUI_CHART_LINE         = 0;
 const int NUI_CHART_BAR          = 1;
-
-const int NUI_ASPECT_FIT         = 0;
-const int NUI_ASPECT_FILL        = 1;
-const int NUI_ASPECT_FIT100      = 2;
-const int NUI_ASPECT_EXACT       = 3;
-const int NUI_ASPECT_EXACTSCALED = 4;
-const int NUI_ASPECT_STRETCH     = 5;
-
-const int NUI_HALIGN_CENTER      = 0;
-const int NUI_HALIGN_LEFT        = 1;
-const int NUI_HALIGN_RIGHT       = 2;
-
-const int NUI_VALIGN_MIDDLE      = 0;
-const int NUI_VALIGN_TOP         = 1;
-const int NUI_VALIGN_BOTTOM      = 2;
 
 const string NUI_DEFINE    = "DefineForm";
 const string NUI_BIND      = "BindForm";
@@ -58,14 +38,16 @@ const string NUI_EVENT_NUI = "HandleNUIEvents";
 const string NUI_EVENT_MOD = "HandleModuleEvents";
 
 const string NUI_OBJECT    = "NUI_OBJECT";
+const string NUI_FUNCTION  = "NUI_FUNCTION";
+const string NUI_ARGS      = "NUI_ARGS";
 
 const int NUI_FI_EVENT_UPDATE_FORMS  = 100001;
 const int NUI_FI_EVENT_UPDATE_EVENTS = 100002;
 
-json jTrue = JsonBool(TRUE);
-json jFalse = JsonBool(FALSE);
+json jTrue = JSON_TRUE;
+json jFalse = JSON_FALSE;
 
-const int NUI_USE_CAMPAIGN_DATABASE = FALSE;
+const int NUI_USE_CAMPAIGN_DATABASE = TRUE;
 const string NUI_FORMFILE_PREFIX = "nui_f_";
 
 struct NUIEventData {
@@ -976,8 +958,10 @@ void NUI_DefineForms(string sFormfile = "");
 /// @param oPC Client to display the form on.
 /// @param sFormID ID of the form to display.
 /// @param sProfile Optional form profile.
+/// @param bSelfManage If TRUE, call the formfile directly instead of the
+///     game's NUI event handler.
 /// @returns Form's token as assigned by the game engine.
-int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "default");
+int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "", int bSelfManage = FALSE);
 
 /// @brief Close an open form.
 /// @param oPC Client on which to close the form.
@@ -1332,9 +1316,9 @@ void nui_CopyDefinitions(string sTable = "nui_forms")
     string sQuery = "WITH forms AS (SELECT json_object('form', form, 'definition', definition) AS f " +
              "FROM " + sTable + ") SELECT json_group_array(json(f)) FROM forms;";
     sqlquery sql = nui_PrepareQuery(sQuery, TRUE);
-    json jForms = SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
+    json jForms = SqlStep(sql) ? SqlGetJson(sql, 0) : JSON_NULL;
 
-    if (jForms == JsonNull())
+    if (jForms == JSON_NULL)
         return;
 
     sQuery = "INSERT OR REPLACE INTO " + sTable + " (form, definition) " +
@@ -1554,7 +1538,7 @@ void NUI_SaveBindState(object oPC, string sFormID)
 void NUI_RestoreBindState(object oPC, string sFormID)
 {
     json jState = GetLocalJson(oPC, "NUI_STATE:" + sFormID);
-    if (jState == JsonNull())
+    if (jState == JSON_NULL)
         return;
 
     json jKeys = JsonObjectKeys(jState);
@@ -1731,6 +1715,11 @@ void NUI_AddRow(float fHeight = -1.0)      {nui_AddLayout("row", fHeight);}
 void NUI_CloseRow()                        {nui_DecrementPath();}
 
 void NUI_CloseLayout()                     {nui_DecrementPath();}
+
+void NUI_AddLayout(json jLayout)
+{
+    nui_SetProperty("root", JsonDump(jLayout));
+}
 
 // Controls --------------------------------------------------------------------
 
@@ -2269,7 +2258,7 @@ json nui_GetForm(string sFormID, int bForceModule = FALSE)
     sqlquery sql = nui_PrepareQuery("SELECT definition FROM nui_forms WHERE form = @form;", bForceModule);    
     SqlBindString(sql, "@form", sFormID);
 
-    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonNull();
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JSON_NULL;
 }
 
 string nui_GetFormsByPrefix(string sForms, string sPrefix, int nResType)
@@ -2294,8 +2283,8 @@ int nui_ExecuteFunction(string sFile, string sFunction, object oTarget = OBJECT_
 
     if (ResManFindPrefix(sFile, RESTYPE_NCS) == sFile)
     {   
-        SetScriptParam("NUI_FUNCTION", sFunction);
-        SetScriptParam("NUI_ARGS", sArguments);
+        SetScriptParam(NUI_FUNCTION, sFunction);
+        SetScriptParam(NUI_ARGS, sArguments);
         ExecuteScript(sFile, oTarget);
         return TRUE;
     }
@@ -2314,7 +2303,7 @@ json nui_GetWatchedBinds(string sFormID)
         "nui_forms.definition, path || '.watch') = true AND form = @form);";
     sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
-    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonArray();
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JSON_ARRAY;
 }
 
 json NUI_GetOrphanBinds(string sFormID)
@@ -2325,7 +2314,7 @@ json NUI_GetOrphanBinds(string sFormID)
         "'$.profiles.default') AS value WHERE form = @form));";
     sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
-    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonArray();
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JSON_ARRAY;
 }
 
 // -----------------------------------------------------------------------------
@@ -2377,7 +2366,7 @@ json nui_GetProfileBinds(string sFormID, string sProfile = "")
     sqlquery sql = nui_PrepareQuery(sQuery);
     SqlBindString(sql, "@form", sFormID);
     SqlBindString(sql, "@profile", sProfile);
-    return SqlStep(sql) ? SqlGetJson(sql, 0) : JsonObject();    
+    return SqlStep(sql) ? SqlGetJson(sql, 0) : JSON_OBJECT;    
 }
 
 /// @private Called during form opening, sets the initial values for all default binds.
@@ -2443,14 +2432,16 @@ void NUI_DefineForms(string sFormfile = "")
     nui_CommitTransaction();
 }
 
-int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "default")
+int NUI_DisplayForm(object oPC, string sFormID, string sProfile = "", int bSelfManage = FALSE)
 {
     json jForm = nui_GetForm(sFormID);
-    if (jForm != JsonNull())
+    if (jForm != JSON_NULL)
     {   
-        int nToken = NuiCreate(oPC, jForm, sFormID);
-        json jData = JsonObjectSet(JsonObject(), "profile", JsonString(sProfile));
-             jData = JsonObjectSet(jData, "formfile", JsonString(nui_GetDefinitionValue(sFormID, "formfile")));
+        string sFormfile = nui_GetDefinitionValue(sFormID, "formfile");
+
+        int nToken = NuiCreate(oPC, jForm, sFormID, (bSelfManage ? sFormfile : ""));
+        json jData = JsonObjectSet(JSON_OBJECT, "profile", JsonString(sProfile == "" ? "default" : sProfile));
+             jData = JsonObjectSet(jData, "formfile", JsonString(sFormfile));
 
         NuiSetUserData(oPC, NuiFindWindow(oPC, sFormID), jData);
         return nToken;
@@ -2490,7 +2481,7 @@ void NUI_CreateProfile(string sProfile, string sBase = "")
 
 void NUI_SetProfileBind(string sBind, string sJson)
 {
-    if (sBind == "" || sJson == "" || JsonParse(sJson) == JsonNull())
+    if (sBind == "" || sJson == "" || JsonParse(sJson) == JSON_NULL)
         return;
 
     nui_SetProfileBind(sBind, sJson);
@@ -2503,7 +2494,7 @@ void NUI_SetProfileBindJ(string sBind, json jValue)
 
 void NUI_SetProfileBinds(string sBinds, string sJson)
 {
-    if (sBinds == "" || sJson == "" || JsonParse(sJson) == JsonNull())
+    if (sBinds == "" || sJson == "" || JsonParse(sJson) == JSON_NULL)
         return;
 
     int n; for (n; n < CountList(sBinds); n++)

@@ -34,10 +34,11 @@ void HandleModuleEvents();
 
 void main()
 {
-    string sOperation = GetScriptParam("NUI_FUNCTION");
+    string sOperation = GetScriptParam(NUI_FUNCTION);
 
     if      (sOperation == NUI_DEFINE)    DefineForm();
     else if (sOperation == NUI_BIND)      BindForm();
     else if (sOperation == NUI_EVENT_NUI) HandleNUIEvents();
-    else                                  HandleModuleEvents();
+    else if (sOperation == NUI_EVENT_MOD) HandleModuleEvents();
+    else                                  NUI();
 }

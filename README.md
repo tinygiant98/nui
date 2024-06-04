@@ -43,6 +43,57 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.5.0 ***
+- Modified system constants in `nui_i_main` to allow `nw_inc_nui` to be included in formfiles, allowing this nui system and the base game's nui implementation script to work together.  `nw_inc_nui` is now `#include`d in `nui_i_main`.
+- Modified `NUI_DisplayForm()` prototype:
+ - Modified default value for `sProfile` parameter changed from `"default"` to `""`.  Passing `""` will still call the `default` profile, so no behavior has changed and no code requires updating.
+ - Added fourth parameter `int bSelfManage = FALSE` to direct the game to call the formfile directly instead of the module's NUI handler.
+- Added ability for formfiles to be called directly instead of through the module's NUI event handler.  This feature defaults to `FALSE` (i.e. the game's NUI handler will normally be used) to maintain backward-compatibility.  To call formfiles directly, the following conditions must be met:
+ - The formfile must be pre-compiled, not compiled-on-demand (i.e. it must `#include "nui_i_library"`)
+ - The form must be opened using `NUI_DisplayForm(oPC, sFormID, sProfile, TRUE);`, where the fourth paramter (`TRUE`) tells the NUI system to call the formfile instead of the game's NUI handler.
+- Modified `JsonNull()`, `JsonArray()` and `JsonObject()` function calls to their constant representations `JSON_NULL`, `JSON_ARRAY` and `JSON_OBJECT`.
+- Added `NUI_AddLayout(json jLayout)`.  This function allows forms defined with functions in `nw_inc_nui` to be added to and used by this NUI system.  To use this feature, the normal form definition process is followed, except the primitive form layout is added instead of adding controls.  In the example below, `jLayout` is the form/window definition built using functions in `nw_inc_nui` as defined before calling `NuiWindow()`.
+> After calling `NUI_CreateForm()`, set all form-level properties, such as resizable, accepts_input, etc.  After those are set, call `NUI_AddLayout()` and pass a form definition.
+> You cannot modify control or form properties after adding a layout via `NUI_AddLayout()`.  `NUI_AddLayout()` should be the last call in the primary form definition process, followed only by optional profile and/or subform definitions.
+```c
+void DefineForm()
+{
+    NUI_CreateForm("<form_id>", "<form_version");
+        NUI_SetResizable(TRUE);
+        NUI_BindTitle("frmTitle");
+    {
+        json jWidget, jCol;
+
+        {
+            jWidget = NuiLabel(NuiBind("lblTitle:value"), JsonInt(NUI_HALIGN_CENTER), JsonInt(NUI_VALIGN_MIDDLE));
+            jWidget = NuiStyleForegroundColor(jWidget, NuiBind("lblTitle:color"));
+            jWidget = NuiHeight(jWidget, 35.0);
+
+            jCol = JsonArrayInsert(JSON_ARRAY, NuiRow(JsonArrayInsert(JSON_ARRAY, jWidget)));
+        }
+
+        {
+            jWidget = NuiText(NuiBind("txtSecondary:value"), FALSE);
+            jWidget = NuiStyleForegroundColor(jWidget, NuiBind("txtSecondary:color"));
+            jWidget = NuiHeight(jWidget, 75.0);
+
+            JsonArrayInsertInplace(jCol, NuiRow(JsonArrayInsert(JSON_ARRAY, jWidget)));
+        }
+
+        NUI_AddLayout(NuiCol(jCol));
+    }
+
+    NUI_CreateSubform();
+        // ... [optional]
+
+    NUI_CreateDefaultProfile();
+        // ... [optional]
+
+    NUI_CreateProfile();
+        // ... [optional]
+}
+```
+
 *** 0.4.9 ***
 - Fixed a bug that occurred in an edge case where the nui system was installed in a module, but no formfiles were found during the initialization process.  This bug manifests in a hard-to-track behavior where multiple sql statements, including statements not related to the nui system, were rolled back by the game because an open transaction was never closed by the nui system.
 

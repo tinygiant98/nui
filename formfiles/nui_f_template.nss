@@ -1,5 +1,5 @@
 /// ----------------------------------------------------------------------------
-/// @file   nuif_f_template.nss
+/// @file   nui_f_template.nss
 /// @author Ed Burke (tinygiant98) <af.hog.pilot@gmail.com>
 /// @brief  Template formfile
 /// ----------------------------------------------------------------------------
@@ -11,23 +11,6 @@
 const string FORM_ID = "<form_name>";
 const string VERSION = "0.1.0";
 const string IGNORE_FORM_EVENTS = "";
-
-void DefineForm()
-{
-    //Form Definition
-    NUI_CreateForm(FORM_ID);
-    {
-        NUI_AddColumn();
-            NUI_AddSpacer();
-        NUI_CloseColumn();
-    }
-
-    // Profile Definition
-    NUI_CreateDefaultProfile();
-    {
-        NUI_SetProfileBind("geometry", NUI_DefineRectangle(100.0, 100.0, 650.0, 610.0));
-    }
-}
 
 void BindForm()
 {
@@ -55,7 +38,19 @@ void HandleModuleEvents()
 
 }
 
-void HandleNWNXEvents()
+void DefineForm()
 {
-    
+    //Form Definition
+    NUI_CreateForm(FORM_ID);
+    {
+        NUI_AddColumn();
+            NUI_AddSpacer();
+        NUI_CloseColumn();
+    }
+
+    // Profile Definition
+    NUI_CreateDefaultProfile();
+    {
+        NUI_SetProfileBind("geometry", NUI_DefineRectangle(100.0, 100.0, 650.0, 610.0));
+    }
 }
