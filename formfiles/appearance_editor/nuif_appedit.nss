@@ -10,14 +10,14 @@
 //                          DO NOT MAKE ANY CHANGES BELOW THIS LINE
 // ---------------------------------------------------------------------------------------
 
-#include "nui_i_config"
+#include "nui_c_config"
 #include "nui_i_main"
 #include "nuio_appedit"
 
 #include "util_i_csvlists"
 #include "util_i_debug"
 
-const string VERSION = "1.1.2";
+const string VERSION = "1.1.3";
 const string PROPERTIES = "APPEARANCE_EDITOR_PROPERTIES";
 const string FORM_ID = "appearance_editor";
 
@@ -1968,12 +1968,22 @@ void AddModelToDatabase(int nType, json jModel, string sCategory = "")
         nCount = JsonGetLength(jModel);
         for (n = 0; n < nCount; n++)
         {
-            string sFile = JsonGetString(JsonArrayGet(jModel, n));
-            string sGender = GetSubString(sFile, 1, 1);
-            string sRace = GetSubString(sFile, 2, 1);
-            string sPhenotype = GetSubString(sFile, 3, 1);
-            string sPart = GetSubString(sFile, 5, GetStringLength(sFile) - 8);
-            int nModel = StringToInt(GetStringRight(sFile, 3));
+            // pfa0_chest001.mdl
+            string sRegex = "^.(.)(.)(.)_([a-zA-Z]+)(\\d+)$";
+            json jFile = RegExpMatch(sRegex, JsonGetString(JsonArrayGet(jModel, n)));
+            
+            string sGender = JsonGetString(JsonArrayGet(jFile, 1));
+            string sRace = JsonGetString(JsonArrayGet(jFile, 2));
+            string sPhenotype = JsonGetString(JsonArrayGet(jFile, 3));
+            string sPart = JsonGetString(JsonArrayGet(jFile, 4));
+            int nModel = StringToInt(JsonGetString(JsonArrayGet(jFile, 5)));
+            
+            //string sFile = JsonGetString(JsonArrayGet(jModel, n));
+            //string sGender = GetSubString(sFile, 1, 1);
+            //string sRace = GetSubString(sFile, 2, 1);
+            //string sPhenotype = GetSubString(sFile, 3, 1);
+            //string sPart = GetSubString(sFile, 5, GetStringLength(sFile) - 8);
+            //int nModel = StringToInt(GetStringRight(sFile, 3));
 
             sValues += (sValues != "" ? "," : "") + "('" + sGender + "'," +
                                                     "'" + sRace   + "'," +
