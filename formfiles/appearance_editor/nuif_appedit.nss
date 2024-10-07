@@ -1970,7 +1970,9 @@ void AddModelToDatabase(int nType, json jModel, string sCategory = "")
         {
             // pfa0_chest001.mdl
             string sRegex = "^.(.)(.)(.)_([a-zA-Z]+)(\\d+)$";
-            json jFile = RegExpMatch(sRegex, JsonGetString(JsonArrayGet(jModel, n)));
+
+            string sFile = JsonGetString(JsonArrayGet(jModel, n));
+            json jFile = RegExpMatch(sRegex, sFile);
             
             string sGender = JsonGetString(JsonArrayGet(jFile, 1));
             string sRace = JsonGetString(JsonArrayGet(jFile, 2));
