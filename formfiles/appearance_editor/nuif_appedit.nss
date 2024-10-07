@@ -17,7 +17,7 @@
 #include "util_i_csvlists"
 #include "util_i_debug"
 
-const string VERSION = "1.1.3";
+const string VERSION = "1.1.4";
 const string PROPERTIES = "APPEARANCE_EDITOR_PROPERTIES";
 const string FORM_ID = "appearance_editor";
 
@@ -2255,6 +2255,7 @@ void PopulateSimpleModelData(int nType = BASE_CONTENT)
     {
         string sType = GetListItem(sTypes, t);
         string sClasses = Get2DAListByCriteria("baseitems", "itemclass", "modeltype", sType);
+               sClasses = RemoveListItem(sClasses, "cloak");
         
         int n, nClasses = CountList(sClasses);
         for (n = 0; n < nClasses; n++)
@@ -2329,6 +2330,7 @@ void PopulateArmorAndAppearanceModelData(int nType = BASE_CONTENT)
     string sPhenotypes = CountList(MODEL_PHENOTYPE) > 0 ? MODEL_PHENOTYPE : Get2DAListByCriteria("phenotype", "label", TWODA_INDEX);
     string sParts = Get2DAListByCriteria("capart", "mdlname");
            sParts = AddListItem(sParts, "head");
+           sParts = AddListItem(sParts, "cloak");
 
     int g, nGenders = CountList(sGenders);
     int r, nRaces = CountList(sRaces);
