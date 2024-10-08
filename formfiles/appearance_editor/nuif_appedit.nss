@@ -1968,8 +1968,7 @@ void AddModelToDatabase(int nType, json jModel, string sCategory = "")
         nCount = JsonGetLength(jModel);
         for (n = 0; n < nCount; n++)
         {
-            // pfa0_chest001.mdl
-            string sRegex = "^.(.)(.)(.)_([a-zA-Z]+)(\\d+)$";
+            string sRegex = "^.(.)(.)(.)_([a-zA-Z]+)_?(\\d+)$";
 
             string sFile = JsonGetString(JsonArrayGet(jModel, n));
             json jFile = RegExpMatch(sRegex, sFile);
