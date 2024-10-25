@@ -2503,6 +2503,9 @@ void CreatePartCategoryTabs()
 
             sParts = AddListItem(sParts, ROBE);
             sPointers = AddListItem(sPointers, "robe");
+
+            sParts = AddListItem(sParts, CLOAK);
+            sPointers = AddListItem(sPointers, "cloak");
         }
 
         sParts = AddListItem(sParts, CHEST);

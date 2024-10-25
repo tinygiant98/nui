@@ -36,6 +36,8 @@ string SHOULDER = "Shoulder";
 string HELMET   = "Helmet";
 string ROBE     = "Robe";
 
+string CLOAK    = "Cloak";
+
 string RIGHT_SHOULDER = "Right Shoulder";
 string LEFT_SHOULDER = "Left Shoulder";
 
