@@ -43,6 +43,9 @@ NWN:EE >= 8193.35
 
 ## Change Log
 
+*** 0.5.1 ***
+- Modified the form name constant in `nui_f_template.nss` to prevent a rare sqlite parsing error involving the use of angle brackets.
+
 *** 0.5.0 ***
 - Removed some constants in `nui_i_main` to permit including `nw_inc_nui`, allowing this nui system and the base game's nui implementation script to work together.  `nw_inc_nui` is now `#include`d in `nui_i_main`.
 - Modified `NUI_DisplayForm()` prototype:
@@ -58,7 +61,7 @@ NWN:EE >= 8193.35
 ```c
 void DefineForm()
 {
-    NUI_CreateForm("<form_id>", "<form_version");
+    NUI_CreateForm("<form_id>", "<form_version>");
         NUI_SetResizable(TRUE);
         NUI_BindTitle("frmTitle");
     {

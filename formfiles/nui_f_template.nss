@@ -8,7 +8,7 @@
 #include "util_i_csvlists"
 #include "util_i_debug"
 
-const string FORM_ID = "<form_name>";
+const string FORM_ID = "template_form";
 const string VERSION = "0.1.0";
 const string IGNORE_FORM_EVENTS = "";
 
