@@ -23,12 +23,11 @@ NUI >= 0.2.3
 - Move global `sQuery` and `sql` variables into local scope to prevent conflicts with custom user formfiles.
 
 ## 0.2.0:
-- BREAKING CHANGE:  This modification requires an addition to `nui_c_storage`, so be sure to copy over
-all of your current configuration values to the new `nui_c_storage`.
-- Added ability to use items as persistent storage containers.  The item must have the `Cast Spell: Unique Power (Self-Only)` property on it.  If you're using the NUI system's event handler, add `NUI_HandleEvents(GetItemActivator());` to the event handler for `OnActivateItem`.  This can also be called from a tag-based script in the same way.  If you are calling the formfile directly, you can achieve the same result by calling `ExecuteScript("nui_f_storage", GetItemActivator());` (if you're using pre-compiled formfiles).  The item's tag must be unique, but multiple players can have the same item while still keeping persistent inventories separate.  Persistent storage items can have all persistent storage variables set as with any other object, and will use the same defaults if those variables are not set.  Gold storage is disabled for all persistent storage items.
+- BREAKING CHANGE:  This modification requires an addition to `nui_c_storage`, so be sure to copy over all of your current configuration values to the new `nui_c_storage`.
+- Added ability to use items as persistent storage containers.  The item must have the `Cast Spell: Unique Power (Self-Only)` property on it.  If you're using the NUI system's event handler, add `NUI(GetItemActivator());` to the event handler for `OnActivateItem`.  This can also be called from a tag-based script in the same way.  If you are calling the formfile directly, you can achieve the same result by calling `ExecuteScript("nui_f_storage", GetItemActivator());` (if you're using pre-compiled formfiles).  The item's tag must be unique, but multiple players can have the same item while still keeping persistent inventories separate.  Persistent storage items can have all persistent storage variables set as with any other object, and will use the same defaults if those variables are not set.  Gold storage is disabled for all persistent storage items.
 - Added `PS_CONTAINER_ITEM_TYPE_DEFAULT` configuration option.  Container type assignment precedence is `PS_CONTAINTER_TYPE` variable set on the object, `PS_CONTAINER_ITEM_TYPE_DEFAULT` (if the object is an item), `PS_CONTAINER_TYPE_DEFAULT`.
 
-*** WARNING *** `nui_f_storage` should not be set as the event handler for the module's `OnActivateItem` event.  If this is set, every activated object in the game will be considered a persistent storage object.  Calling the NUI event handling system (via `NUI_HandleEvents()`) or invoking the form directly (via `ExecuteScript()`) should only be done after you have confirmed the item is a valid persistent storage item.
+*** WARNING *** `nui_f_storage` should not be set as the event handler for the module's `OnActivateItem` event.  If this is set, every activated object in the game will be considered a persistent storage object.  Calling the NUI event handling system (via `NUI()`) or invoking the form directly (via `ExecuteScript()`) should only be done after you have confirmed the item is a valid persistent storage item.
 
 ## 0.1.12:
 - Modified `nui_f_storage` to use automatic bind watching.  This ups the NUI requriement to 0.2.3.
@@ -104,7 +103,7 @@ Initial Release
 The persistent storage formfile requires two scripts:  `nui_c_storage`, which contains all configuration defaults, and `nui_f_storage`, which contains the formfile's functionality.  Do not make any changes to `nui_f_storage`.  All constants in `nui_c_storage` can be changed per the module builder's desires, however, the actual configuration constant names should not be changed.
 
 In addition to the event calls required for the base NUI system, the following are required for the persistent storage form to function correctly:
-- The module's handler for `OnPlayerTarget` must include `NUI_HandleEvents(GetLastPlayerToSelectTarget());`.
+- The module's handler for `OnPlayerTarget` must include `NUI(GetLastPlayerToSelectTarget());`.
 
 <a id="basic"></a>
 To primary method to instantiate the persistent storage form for any container is to set `nui_f_storage` as the event handler for the following events on each container that will be part of the system:
@@ -114,9 +113,9 @@ To primary method to instantiate the persistent storage form for any container i
 
 <a id="advanced"></a>
 Alternately, the form can be opened via calls from event handling system.  To instantiate the persistent storage form for any container from an event handler.  Once the container is verified as part of the system (through whatever method is deemed appropriate by the module builder), the following should be called:
-- In the `OnPlaceableUsed` handler: `NUI_HandleEvents(GetLastUsedBy());`
-- In the `OnPlaceableOpen` handler: `NUI_HandleEvents(GetLastOpenedBy());`
-- In the `OnPlaceableClosed` handler: `NUI_HandleEvents(GetLastClosedBy());`
+- In the `OnPlaceableUsed` handler: `NUI(GetLastUsedBy());`
+- In the `OnPlaceableOpen` handler: `NUI(GetLastOpenedBy());`
+- In the `OnPlaceableClosed` handler: `NUI(GetLastClosedBy());`
 > Only one opening handler is required, either `OnPlaceableUsed` or `OnPlaceableOpen`.  Setting both will cause the form to open, immediately close and then open again.  Although this action may not be readily apparent, it can eat up valuable resources in large modules.
 
 ### Configuration
